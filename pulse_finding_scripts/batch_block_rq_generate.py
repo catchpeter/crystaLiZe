@@ -12,6 +12,15 @@ list_dir = glob(path_text+"*/")
 for i in reversed(range(len(list_dir))):
     if ("spe" in list_dir[i]) or ("dark" in list_dir[i]): list_dir.pop(i)
 
+print("\n Process all the data(1), or only those ones not processed yet(2)?\n")
+mode = input()
+if mode == "2":
+    for i in reversed(range(len(list_dir))):
+        rq_file = Path(list_dir[i]+"rq.npz")
+        if rq_file.exists: list_dir.pop(i)
+else:
+    pass
+
 print("\n Data to process:\n")
 print('\n'.join(list_dir))
 print("\n Check the data list above, if not correct, press q then Enter. Otherwise, press any other key to start\n")
