@@ -1,5 +1,6 @@
 from rq_generate import make_rq
 from glob import glob
+from pathlib import Path
 
 #process all data sets but the calibration data under this main folder
 
@@ -17,7 +18,7 @@ mode = input()
 if mode == "2":
     for i in reversed(range(len(list_dir))):
         rq_file = Path(list_dir[i]+"rq.npz")
-        if rq_file.exists: list_dir.pop(i)
+        if rq_file.exists(): list_dir.pop(i)
 else:
     pass
 
