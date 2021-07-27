@@ -1,29 +1,29 @@
-from cut_plot import make_plots
-from pathlib import Path
+from rq_generate import make_rq
 from glob import glob
+from pathlib import Path
+from sys import argv
 
-#process all data sets but the calibration data under this main folder
-
+#open all the data sets in the path 
 with open("batch_path.txt", 'r') as path:
     path_text = path.read()
 
 list_dir = glob(path_text+"*/")
 
-
+#remove all the calibration data and data without rq.npz
 for i in reversed(range(len(list_dir))):
     if ("spe" in list_dir[i]) or ("dark" in list_dir[i]): list_dir.pop(i)
+    rq_file = Path(list_dir[i]+"rq.npz")
+    if not rq_file.exists(): list_dir.pop(i)
 
-print("\n Process all the data(1), or only those ones not processed yet(2)?\n")
-mode = input()
-if mode == "2":
+#Remove the data set alreay processed before, if any argument given, then process all data. 
+if len(argv)==1:
     for i in reversed(range(len(list_dir))):
-    	rq_file = Path(list_dir[i]+"rq.npz")
-    	if not rq_file.exists(): list_dir.pop(i)
-    	fig_file = Path(list_dir[i]+"DriftTime_AS.png")
-    	if fig_file.exists(): list_dir.pop(i)
+        rq_file = Path(list_dir[i]+"rq.npz")
+        if rq_file.exists(): list_dir.pop(i)
 else:
     pass
 
+#shows all the data sets ready to be processed. 
 print("\n Data to process:\n")
 print('\n'.join(list_dir))
 print("\n Check the data list above, if not correct, press q then Enter. Otherwise, press any other key to start\n")
