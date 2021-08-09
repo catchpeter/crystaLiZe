@@ -12,6 +12,7 @@ list_dir = glob(path_text+"*/")
 #remove all the calibration data and data without rq.npz
 for i in reversed(range(len(list_dir))):
     if ("spe" in list_dir[i]) or ("dark" in list_dir[i]): list_dir.pop(i)
+for i in reversed(range(len(list_dir))):
     rq_file = Path(list_dir[i]+"rq.npz")
     if not rq_file.exists(): list_dir.pop(i)
 
