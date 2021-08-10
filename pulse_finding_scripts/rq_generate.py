@@ -72,7 +72,7 @@ def make_rq(data_dir):
     t_start = time.time()
 
     block_size = 3000
-    n_block = 100
+    n_block = 500
     max_evts = n_block*block_size#5000  # 25000 # -1 means read in all entries; 25000 is roughly the max allowed in memory on the DAQ computer
     max_pts = -1  # do not change
     if max_evts > 0:
@@ -161,8 +161,8 @@ def make_rq(data_dir):
         for ch_ind in range(n_sipms):
             ch_data.append(np.fromfile(data_dir + "wave"+str(ch_ind)+".dat", dtype=load_dtype, offset = block_size*wsize*j, count=wsize*block_size))
 
-        t_end_load = time.time()
-        print("Time to load files: ", t_end_load-t_start)
+        #t_end_load = time.time()
+        #print("Time to load files: ", t_end_load-t_start)
 
         # scale waveforms to get units of mV/sample
         # then for each channel ensure we 
@@ -196,10 +196,10 @@ def make_rq(data_dir):
         # baseline subtracted (bls) waveforms saved in this matrix:
         v_bls_matrix_all_ch = np.zeros( np.shape(v_matrix_all_ch), dtype=array_dtype) # dims are (chan #, evt #, sample #)
 
-        t_end_wfm_fill = time.time()
-        print("Time to fill all waveform arrays: ", t_end_wfm_fill - t_end_load)
+        #t_end_wfm_fill = time.time()
+        #print("Time to fill all waveform arrays: ", t_end_wfm_fill - t_end_load)
 
-        print("Events to process: ",n_events)
+        #print("Events to process: ",n_events)
         for i in range(0, n_events):
             
             sum_baseline = np.mean( v_matrix_all_ch[-1][i,baseline_start:baseline_end] ) #avg ~us, avoiding trigger
@@ -218,7 +218,7 @@ def make_rq(data_dir):
         
     #check mark
 
-        print("Running pulse finder on {:d} events...".format(n_events))
+        #print("Running pulse finder on {:d} events...".format(n_events))
 
         # use for coloring pulses
         pulse_class_colors = np.array(['blue', 'green', 'red', 'magenta', 'darkorange'])
@@ -228,7 +228,7 @@ def make_rq(data_dir):
             pc_legend_handles.append(mpl.patches.Patch(color=pulse_class_colors[class_ind], label=str(class_ind)+": "+pulse_class_labels[class_ind]))
 
         for i in range(j*block_size, j*block_size+n_events):
-            if i%500==0: print("Event #",i)
+            if (i)%2000==0: print("Event #",i)
             
             # Find pulse locations; other quantities for pf tuning/debugging
             start_times, end_times, peaks, data_conv, properties = pf.findPulses( v_bls_matrix_all_ch[-1,i-j*block_size,:], max_pulses , SPEMode=False)
@@ -344,7 +344,7 @@ def make_rq(data_dir):
             # Condition to skip the individual plotting, hand scan condition
             #plotyn = drift_Time[i]<2 and drift_Time[i]>0 and np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1400))#np.any((p_tba[i,:]>-0.91)*(p_tba[i,:]<-0.82)*(p_area[i,:]<2800)*(p_area[i,:]>1000))# True#np.any(p_class[i,:]==4)#False#np.any(p_area[i,:]>1000) and 
             #plotyn = drift_Time[i]>2.5 and (center_bot_y[i,0]**2+center_bot_x[i,0]**2) <0.1
-            plotyn = True #np.any((p_class[i,:] == 3) + (p_class[i,:] == 4))#np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1000))
+            plotyn = False #np.any((p_class[i,:] == 3) + (p_class[i,:] == 4))#np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1000))
             #plotyn = np.any((np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<3.4) )#False#np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1000))
             # Pulse area condition
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
@@ -446,7 +446,9 @@ def make_rq(data_dir):
         print("Average waveform saved")
 
     n_events = i
+    t_end = time.time()
     print("total number of events processed:", n_events)
+    print("Time used: {}".format(t_end-t_start))
 
     print("empty events: {0}".format(np.sum(empty_evt_ind>0)))
     # pl.hist(empty_evt_ind[empty_evt_ind>0], bins=1000)
