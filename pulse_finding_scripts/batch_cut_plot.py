@@ -1,4 +1,4 @@
-from rq_generate import make_rq
+from cut_plot import make_plots
 from glob import glob
 from pathlib import Path
 from sys import argv
