@@ -1,4 +1,6 @@
-#This will produce S1 peak 
+#This will produce values of S1 peak vs drift time
+#The inputs are: data_dir, minimum drift time you want to get, maximum drift time you want, number of drift time points, and name of the fitting plots. 
+
 
 import numpy as np
 import matplotlib.pyplot as plt
