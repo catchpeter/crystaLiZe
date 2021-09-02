@@ -19,7 +19,7 @@ for i in reversed(range(len(list_dir))):
 #Remove the data set alreay processed before, if any argument given, then process all data. 
 if len(argv)==1:
     for i in reversed(range(len(list_dir))):
-        rq_file = Path(list_dir[i]+"rq.npz")
+        rq_file = Path(list_dir[i]+"S1_ValidPulse.png")
         if rq_file.exists(): list_dir.pop(i)
 else:
     pass

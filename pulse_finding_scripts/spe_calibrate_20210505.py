@@ -11,9 +11,9 @@ import PulseClassification as pc
 
 import PulseFinderSPE_crystalize as pfSPE
 
-data_dir = "/home/xaber/caen/wavedump-3.8.2/data/20210512/20210512_1745_spe_calibration_match/"
+data_dir = "/media/xaber/gpeter/data/20210810/20210810_1622_Co_OCVtop_1.38_spe/"
 
-chs = [5, 7] # Sipm channels needed to be processed
+chs = [0, 1, 3, 4, 5, 6] # Sipm channels needed to be processed
 SPEMode = True
 LED = False # LED mode, expects signal at ~2us
 plotyn = False # Waveform plotting
@@ -43,7 +43,7 @@ else:
     right_bound = wsize
 
 block_size = 5000
-n_block = 40
+n_block = 60
 max_evts = n_block*block_size#5000  # 25000 # -1 means read in all entries; 25000 is roughly the max allowed in memory on the DAQ computer
 max_pts = -1  # do not change
 max_pulses = 6
@@ -102,7 +102,7 @@ for ch_index in chs:
             ch_data.append(np.zeros(10000000))
 
         t_end_load = time.time()
-        print("Time to load files: ", t_end_load-t_start)
+        #print("Time to load files: ", t_end_load-t_start)
 
         # scale waveforms to get units of mV/sample
         # then for each channel ensure we 
@@ -136,9 +136,9 @@ for ch_index in chs:
         v_bls_matrix_all_ch = np.zeros( np.shape(v_matrix_all_ch), dtype=array_dtype) # dims are (chan #, evt #, sample #)
         
         t_end_wfm_fill = time.time()
-        print("Time to fill all waveform arrays: ", t_end_wfm_fill - t_end_load)
+        #print("Time to fill all waveform arrays: ", t_end_wfm_fill - t_end_load)
 
-        print("Events to process: ",n_events)
+        #print("Events to process: ",n_events)
 
         
         # For LED, looks 0.5 us before expected range of pulse
@@ -167,7 +167,7 @@ for ch_index in chs:
         # ==================================================================
         # now setup for pulse finding on the baseline-subtracted sum waveform
 
-        print("Running pulse finder on {:d} events...".format(n_events))
+        #print("Running pulse finder on {:d} events...".format(n_events))
 
         # Loop index key:
         # j = blocks 
@@ -179,7 +179,7 @@ for ch_index in chs:
 
         # Loop over events
         for i in range(j*block_size, j*block_size+n_events):
-            if i%1000==0: print("Event #",i)
+            if i%5000==0: print("Event #",i)
             
             # Loop over channels, slowest part of the code
             # Have to do a loop, pulse finder does not like v_bls_matrix_all_ch[:,i,:] 
