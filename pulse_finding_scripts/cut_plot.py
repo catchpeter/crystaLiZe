@@ -107,6 +107,9 @@ def make_plots(data_dir):
 
 
     # ==================================================================
+    #Create a text file to save summary
+    summary_file = open(data_dir+"summary.txt", "w")
+
     # define DAQ and other parameters
     tscale = (8.0/4096.0)     # = 0.002 µs/sample, time scale
 
@@ -160,6 +163,7 @@ def make_plots(data_dir):
 
     n_golden = int(np.sum(drift_Time>0))
     print("number of golden events found = {0:d} ({1:g}%)".format(n_golden,n_golden*100./n_events))
+    summary_file.write("number of golden events found = {0:d} ({1:g}%)\n".format(n_golden,n_golden*100./n_events))
 
     p_t_rise = tscale*(p_afs_50-p_afs_2l)
 
@@ -191,6 +195,8 @@ def make_plots(data_dir):
     pulse_cut_name = 'ValidPulse'#'Co_peak'
     pulse_cut = cut_dict[pulse_cut_name]
     print("number of pulses found passing cut "+pulse_cut_name+" = {0:d} ({1:g}% of pulses found)".format(np.sum(pulse_cut),np.sum(pulse_cut)*100./np.sum(n_pulses)))
+    summary_file.write("number of pulses found passing cut "+pulse_cut_name+" = {0:d} ({1:g}% of pulses found)\n".format(np.sum(pulse_cut),np.sum(pulse_cut)*100./np.sum(n_pulses)))
+
     #pulse_cut_name = 'ValidPulse_SS_Evt'
     #pulse_cut = pulse_cut*SS_cut[:,np.newaxis] # add second dimension to allow broadcasting
 
@@ -221,6 +227,7 @@ def make_plots(data_dir):
     cleanS1AreaChFrac = p_area_ch_frac[s1_cut]
     cleanS1TBA = p_tba[s1_cut].flatten()
     print("number of S1 pulses found = {0:d} ({1:g}% of pulses found)".format(np.sum(s1_cut),np.sum(s1_cut)*100./np.sum(n_pulses)))
+    summary_file.write("number of S1 pulses found = {0:d} ({1:g}% of pulses found)\n".format(np.sum(s1_cut),np.sum(s1_cut)*100./np.sum(n_pulses)))
 
     s2_cut = pulse_cut*cut_dict['S2']
     cleanS2Area = p_area[s2_cut].flatten()
@@ -228,6 +235,8 @@ def make_plots(data_dir):
     cleanS2AreaChFrac = p_area_ch_frac[s2_cut]
     cleanS2TBA = p_tba[s2_cut].flatten()
     print("number of S2 pulses found = {0:d} ({1:g}% of pulses found)".format(np.sum(s2_cut),np.sum(s2_cut)*100./np.sum(n_pulses)))
+    summary_file.write("number of S2 pulses found = {0:d} ({1:g}% of pulses found)\n".format(np.sum(s2_cut),np.sum(s2_cut)*100./np.sum(n_pulses)))
+
 
     # Quantities for plotting only events with n number of pulses, not just all of them
     # May still contain empty pulses
@@ -262,6 +271,7 @@ def make_plots(data_dir):
     cleanDT = drift_Time[event_cut]
     cleanDT_AS = drift_Time_AS[event_cut]
     print("number of events found passing cut "+event_cut_name+" = {0:d} ({1:g}%)".format(np.sum(event_cut),np.sum(event_cut)*100./n_events))
+    summary_file.write("number of events found passing cut "+event_cut_name+" = {0:d} ({1:g}%)\n".format(np.sum(event_cut),np.sum(event_cut)*100./n_events))
 
     # =============================================================
     # =============================================================
@@ -466,7 +476,7 @@ def make_plots(data_dir):
         pl.ylim(bottom=0)
 
         pl.savefig(data_dir+"PoS1lgS2_nS2_vs_S1_TBA.png")
-
+    summary_file.close()
 # This is what actually gets run when calling cut_plot.py as a script
 def main():
     with open("path.txt", 'r') as path:
