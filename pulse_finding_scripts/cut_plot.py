@@ -95,7 +95,7 @@ def basicHeatmap(xdata, ydata, weights=None, bins=40, save=False, name="", show=
 # Write out the message 'txt' to console and to file
 def message(file, txt):
     print(txt)
-    file.write(txt)
+    file.write(txt+'\n')
 
     return
 
@@ -299,6 +299,7 @@ def make_plots(data_dir):
     event_cut_msg = "number of events found passing cut "+event_cut_name+" = {0:d} ({1:g}%)".format(np.sum(event_cut),np.sum(event_cut)*100./n_events)
     message(summary_file, event_cut_msg)
 
+    summary_file.close()
     # =============================================================
     # =============================================================
     # now make plots of interesting pulse quantities
@@ -514,7 +515,6 @@ def make_plots(data_dir):
         pl.ylim(bottom=0)
 
         pl.savefig(data_dir+"PoS1lgS2_nS2_vs_S1_TBA.png")
-    summary_file.close()
 # This is what actually gets run when calling cut_plot.py as a script
 def main():
     with open("path.txt", 'r') as path:
