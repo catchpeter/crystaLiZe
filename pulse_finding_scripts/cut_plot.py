@@ -19,7 +19,7 @@ def basicHist(data, bins=100, save=False, name="", mean=False, show=False, hRang
         cut = (data>hRange[0])*(data<hRange[1])
         data = data[cut]
         pl.hist(data, bins, range=(hRange[0],hRange[1]), histtype='step' )
-    else: pl.hist(data, bins)
+    else: pl.hist(data, bins, histtype='step')
 
     pl.xlabel(xlabel)
     pl.ylabel(ylabel)
@@ -71,11 +71,13 @@ def basicScatter(xdata, ydata, s=[], c=[], save=False, name="", mean=False, show
     return
 
 # For creating heatmaps, i.e. 2D histograms (can be weighted if desired)
-def basicHeatmap(xdata, ydata, weights=None, bins=40, save=False, name="", show=False, xlim=[], ylim=[], cmin=1e-12, cmax=None, xlabel="", ylabel="", logx=False, logy=False, legHand=[], data_dir=None):
+def basicHeatmap(xdata, ydata, weights=None, bins=40, save=False, name="", show=False, xlim=[], ylim=[], cmin=1e-12, cmax=None, xlabel="", ylabel="", logx=False, logy=False, logz=False, legHand=[], data_dir=None):
     pl.figure()
     if len(xlim)>1 and len(ylim)>1: hist_range = [xlim, ylim]
     else: hist_range = None
-    _, _, _, image = pl.hist2d(xdata, ydata, bins=bins, range=hist_range, weights=weights, cmin=cmin, cmax=cmax)
+    if logz: norm = mcolors.LogNorm()
+    else: norm = mcolors.Normalize()
+    _, _, _, image = pl.hist2d(xdata, ydata, bins=bins, range=hist_range, weights=weights, cmin=cmin, cmax=cmax, norm=norm)
     pl.colorbar(image)
 
     pl.xlabel(xlabel)
@@ -87,6 +89,13 @@ def basicHeatmap(xdata, ydata, weights=None, bins=40, save=False, name="", show=
     if save and data_dir is not None: pl.savefig(str(data_dir)+str(name)+".png")
     if show: pl.show()
     pl.close()
+
+    return
+
+# Write out the message 'txt' to console and to file
+def message(file, txt):
+    print(txt)
+    file.write(txt)
 
     return
 
@@ -162,8 +171,23 @@ def make_plots(data_dir):
     #end of RQ read
 
     n_golden = int(np.sum(drift_Time>0))
-    print("number of golden events found = {0:d} ({1:g}%)".format(n_golden,n_golden*100./n_events))
-    summary_file.write("number of golden events found = {0:d} ({1:g}%)\n".format(n_golden,n_golden*100./n_events))
+    golden_msg = "number of golden events found = {0:d} ({1:g}%)".format(n_golden,n_golden*100./n_events)
+    message(summary_file, golden_msg)
+    n_MS = int(np.sum((n_s1==1)*(n_s2>1)))
+    MS_msg = "number of MS events found = {0:d} ({1:g}%)".format(n_MS,n_MS*100./n_events)
+    message(summary_file, MS_msg)
+    n_pileup = int(np.sum((n_s1>1)*(n_s2>0)))
+    pileup_msg = "number of pileup events found = {0:d} ({1:g}%)".format(n_pileup,n_pileup*100./n_events)
+    message(summary_file, pileup_msg)
+    n_S1_only = int(np.sum((n_s1>0)*(n_s2<1)))
+    S1o_msg = "number of S1-only events found = {0:d} ({1:g}%)".format(n_S1_only,n_S1_only*100./n_events)
+    message(summary_file, S1o_msg)
+    n_S2_only = int(np.sum((n_s1<1)*(n_s2>0)))
+    S2o_msg = "number of S2-only events found = {0:d} ({1:g}%)".format(n_S2_only,n_S2_only*100./n_events)
+    message(summary_file, S2o_msg)
+    n_empty = int(np.sum((n_s1<1)*(n_s2<1)))
+    empty_msg = "number of events w/o an S1 or S2 found = {0:d} ({1:g}%)".format(n_empty,n_empty*100./n_events)
+    message(summary_file, empty_msg)
 
     p_t_rise = tscale*(p_afs_50-p_afs_2l)
 
@@ -178,13 +202,14 @@ def make_plots(data_dir):
     cut_dict['LargeS1'] = cut_dict['S1']*(p_area>500)
     cut_dict['TopCo'] = cut_dict['S1']*(p_tba>0.0)*(p_area>200)
     cut_dict['TopS1'] = cut_dict['S1']*(p_tba>0.75)
-    cut_dict['PoS1'] = cut_dict['S1']*(p_tba<-0.75)*(p_tba>-1)*(p_area>5000)*(p_area<30000)
+    cut_dict['PoS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-1)*(p_area>2000)*(p_area<30000)
+    cut_dict['PoUpS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-0.8)*(p_area>2000)*(p_area<30000)
+    cut_dict['PoDownS1'] = cut_dict['S1']*(p_tba<-0.8)*(p_tba>-1)*(p_area>2000)*(p_area<30000)
     cut_dict['PoSmallS1'] = cut_dict['S1']*(p_tba<-0.25)*(p_tba>-1)*(p_area>0)*(p_area<2000)
     cut_dict['PoMedS1'] = cut_dict['S1']*(p_tba<-0.25)*(p_tba>-1)*(p_area>2000)*(p_area<5000)
     cut_dict['PoMedLgS1'] = cut_dict['S1']*(p_tba<-0.75)*(p_tba>-1)*(p_area>5000)*(p_area<10000)
     cut_dict['S1_200-400phd'] = cut_dict['S1']*(p_area>200)*(p_area<400)
     cut_dict['S1_0-200phd'] = cut_dict['S1']*(p_area>0)*(p_area<200)
-    SS_cut = drift_Time > 0
 
     # Pick which cut from cut_dict to apply here and whether to save plots
     save_pulse_plots=True # One entry per pulse
@@ -194,11 +219,10 @@ def make_plots(data_dir):
     save_PoS1_plots=False # One entry per event w/ 1 Po S1, specific to studies of S2 multiplicity
     pulse_cut_name = 'ValidPulse'#'Co_peak'
     pulse_cut = cut_dict[pulse_cut_name]
-    print("number of pulses found passing cut "+pulse_cut_name+" = {0:d} ({1:g}% of pulses found)".format(np.sum(pulse_cut),np.sum(pulse_cut)*100./np.sum(n_pulses)))
-    summary_file.write("number of pulses found passing cut "+pulse_cut_name+" = {0:d} ({1:g}% of pulses found)\n".format(np.sum(pulse_cut),np.sum(pulse_cut)*100./np.sum(n_pulses)))
+    pulse_cut_msg = "number of pulses found passing cut "+pulse_cut_name+" = {0:d} ({1:g}% of pulses found)".format(np.sum(pulse_cut),np.sum(pulse_cut)*100./np.sum(n_pulses))
+    message(summary_file, pulse_cut_msg)
 
     #pulse_cut_name = 'ValidPulse_SS_Evt'
-    #pulse_cut = pulse_cut*SS_cut[:,np.newaxis] # add second dimension to allow broadcasting
 
     cleanArea = p_area[pulse_cut].flatten()
     cleanMax = p_max_height[pulse_cut].flatten()
@@ -226,16 +250,16 @@ def make_plots(data_dir):
     cleanS1RiseTime = p_t_rise[s1_cut].flatten()
     cleanS1AreaChFrac = p_area_ch_frac[s1_cut]
     cleanS1TBA = p_tba[s1_cut].flatten()
-    print("number of S1 pulses found = {0:d} ({1:g}% of pulses found)".format(np.sum(s1_cut),np.sum(s1_cut)*100./np.sum(n_pulses)))
-    summary_file.write("number of S1 pulses found = {0:d} ({1:g}% of pulses found)\n".format(np.sum(s1_cut),np.sum(s1_cut)*100./np.sum(n_pulses)))
+    nS1_msg = "number of S1 pulses found = {0:d} ({1:g}% of pulses found)".format(np.sum(s1_cut),np.sum(s1_cut)*100./np.sum(n_pulses))
+    message(summary_file, nS1_msg)
 
     s2_cut = pulse_cut*cut_dict['S2']
     cleanS2Area = p_area[s2_cut].flatten()
     cleanS2RiseTime = p_t_rise[s2_cut].flatten()
     cleanS2AreaChFrac = p_area_ch_frac[s2_cut]
     cleanS2TBA = p_tba[s2_cut].flatten()
-    print("number of S2 pulses found = {0:d} ({1:g}% of pulses found)".format(np.sum(s2_cut),np.sum(s2_cut)*100./np.sum(n_pulses)))
-    summary_file.write("number of S2 pulses found = {0:d} ({1:g}% of pulses found)\n".format(np.sum(s2_cut),np.sum(s2_cut)*100./np.sum(n_pulses)))
+    nS2_msg = "number of S2 pulses found = {0:d} ({1:g}% of pulses found)".format(np.sum(s2_cut),np.sum(s2_cut)*100./np.sum(n_pulses))
+    message(summary_file, nS2_msg)
 
 
     # Quantities for plotting only events with n number of pulses, not just all of them
@@ -253,12 +277,14 @@ def make_plots(data_dir):
     # Event level quantities
     event_cut_dict = {}
     event_cut_dict["SS"] = drift_Time > 0
+    event_cut_dict["AllEvents"] = n_pulses > 0
     event_cut_dict["All_Scatter"] = drift_Time_AS > 0
     event_cut_dict["MS"] = (n_s1 == 1)*(n_s2 > 1)*s1_before_s2
-    event_cut_dict["Po"] = (drift_Time>4)*np.any((p_tba<-0.0)*(p_tba>-0.7)*(p_area>1000)*(p_area<4000), axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
+    event_cut_dict["Po"] = (drift_Time>0)*np.any((p_tba<-0.0)*(p_tba>-1)*(p_area>2000)*(p_area<30000)*cut_dict["S1"], axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
     event_cut_dict["Po_AS"] = (drift_Time_AS>0.)*(drift_Time_AS<1.5)*np.any((p_tba<-0.6)*(p_tba>-1)*(p_area>5000)*(p_area<20000), axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
     event_cut_dict["lg_S1"] = (drift_Time>0)*np.any((p_area>1000.)*cut_dict["S1"], axis=1) # true if any S1 has area>1000
     event_cut_dict["2S2"] = (n_s2 == 2)
+    event_cut_dict["SS_1-2us"] = (drift_Time > 1)*(drift_Time < 2)
     event_cut_dict["PoS1"] = (np.sum(cut_dict['PoS1'], axis=1)==1)#*(n_s2>0)
 
     event_cut_name = "SS"#"Po"#"lg_S1"
@@ -270,8 +296,8 @@ def make_plots(data_dir):
     cleanSumS1TBA = p_tba[event_cut_dict['SS'][:,np.newaxis]*cut_dict['S1']]
     cleanDT = drift_Time[event_cut]
     cleanDT_AS = drift_Time_AS[event_cut]
-    print("number of events found passing cut "+event_cut_name+" = {0:d} ({1:g}%)".format(np.sum(event_cut),np.sum(event_cut)*100./n_events))
-    summary_file.write("number of events found passing cut "+event_cut_name+" = {0:d} ({1:g}%)\n".format(np.sum(event_cut),np.sum(event_cut)*100./n_events))
+    event_cut_msg = "number of events found passing cut "+event_cut_name+" = {0:d} ({1:g}%)".format(np.sum(event_cut),np.sum(event_cut)*100./n_events)
+    message(summary_file, event_cut_msg)
 
     # =============================================================
     # =============================================================
@@ -297,6 +323,7 @@ def make_plots(data_dir):
 
     basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 30000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
     basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 1000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_small_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
+    basicHeatmap(cleanTBA, cleanArea, xlim=[-1.01,1.01], ylim=[2000, 30000], bins=100, xlabel="TBA", ylabel="Pulse area (phd)", logz=True, name="PulseArea_vs_TBA_map_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
 
     basicScatter(cleanCenterBottomX, cleanCenterBottomY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="BottomCentroid_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir, showsipms=True)
     basicHeatmap(cleanCenterBottomX, cleanCenterBottomY, xlim=[-0.7, 0.7], ylim=[-0.7, 0.7], xlabel="x (cm)",
@@ -355,6 +382,10 @@ def make_plots(data_dir):
     basicHist(cleanS2Area, bins=500, hRange=[0, 10000], mean=True, xlabel="S2 area (phd)", name="S2_med_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
     basicHist(cleanS2Area, bins=500, hRange=[0, 500000], mean=True, xlabel="S2 area (phd)", name="S2_lg_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
 
+    # Temp: Po-specific S1 histograms
+    basicHist(p_area[pulse_cut*cut_dict["PoUpS1"]], bins=100, hRange=[0, 30000], mean=True, xlabel="S1 area (phd), up Po", name="S1_lg_Up_Po_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
+    basicHist(p_area[pulse_cut*cut_dict["PoDownS1"]], bins=100, hRange=[0, 30000], mean=True, xlabel="S1 area (phd), down Po", name="S1_lg_Down_Po_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
+
     # Plots of event-level variables
     pl.figure()
     pl.scatter(cleanSumS1, np.log10(cleanSumS2), s = 1, c=cleanDT)
@@ -364,6 +395,12 @@ def make_plots(data_dir):
     cbar.set_label("Drift time (us)")
     if save_event_plots: pl.savefig(data_dir+"log10_SumS2_vs_SumS1_"+event_cut_name +".png")
 
+    pl.xlim((0,1000))
+    if save_event_plots: pl.savefig(data_dir + "log10_SumS2_vs_SumS1_small" + event_cut_name + ".png")
+
+    basicHeatmap(cleanSumS1, np.log10(cleanSumS2), xlim=[0, 1000], ylim=[1, 6], bins=100, xlabel="Sum S1 area (phd)",
+             ylabel="log10 Sum S2 area", name="log10S2vsS1BandMap_" + event_cut_name, save=save_event_plots, data_dir=data_dir)
+
     pl.figure()
     pl.scatter(cleanAvgS1TBA, np.log10(cleanSumS2), s = 1, c=cleanDT_AS)
     pl.xlabel("Avg S1 TBA")
@@ -372,6 +409,7 @@ def make_plots(data_dir):
     cbar.set_label("Drift time (us)")
     if save_event_plots: pl.savefig(data_dir+"log10_SumS2_vs_S1TBA_"+event_cut_name +".png")
 
+    basicHist(cleanSumS1, bins=100, hRange=[0, 200], mean=True, xlabel="Sum S1 area (phd)", name="SumS1_small_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
     basicHist(np.log10(cleanSumS1), bins=100, mean=True, xlabel="log10 Sum S1 area (phd)", name="log10_SumS1_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
     basicHist(np.log10(cleanSumS2), bins=100, mean=True, xlabel="log10 Sum S2 area (phd)", name="log10_SumS2_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
     basicHist(cleanSumS2, bins=100, hRange=[0,400000], mean=True, xlabel="Sum S2 area (phd)", name="SumS2_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
