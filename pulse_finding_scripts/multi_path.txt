@@ -1,0 +1,5 @@
+Plot save dir
+G:/My Drive/crystalize/data/data-202108/SXe_vs_LXe_Po_0V/
+Filename, Legend_label, Color
+G:/My Drive/crystalize/data/data-202108/20210810/20210810_0801_Co_OCVtop_activated_xenon_Po_0g_0c_3mv_3us_51V_1.36b_240mins/, Liquid Xenon, blue
+G:/My Drive/crystalize/data/data-202108/20210818/20210818_1308_Po_0g_0c_3mv_3us_matched_0.76b_240mins/, Solid Xenon, purple

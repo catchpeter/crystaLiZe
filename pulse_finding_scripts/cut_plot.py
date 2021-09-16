@@ -13,29 +13,38 @@ def histToPlot(data, bins):
     return binCenters, histData
 
 # For creating basic histograms
-def basicHist(data, bins=100, save=False, name="", mean=False, show=False, hRange=[], xlim=[], ylim=[], xlabel="", ylabel="", logx=False, logy=False, area_max_plot=-99999999,legHand=[],data_dir=None):
-    pl.figure()
+
+# For creating basic histograms
+def basicHist(data, bins=100, save=False, name="", mean=False, show=False, hRange=[], xlim=[], ylim=[], xlabel="", ylabel="", logx=False, logy=False, area_max_plot=-99999999,legHand=[],save_dir=None,fig_dict=None,label=None,color=None):
+    # Get existing plot by same name, if it exists
+    try:
+        fig, ax = fig_dict[name]
+    except (TypeError, KeyError):
+        fig, ax = pl.subplots()
     if len(hRange) > 1:
         cut = (data>hRange[0])*(data<hRange[1])
         data = data[cut]
-        pl.hist(data, bins, range=(hRange[0],hRange[1]), histtype='step' )
-    else: pl.hist(data, bins, histtype='step')
+        ax.hist(data, bins, range=(hRange[0],hRange[1]), histtype='step',label=label,color=color )
+    else: ax.hist(data, bins, histtype='step',label=label,color=color)
 
-    pl.xlabel(xlabel)
-    pl.ylabel(ylabel)
-    if mean and area_max_plot<np.mean(data): pl.axvline(x=np.mean(data), ls='--', color='r')
-    if len(xlim) > 1: pl.xlim(xlim[0],xlim[1])
-    if len(ylim) > 1: pl.ylim(ylim[0],ylim[1])
-    if logx: pl.xscale("log")
-    if logy: pl.yscale("log")
-    if len(legHand) > 0: pl.legend(handles=legHand)
-    if save and data_dir is not None: pl.savefig(str(data_dir)+str(name)+".png")
-    if show: pl.show()
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if mean and area_max_plot<np.mean(data) and (fig_dict is None): ax.axvline(x=np.mean(data), ls='--', color='r')
+    if len(xlim) > 1: ax.xlim(xlim[0],xlim[1])
+    if len(ylim) > 1: ax.ylim(ylim[0],ylim[1])
+    if logx: ax.set_xscale("log")
+    if logy: ax.set_yscale("log")
+    if len(legHand) > 0: ax.legend(handles=legHand)
+    elif fig_dict is not None: ax.legend()
+    if save and save_dir is not None: fig.savefig(str(save_dir)+str(name)+".png")
+    if fig_dict is not None: # save figure and axis info to dictionary for later use
+        fig_dict[name] = (fig, ax)
+    if show: ax.show()
 
     return
 
 # For creating basic scatter plots
-def basicScatter(xdata, ydata, s=[], c=[], save=False, name="", mean=False, show=False, xlim=[], ylim=[], xlabel="", ylabel="", logx=False, logy=False, area_max_plot=-99999999,legHand=[],data_dir=None,showsipms=False):
+def basicScatter(xdata, ydata, s=[], c=[], save=False, name="", mean=False, show=False, xlim=[], ylim=[], xlabel="", ylabel="", logx=False, logy=False, area_max_plot=-99999999,legHand=[],save_dir=None,showsipms=False):
     pl.figure()
     if showsipms:
         w = 0.6 # Photosensitive area in cm
@@ -64,14 +73,14 @@ def basicScatter(xdata, ydata, s=[], c=[], save=False, name="", mean=False, show
     if logx: pl.xscale("log")
     if logy: pl.yscale("log")
     if len(legHand) > 0: pl.legend(handles=legHand)
-    if save and data_dir is not None: pl.savefig(str(data_dir)+str(name)+".png")
+    if save and save_dir is not None: pl.savefig(str(save_dir)+str(name)+".png")
     if show: pl.show()
     pl.close()
 
     return
 
 # For creating heatmaps, i.e. 2D histograms (can be weighted if desired)
-def basicHeatmap(xdata, ydata, weights=None, bins=40, save=False, name="", show=False, xlim=[], ylim=[], cmin=1e-12, cmax=None, xlabel="", ylabel="", logx=False, logy=False, logz=False, legHand=[], data_dir=None):
+def basicHeatmap(xdata, ydata, weights=None, bins=40, save=False, name="", show=False, xlim=[], ylim=[], cmin=1e-12, cmax=None, xlabel="", ylabel="", logx=False, logy=False, logz=False, legHand=[], save_dir=None):
     pl.figure()
     if len(xlim)>1 and len(ylim)>1: hist_range = [xlim, ylim]
     else: hist_range = None
@@ -86,7 +95,7 @@ def basicHeatmap(xdata, ydata, weights=None, bins=40, save=False, name="", show=
     if logx: pl.xscale("log")
     if logy: pl.yscale("log")
     if len(legHand) > 0: pl.legend(handles=legHand)
-    if save and data_dir is not None: pl.savefig(str(data_dir)+str(name)+".png")
+    if save and save_dir is not None: pl.savefig(str(save_dir)+str(name)+".png")
     if show: pl.show()
     pl.close()
 
@@ -99,10 +108,14 @@ def message(file, txt):
 
     return
 
-def make_plots(data_dir):
+def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     # set plotting style
-    mpl.rcParams['font.size']=10
-    mpl.rcParams['legend.fontsize']='small'
+    if fig_dict is not None:
+        mpl.rcParams['font.size']=18
+        mpl.rcParams['legend.fontsize']='large'
+    else:
+        mpl.rcParams['font.size']=10
+        mpl.rcParams['legend.fontsize']='small'
     mpl.rcParams['figure.autolayout']=True
     mpl.rcParams['figure.figsize']=[8.0,6.0]
     mpl.rcParams['figure.max_open_warning']=False
@@ -117,7 +130,8 @@ def make_plots(data_dir):
 
     # ==================================================================
     #Create a text file to save summary
-    summary_file = open(data_dir+"summary.txt", "w")
+    if save_dir is None: save_dir = data_dir # default save dir is where data comes from
+    summary_file = open(data_dir+"summary.txt", "w") # summary always goes in same folder as data comes from
 
     # define DAQ and other parameters
     tscale = (8.0/4096.0)     # = 0.002 µs/sample, time scale
@@ -202,9 +216,9 @@ def make_plots(data_dir):
     cut_dict['LargeS1'] = cut_dict['S1']*(p_area>500)
     cut_dict['TopCo'] = cut_dict['S1']*(p_tba>0.0)*(p_area>200)
     cut_dict['TopS1'] = cut_dict['S1']*(p_tba>0.75)
-    cut_dict['PoS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-1)*(p_area>2000)*(p_area<30000)
-    cut_dict['PoUpS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-0.8)*(p_area>2000)*(p_area<30000)
-    cut_dict['PoDownS1'] = cut_dict['S1']*(p_tba<-0.8)*(p_tba>-1)*(p_area>2000)*(p_area<30000)
+    cut_dict['PoS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-1)*(p_area>3000)*(p_area<30000)
+    cut_dict['PoUpS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-0.8)*(p_area>3000)*(p_area<30000)
+    cut_dict['PoDownS1'] = cut_dict['S1']*(p_tba<-0.8)*(p_tba>-1)*(p_area>3000)*(p_area<30000)
     cut_dict['PoSmallS1'] = cut_dict['S1']*(p_tba<-0.25)*(p_tba>-1)*(p_area>0)*(p_area<2000)
     cut_dict['PoMedS1'] = cut_dict['S1']*(p_tba<-0.25)*(p_tba>-1)*(p_area>2000)*(p_area<5000)
     cut_dict['PoMedLgS1'] = cut_dict['S1']*(p_tba<-0.75)*(p_tba>-1)*(p_area>5000)*(p_area<10000)
@@ -280,7 +294,7 @@ def make_plots(data_dir):
     event_cut_dict["AllEvents"] = n_pulses > 0
     event_cut_dict["All_Scatter"] = drift_Time_AS > 0
     event_cut_dict["MS"] = (n_s1 == 1)*(n_s2 > 1)*s1_before_s2
-    event_cut_dict["Po"] = (drift_Time>0)*np.any((p_tba<-0.0)*(p_tba>-1)*(p_area>2000)*(p_area<30000)*cut_dict["S1"], axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
+    event_cut_dict["Po"] = (drift_Time>0)*np.any((p_tba<-0.0)*(p_tba>-1)*(p_area>3000)*(p_area<30000)*cut_dict["S1"], axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
     event_cut_dict["Po_AS"] = (drift_Time_AS>0.)*(drift_Time_AS<1.5)*np.any((p_tba<-0.6)*(p_tba>-1)*(p_area>5000)*(p_area<20000), axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
     event_cut_dict["lg_S1"] = (drift_Time>0)*np.any((p_area>1000.)*cut_dict["S1"], axis=1) # true if any S1 has area>1000
     event_cut_dict["2S2"] = (n_s2 == 2)
@@ -306,32 +320,32 @@ def make_plots(data_dir):
 
 
     # Plots of all pulses combined (after cuts)
-    basicHist(cleanTBA, bins=100, hRange=[-1.01,1.01], mean=True, xlabel="TBA", name="TBA_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
+    basicHist(cleanTBA, bins=100, hRange=[-1.01,1.01], mean=True, xlabel="TBA", name="TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
-    basicHist(cleanRiseTime, bins=100, mean=True, logy=True, xlabel="Rise time, 50-2 (us)", name="RiseTime_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
+    basicHist(cleanRiseTime, bins=100, mean=True, logy=True, xlabel="Rise time, 50-2 (us)", name="RiseTime_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
-    basicHist(np.log10(cleanArea), bins=100, mean=True, xlabel="log10 Pulse area (phd)", name="log10PulseArea_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
+    basicHist(np.log10(cleanArea), bins=100, mean=True, xlabel="log10 Pulse area (phd)", name="log10PulseArea_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     area_max_plot=150
-    basicHist(cleanArea, bins=125, hRange=[0,area_max_plot], mean=True, xlabel="Pulse area (phd)", area_max_plot=area_max_plot, name="PulseArea_Under150phd"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
+    basicHist(cleanArea, bins=125, hRange=[0,area_max_plot], mean=True, xlabel="Pulse area (phd)", area_max_plot=area_max_plot, name="PulseArea_Under150phd"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
-    basicHist(cleanPulseClass, legHand=pc_legend_handles, xlabel="Pulse Class", name="PulseClass_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
+    if fig_dict is None: # save time, don't make scatter/heatmap plots if we're comparing multiple files
+        basicHist(cleanPulseClass, legHand=pc_legend_handles, xlabel="Pulse Class", name="PulseClass_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=None)
+        basicScatter(cleanTBA, cleanRiseTime, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], logy=True, ylim=[.01,4], xlabel="TBA", ylabel="Rise time, 50-2 (us)", legHand=pc_legend_handles, name="RiseTime_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
 
-    basicScatter(cleanTBA, cleanRiseTime, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], logy=True, ylim=[.01,4], xlabel="TBA", ylabel="Rise time, 50-2 (us)", legHand=pc_legend_handles, name="RiseTime_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
+        basicScatter(cleanArea, cleanRiseTime, s=1.2, c=pulse_class_colors[cleanPulseClass], logx=True, logy=True, xlim=[5,10**6], ylim=[.01,4], xlabel="Pulse area (phd)", ylabel="Rise time, 50-2 (us)", legHand=pc_legend_handles, name="RiseTime_vs_PulseArea_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
+        #xlim=[0.7*min(p_area.flatten()), 1.5*max(p_area.flatten())]
 
-    basicScatter(cleanArea, cleanRiseTime, s=1.2, c=pulse_class_colors[cleanPulseClass], logx=True, logy=True, xlim=[5,10**6], ylim=[.01,4], xlabel="Pulse area (phd)", ylabel="Rise time, 50-2 (us)", legHand=pc_legend_handles, name="RiseTime_vs_PulseArea_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
-    #xlim=[0.7*min(p_area.flatten()), 1.5*max(p_area.flatten())]
+        basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 30000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
+        basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 1000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_small_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
+        basicHeatmap(cleanTBA, cleanArea, xlim=[-1.01,1.01], ylim=[2000, 30000], bins=100, xlabel="TBA", ylabel="Pulse area (phd)", logz=True, name="PulseArea_vs_TBA_map_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
 
-    basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 30000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
-    basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 1000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_small_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
-    basicHeatmap(cleanTBA, cleanArea, xlim=[-1.01,1.01], ylim=[2000, 30000], bins=100, xlabel="TBA", ylabel="Pulse area (phd)", logz=True, name="PulseArea_vs_TBA_map_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
-
-    basicScatter(cleanCenterBottomX, cleanCenterBottomY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="BottomCentroid_"+pulse_cut_name, save=save_pulse_plots, data_dir=data_dir, showsipms=True)
-    basicHeatmap(cleanCenterBottomX, cleanCenterBottomY, xlim=[-0.7, 0.7], ylim=[-0.7, 0.7], xlabel="x (cm)",
-             ylabel="y (cm)", name="BottomCentroidMap_" + pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
-    basicScatter(cleanCenterTopX, cleanCenterTopY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="TopCentroid_" + pulse_cut_name, save=save_pulse_plots, data_dir=data_dir, showsipms=True)
-    basicHeatmap(cleanCenterTopX, cleanCenterTopY, xlim=[-0.7, 0.7], ylim=[-0.7, 0.7], xlabel="x (cm)", ylabel="y (cm)",
-             name="TopCentroidMap_" + pulse_cut_name, save=save_pulse_plots, data_dir=data_dir)
+        basicScatter(cleanCenterBottomX, cleanCenterBottomY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="BottomCentroid_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
+        basicHeatmap(cleanCenterBottomX, cleanCenterBottomY, xlim=[-0.7, 0.7], ylim=[-0.7, 0.7], xlabel="x (cm)",
+                 ylabel="y (cm)", name="BottomCentroidMap_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
+        basicScatter(cleanCenterTopX, cleanCenterTopY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="TopCentroid_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
+        basicHeatmap(cleanCenterTopX, cleanCenterTopY, xlim=[-0.7, 0.7], ylim=[-0.7, 0.7], xlabel="x (cm)", ylabel="y (cm)",
+                 name="TopCentroidMap_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
 
     # Channel fractional area for all pulses
     pl.figure()
@@ -343,7 +357,7 @@ def make_plots(data_dir):
         #pl.yscale('log')
         pl.xlabel("Pulse area fraction")
         pl.title('Ch '+str(j))
-    if save_pulse_plots: pl.savefig(data_dir+"pulse_ch_area_frac_"+pulse_cut_name+".png")
+    if save_pulse_plots: pl.savefig(save_dir+"pulse_ch_area_frac_"+pulse_cut_name+".png")
 
     # Plots of all S1 or all S2 pulses
     pl.figure()
@@ -355,7 +369,7 @@ def make_plots(data_dir):
         #pl.yscale('log')
         pl.xlabel("S1 area fraction")
         pl.title('Ch '+str(j))
-    if save_S1S2_plots: pl.savefig(data_dir+"S1_ch_area_frac_"+pulse_cut_name+".png")
+    if save_S1S2_plots: pl.savefig(save_dir+"S1_ch_area_frac_"+pulse_cut_name+".png")
 
     pl.figure()
     for j in range(0, n_channels-1):
@@ -366,91 +380,94 @@ def make_plots(data_dir):
         #pl.yscale('log')
         pl.xlabel("S2 area fraction")
         pl.title('Ch '+str(j))
-    if save_S1S2_plots: pl.savefig(data_dir+"S2_ch_area_frac_"+pulse_cut_name+".png")
+    if save_S1S2_plots: pl.savefig(save_dir+"S2_ch_area_frac_"+pulse_cut_name+".png")
 
-    basicHist(cleanS1TBA, bins=100, hRange=[-1.01,1.01], mean=True, xlabel="S1 TBA", name="S1TBA_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(cleanS2TBA, bins=100, hRange=[-1.01,1.01], mean=True, xlabel="S2 TBA", name="S2TBA_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
+    basicHist(cleanS1TBA, bins=100, hRange=[-1.01,1.01], mean=True, xlabel="S1 TBA", name="S1TBA_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS2TBA, bins=100, hRange=[-1.01,1.01], mean=True, xlabel="S2 TBA", name="S2TBA_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
-    basicHist(np.log10(cleanS1Area), bins=100, mean=True, xlabel="log10 S1 Area", name="log10_S1_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(np.log10(cleanS2Area), bins=100, mean=True, xlabel="log10 S2 Area", name="log10_S2_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
+    basicHist(np.log10(cleanS1Area), bins=100, mean=True, xlabel="log10 S1 Area", name="log10_S1_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(np.log10(cleanS2Area), bins=100, mean=True, xlabel="log10 S2 Area", name="log10_S2_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
-    basicHist(cleanS1Area, bins=125, mean=True, xlabel="S1 area (phd)", name="S1_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(cleanS1Area, bins=100, hRange=[0, 200], mean=True, xlabel="S1 area (phd)", name="S1_small_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(cleanS1Area, bins=100, hRange=[0, 1000], mean=True, xlabel="S1 area (phd)", name="S1_med_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(cleanS1Area, bins=100, hRange=[0, 30000], mean=True, xlabel="S1 area (phd)", name="S1_lg_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(cleanS2Area, bins=500, mean=True, xlabel="S2 area (phd)", name="S2_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(cleanS2Area, bins=500, hRange=[0, 1000], mean=True, xlabel="S2 area (phd)", name="S2_small_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(cleanS2Area, bins=500, hRange=[0, 10000], mean=True, xlabel="S2 area (phd)", name="S2_med_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(cleanS2Area, bins=500, hRange=[0, 500000], mean=True, xlabel="S2 area (phd)", name="S2_lg_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
+    basicHist(cleanS1Area, bins=125, mean=True, xlabel="S1 area (phd)", name="S1_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS1Area, bins=100, hRange=[0, 200], mean=True, xlabel="S1 area (phd)", name="S1_small_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS1Area, bins=100, hRange=[0, 1000], mean=True, xlabel="S1 area (phd)", name="S1_med_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS1Area, bins=100, hRange=[0, 30000], mean=True, xlabel="S1 area (phd)", name="S1_lg_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS2Area, bins=500, mean=True, xlabel="S2 area (phd)", name="S2_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS2Area, bins=500, hRange=[0, 1000], mean=True, xlabel="S2 area (phd)", name="S2_small_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS2Area, bins=500, hRange=[0, 10000], mean=True, xlabel="S2 area (phd)", name="S2_med_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS2Area, bins=500, hRange=[0, 500000], mean=True, xlabel="S2 area (phd)", name="S2_lg_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     # Temp: Po-specific S1 histograms
-    basicHist(p_area[pulse_cut*cut_dict["PoUpS1"]], bins=100, hRange=[0, 30000], mean=True, xlabel="S1 area (phd), up Po", name="S1_lg_Up_Po_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
-    basicHist(p_area[pulse_cut*cut_dict["PoDownS1"]], bins=100, hRange=[0, 30000], mean=True, xlabel="S1 area (phd), down Po", name="S1_lg_Down_Po_"+pulse_cut_name, save=save_S1S2_plots, data_dir=data_dir)
+    basicHist(p_area[pulse_cut*cut_dict["PoS1"]], bins=100, hRange=[0, 20000], mean=True, xlabel="S1 area (phd), Po", name="S1_lg_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(p_area[pulse_cut*cut_dict["PoUpS1"]], bins=100, hRange=[0, 20000], mean=True, xlabel="S1 area (phd), up Po", name="S1_lg_Up_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(p_area[pulse_cut*cut_dict["PoDownS1"]], bins=100, hRange=[0, 20000], mean=True, xlabel="S1 area (phd), down Po", name="S1_lg_Down_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     # Plots of event-level variables
-    pl.figure()
-    pl.scatter(cleanSumS1, np.log10(cleanSumS2), s = 1, c=cleanDT)
-    pl.xlabel("Sum S1 area (phd)")
-    pl.ylabel("log10 Sum S2 area")
-    cbar=pl.colorbar()
-    cbar.set_label("Drift time (us)")
-    if save_event_plots: pl.savefig(data_dir+"log10_SumS2_vs_SumS1_"+event_cut_name +".png")
+    if fig_dict is None:  # save time, don't make scatter/heatmap plots if we're comparing multiple files
+        pl.figure()
+        pl.scatter(cleanSumS1, np.log10(cleanSumS2), s = 1, c=cleanDT)
+        pl.xlabel("Sum S1 area (phd)")
+        pl.ylabel("log10 Sum S2 area")
+        cbar=pl.colorbar()
+        cbar.set_label("Drift time (us)")
+        if save_event_plots: pl.savefig(save_dir+"log10_SumS2_vs_SumS1_"+event_cut_name +".png")
 
-    pl.xlim((0,1000))
-    if save_event_plots: pl.savefig(data_dir + "log10_SumS2_vs_SumS1_small" + event_cut_name + ".png")
+        pl.xlim((0,1000))
+        if save_event_plots: pl.savefig(save_dir + "log10_SumS2_vs_SumS1_small" + event_cut_name + ".png")
 
-    basicHeatmap(cleanSumS1, np.log10(cleanSumS2), xlim=[0, 1000], ylim=[1, 6], bins=100, xlabel="Sum S1 area (phd)",
-             ylabel="log10 Sum S2 area", name="log10S2vsS1BandMap_" + event_cut_name, save=save_event_plots, data_dir=data_dir)
+        basicHeatmap(cleanSumS1, np.log10(cleanSumS2), xlim=[0, 1000], ylim=[1, 6], bins=100, xlabel="Sum S1 area (phd)",
+                 ylabel="log10 Sum S2 area", name="log10S2vsS1BandMap_" + event_cut_name, save=save_event_plots, save_dir=save_dir)
 
-    pl.figure()
-    pl.scatter(cleanAvgS1TBA, np.log10(cleanSumS2), s = 1, c=cleanDT_AS)
-    pl.xlabel("Avg S1 TBA")
-    pl.ylabel("log10 Sum S2 area")
-    cbar=pl.colorbar()
-    cbar.set_label("Drift time (us)")
-    if save_event_plots: pl.savefig(data_dir+"log10_SumS2_vs_S1TBA_"+event_cut_name +".png")
+        pl.figure()
+        pl.scatter(cleanAvgS1TBA, np.log10(cleanSumS2), s = 1, c=cleanDT_AS)
+        pl.xlabel("Avg S1 TBA")
+        pl.ylabel("log10 Sum S2 area")
+        cbar=pl.colorbar()
+        cbar.set_label("Drift time (us)")
+        if save_event_plots: pl.savefig(save_dir+"log10_SumS2_vs_S1TBA_"+event_cut_name +".png")
 
-    basicHist(cleanSumS1, bins=100, hRange=[0, 200], mean=True, xlabel="Sum S1 area (phd)", name="SumS1_small_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
-    basicHist(np.log10(cleanSumS1), bins=100, mean=True, xlabel="log10 Sum S1 area (phd)", name="log10_SumS1_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
-    basicHist(np.log10(cleanSumS2), bins=100, mean=True, xlabel="log10 Sum S2 area (phd)", name="log10_SumS2_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
-    basicHist(cleanSumS2, bins=100, hRange=[0,400000], mean=True, xlabel="Sum S2 area (phd)", name="SumS2_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
+    basicHist(cleanSumS1, bins=100, hRange=[0, 200], mean=True, xlabel="Sum S1 area (phd)", name="SumS1_small_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(np.log10(cleanSumS1), bins=100, mean=True, xlabel="log10 Sum S1 area (phd)", name="log10_SumS1_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(np.log10(cleanSumS2), bins=100, mean=True, xlabel="log10 Sum S2 area (phd)", name="log10_SumS2_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanSumS2, bins=100, hRange=[0,400000], mean=True, xlabel="Sum S2 area (phd)", name="SumS2_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     # Only ever plot this for SS events?
-    basicHist(cleanDT, bins=50, hRange=[0,10], mean=True, xlabel="Drift time (us)", name="DriftTime_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
-    basicHist(drift_Time_AS[drift_Time_AS>0], bins=50, hRange=[0,10], mean=True, xlabel="Drift time AS (us)", name="DriftTime_AS", save=save_event_plots, data_dir=data_dir)
-    basicHist(cleanDT_AS, bins=50, hRange=[0,10], mean=True, xlabel="Drift time AS (us)", name="DriftTime_AS_"+event_cut_name, save=save_event_plots, data_dir=data_dir)
+    basicHist(cleanDT, bins=50, hRange=[0,10], mean=True, xlabel="Drift time (us)", name="DriftTime_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(drift_Time_AS[drift_Time_AS>0], bins=50, hRange=[0,10], mean=True, xlabel="Drift time AS (us)", name="DriftTime_AS", save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanDT_AS, bins=50, hRange=[0,10], mean=True, xlabel="Drift time AS (us)", name="DriftTime_AS_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
-    pl.figure() # Only ever plot this for SS events?
-    pl.scatter(cleanDT_AS, cleanSumS2)
-    pl.xlabel("Drift time (us)")
-    pl.ylabel("Sum S2 area")
-    # Calculate mean vs drift bin
-    drift_bins=np.linspace(0,8,50)
-    drift_ind=np.digitize(cleanDT_AS, bins=drift_bins)
-    s2_medians=np.zeros(np.shape(drift_bins))
-    s2_std_err=np.ones(np.shape(drift_bins))*0#10000
-    for i_bin in range(len(drift_bins)):
-        found_i_bin = np.where(drift_ind==i_bin)
-        s2_area_i_bin = cleanSumS2[found_i_bin]
-        if len(s2_area_i_bin) < 1: continue
-        s2_medians[i_bin]=np.median(s2_area_i_bin) # Median instead of mean, better at ignoring outliers
-        s2_std_err[i_bin]=np.std(s2_area_i_bin)/np.sqrt(len(s2_area_i_bin))
-    pl.errorbar(drift_bins, s2_medians, yerr=s2_std_err, linewidth=3, elinewidth=3, capsize=5, capthick=4, color='red')
-    pl.ylim(bottom=0)
-    if save_event_plots: pl.savefig(data_dir+"SumS2_vs_DriftTime_"+event_cut_name +".png")
+    if fig_dict is None:  # save time, don't make scatter/heatmap plots if we're comparing multiple files
+        pl.figure() # Only ever plot this for SS events?
+        pl.scatter(cleanDT_AS, cleanSumS2)
+        pl.xlabel("Drift time (us)")
+        pl.ylabel("Sum S2 area")
+        # Calculate mean vs drift bin
+        drift_bins=np.linspace(0,8,50)
+        drift_ind=np.digitize(cleanDT_AS, bins=drift_bins)
+        s2_medians=np.zeros(np.shape(drift_bins))
+        s2_std_err=np.ones(np.shape(drift_bins))*0#10000
+        for i_bin in range(len(drift_bins)):
+            found_i_bin = np.where(drift_ind==i_bin)
+            s2_area_i_bin = cleanSumS2[found_i_bin]
+            if len(s2_area_i_bin) < 1: continue
+            s2_medians[i_bin]=np.median(s2_area_i_bin) # Median instead of mean, better at ignoring outliers
+            s2_std_err[i_bin]=np.std(s2_area_i_bin)/np.sqrt(len(s2_area_i_bin))
+        pl.errorbar(drift_bins, s2_medians, yerr=s2_std_err, linewidth=3, elinewidth=3, capsize=5, capthick=4, color='red')
+        pl.ylim(bottom=0)
+        if save_event_plots: pl.savefig(save_dir+"SumS2_vs_DriftTime_"+event_cut_name +".png")
     
-    # S1 area vs drift time w/ TBA as color scale:
-    pl.figure()
-    pl.scatter(cleanDT, cleanSumS1, s=1.5, c=cleanAvgS1TBA, cmap='plasma' )
-    pl.xlabel("Drift Time (us)")
-    pl.ylabel("Sum S1 area (phd)")
-    pl.xlim(0,9)
-    pl.ylim(10,30000)
-    pl.yscale('log')
-    pl.clim(-1,1)
-    cbar=pl.colorbar()
-    cbar.set_label("S1 TBA")
-    if save_event_plots: pl.savefig(data_dir+"SumS1_vs_DriftTime_"+event_cut_name +".png")
+        # S1 area vs drift time w/ TBA as color scale:
+        pl.figure()
+        pl.scatter(cleanDT, cleanSumS1, s=1.5, c=cleanAvgS1TBA, cmap='plasma' )
+        pl.xlabel("Drift Time (us)")
+        pl.ylabel("Sum S1 area (phd)")
+        pl.xlim(0,9)
+        pl.ylim(10,30000)
+        pl.yscale('log')
+        pl.clim(-1,1)
+        cbar=pl.colorbar()
+        cbar.set_label("S1 TBA")
+        if save_event_plots: pl.savefig(save_dir+"SumS1_vs_DriftTime_"+event_cut_name +".png")
     
     
     # Just for 2S2 events
@@ -467,24 +484,25 @@ def make_plots(data_dir):
     tstart_2nd_s2 = p_start[event_cut_dict['2S2']][second_s2_ind]
     dt_2s2 = tscale*(tstart_2nd_s2 - tstart_1st_s2)
 
-    pl.figure()
-    pl.scatter(np.log10(area_1st_s2), np.log10(area_2nd_s2), c=dt_2s2)
-    pl.plot([1.5,5],[1.5,5],c='r')
-    cbar=pl.colorbar()
-    cbar.set_label("Time between S2s (us)")
-    pl.xlabel('log10(1st S2 area)')
-    pl.ylabel('log10(2nd S2 area)')
-    if save_2S2_plots: pl.savefig(data_dir+"2S2_log10_area2_vs_log10_area1.png")
+    if fig_dict is None:  # save time, don't make scatter/heatmap plots if we're comparing multiple files
+        pl.figure()
+        pl.scatter(np.log10(area_1st_s2), np.log10(area_2nd_s2), c=dt_2s2)
+        pl.plot([1.5,5],[1.5,5],c='r')
+        cbar=pl.colorbar()
+        cbar.set_label("Time between S2s (us)")
+        pl.xlabel('log10(1st S2 area)')
+        pl.ylabel('log10(2nd S2 area)')
+        if save_2S2_plots: pl.savefig(save_dir+"2S2_log10_area2_vs_log10_area1.png")
 
-    pl.figure()
-    pl.hist(area_2nd_s2/area_1st_s2,range=(0,4),bins=50, histtype='step')
-    pl.xlabel('2nd S2 area/1st S2 area')
-    if save_2S2_plots: pl.savefig(data_dir+"2S2_area2_over_area1.png")
+        pl.figure()
+        pl.hist(area_2nd_s2/area_1st_s2,range=(0,4),bins=50, histtype='step')
+        pl.xlabel('2nd S2 area/1st S2 area')
+        if save_2S2_plots: pl.savefig(save_dir+"2S2_area2_over_area1.png")
 
-    pl.figure()
-    pl.hist(dt_2s2,bins=50, histtype='step')
-    pl.xlabel('Time between S2s (us)')
-    if save_2S2_plots: pl.savefig(data_dir+"2S2_time_diff.png")
+        pl.figure()
+        pl.hist(dt_2s2,bins=50, histtype='step')
+        pl.xlabel('Time between S2s (us)')
+        if save_2S2_plots: pl.savefig(save_dir+"2S2_time_diff.png")
 
     # Events w/ 1 up-going Po-like S1
     if save_PoS1_plots:
@@ -514,7 +532,8 @@ def make_plots(data_dir):
         pl.errorbar(TBA_bins, ns2_means, yerr=ns2_std_err, linewidth=3, elinewidth=3, capsize=5, capthick=4, color='red')
         pl.ylim(bottom=0)
 
-        pl.savefig(data_dir+"PoS1lgS2_nS2_vs_S1_TBA.png")
+        pl.savefig(save_dir+"PoS1lgS2_nS2_vs_S1_TBA.png")
+
 # This is what actually gets run when calling cut_plot.py as a script
 def main():
     with open("path.txt", 'r') as path:
