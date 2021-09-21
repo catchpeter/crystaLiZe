@@ -231,7 +231,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     save_event_plots=True # One entry per event
     save_2S2_plots=True # One entry per event w/ 2 S2s
     save_PoS1_plots=False # One entry per event w/ 1 Po S1, specific to studies of S2 multiplicity
-    pulse_cut_name = 'ValidPulse'#'Co_peak'
+    pulse_cut_name = 'ValidPulse'#'Co_peak'#'PoS1'#
     pulse_cut = cut_dict[pulse_cut_name]
     pulse_cut_msg = "number of pulses found passing cut "+pulse_cut_name+" = {0:d} ({1:g}% of pulses found)".format(np.sum(pulse_cut),np.sum(pulse_cut)*100./np.sum(n_pulses))
     message(summary_file, pulse_cut_msg)
@@ -241,7 +241,8 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     cleanArea = p_area[pulse_cut].flatten()
     cleanMax = p_max_height[pulse_cut].flatten()
     cleanMin = p_min_height[pulse_cut].flatten()
-    cleanWidth = p_width[pulse_cut].flatten()
+    cleanWidth = tscale*p_width[pulse_cut].flatten()
+    cleanHeight = p_max_height[pulse_cut].flatten()
     cleanPulseClass = p_class[pulse_cut].flatten()
 
     cleanAFS2l = p_afs_2l[pulse_cut].flatten()
@@ -323,6 +324,8 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     basicHist(cleanTBA, bins=100, hRange=[-1.01,1.01], mean=True, xlabel="TBA", name="TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     basicHist(cleanRiseTime, bins=100, mean=True, logy=True, xlabel="Rise time, 50-2 (us)", name="RiseTime_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanWidth, bins=100, mean=True, logy=True, xlabel="Pulse width (us)", name="PulseWidth_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanHeight, bins=100, mean=True, logy=True, xlabel="Pulse max height (phd/sample)", name="PulseHeight_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     basicHist(np.log10(cleanArea), bins=100, mean=True, xlabel="log10 Pulse area (phd)", name="log10PulseArea_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 

@@ -271,7 +271,7 @@ def GetTailArea( p_start, p_end, waveforms_bls ):
 # waveform_bls is the full list of waveforms per channel for a single event
 def GetBaselines(p_starts, p_ends, waveform_bls):
 
-    baseline_window = 1000 # take mean over this many samples
+    baseline_window = np.min((int(len(waveform_bls[-1])*0.2), 1000)) # take mean over this many samples
     rms_max_scale = 5 # do not trust baseline estimate from windows w/ RMS this much larger than from start of event
     baselines = [ np.mean( ch_j[0:baseline_window] ) for ch_j in waveform_bls ]
     baseline_sum_rms = np.std( waveform_bls[-1][0:baseline_window] )
