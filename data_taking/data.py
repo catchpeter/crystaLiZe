@@ -2,12 +2,15 @@ import os
 import subprocess
 import time
 from shutil import copy2
-from rq_generate import make_rq
-from cut_plot import make_plots
 from glob import glob
 from baseline import baseline_set
 from grid_voltage import grid_voltage
 from read_pressure import read_pressure
+
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "pulse_finding_scripts"))
+from rq_generate import make_rq
+from cut_plot import make_plots
 #time.sleep(3600*3)
 
 #set up parameters
