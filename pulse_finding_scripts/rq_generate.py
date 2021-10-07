@@ -13,7 +13,7 @@ import PulseClassification as pc
 #data_dir = "/home/xaber/caen/wavedump-3.8.2/data/041921/Po_2.8g_3.0c_0.72bar_circ_20min_0928/"
 #data_dir = "G:/My Drive/crystalize/data/data-202104/041421/Po_2.8g_3.0c_1.1bar_circ_60min_1747/"
 
-def make_rq(data_dir):   
+def make_rq(data_dir, handscan = False):   
     # set plotting style
     mpl.rcParams['font.size']=10
     mpl.rcParams['legend.fontsize']='small'
@@ -341,9 +341,13 @@ def make_rq(data_dir):
             po_test = np.any((p_area[i,:]>5.0e4)*((p_afs_50[i,:]-p_afs_2l[i,:] )*tscale<1.0))
             
             # Condition to skip the individual plotting, hand scan condition
+            if np.size(handscan) == 1: 
+                plotyn = handscan
+            else:
+                plotyn = handscan[i]
             #plotyn = drift_Time[i]<2 and drift_Time[i]>0 and np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1400))#np.any((p_tba[i,:]>-0.91)*(p_tba[i,:]<-0.82)*(p_area[i,:]<2800)*(p_area[i,:]>1000))# True#np.any(p_class[i,:]==4)#False#np.any(p_area[i,:]>1000) and 
             #plotyn = drift_Time[i]>2.5 and (center_bot_y[i,0]**2+center_bot_x[i,0]**2) <0.1
-            plotyn = False #np.any((p_class[i,:] == 3) + (p_class[i,:] == 4))#np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1000))
+            #plotyn = True #np.any((p_class[i,:] == 3) + (p_class[i,:] == 4))#np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1000))
             #plotyn = np.any((p_tba[i,:]>-1)*(p_tba[i,:]<-0.25)*(p_area[i,:]<30000)*(p_area[i,:]>3000))#np.any((np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<3.4) )#False#
             # Pulse area condition
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
