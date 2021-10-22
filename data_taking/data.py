@@ -12,7 +12,8 @@ sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "pulse_finding_script
 from rq_generate import make_rq
 from cut_plot import make_plots
 #time.sleep(3600*3)
-
+process_flag = True # Option to process the data right after taking it.
+baseline_flag = True # option to estimate baseline
 #set up parameters
 #source = "Po"
 data_plan = open("data_plan.txt", 'r')
@@ -33,12 +34,10 @@ for line in data_plan:
 	for i in range(line_int[3]):
 		voltage_sets.append(line_int[:3])
 
-pressure = "{}bar".format(read_pressure())
-trigger = "3mv"
+trigger = "4mv"
 window = "25us"
 config_file = "/home/xaber/caen/wavedump-3.8.2/data/config_self_trig_"+window+".txt"
 
-process_flag = True # Option to process the data right after taking it.
 
 #folder to save data, need to end with "/"
 data_dir = "/media/xaber/gpeter/data/"  
@@ -46,19 +45,29 @@ data_dir = "/media/xaber/gpeter/data/"
 
 
 for one_data in voltage_sets:
+	#read config file to determine if continue
+	with open("/home/xaber/caen/wavedump-3.8.2/data/solid_xenon_tpc/data_taking/continue_data.txt", "r") as f:
+		continue_or_not = f.readline().strip()
+		if continue_or_not != "y": 
+			print(continue_or_not)
+			break
 	#set voltage and time
 	gate_voltage = one_data[0]
 	cathode_voltage = one_data[1]
 	length_mins = one_data[2]
 	length = str(length_mins)+"min"
 	voltage = "{:.1f}g_{:.1f}c".format(gate_voltage/1000., cathode_voltage/1000.)
+	pressure = "{}bar".format(read_pressure())
+
 
 	#Ramp up voltage
 	ramp_flag = grid_voltage(gate = gate_voltage, cathode = cathode_voltage)
-	time.sleep(120)
+	time.sleep(240)
 
 	#set up the baseline and triggers
-	baseline_set()
+	if baseline_flag: 
+		baseline_set()
+		time.sleep(2)
 
 	#make a new folder to store the data
 	date = time.strftime("%Y%m%d", time.localtime())

@@ -48,7 +48,8 @@ center_top_y_d = center_top_y * d_between_SiPM_center_y/2
 listrq.close()
 #end of RQ read
 
-handscan = np.any((p_tba>-1)*(p_tba<-0.25)*(p_area<15000)*(p_area>3000), axis = 1)
+handscan = np.any(p_area_ch<-10, axis = (1,2))*np.any((p_class == 1) + (p_class == 2), axis = 1)
 
+#print(p_area_ch[handscan])
 make_rq(data_dir, handscan = handscan)
 

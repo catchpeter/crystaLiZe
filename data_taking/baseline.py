@@ -6,13 +6,13 @@ def baseline_set():
 	n_sipms = 8
 	#threshold in mV
 	threshold = np.zeros(n_sipms)
-	threshold[0] = 3
-	threshold[1] = 3
+	threshold[0] = 4
+	threshold[1] = 4
 	threshold[2] = 10
-	threshold[3] = 3
-	threshold[4] = 3
-	threshold[5] = 3
-	threshold[6] = 3
+	threshold[3] = 4
+	threshold[4] = 4
+	threshold[5] = 4
+	threshold[6] = 4
 	threshold[7] = 10
 
 
@@ -33,7 +33,7 @@ def baseline_set():
 		pass
 	os.chdir("./baseline")
 
-	subprocess.call(['wavedump', config_file, '6']) 
+	subprocess.call(['wavedump', config_file, '15']) 
 
 	# Calculate the baseline
 	wsize = int(500 * event_window)  # samples per waveform # 12500 for 25 us
@@ -58,7 +58,7 @@ def baseline_set():
 	    V = V[:int(len(V) / wsize) * wsize]
 	    V = V.reshape(int(V.size / wsize), wsize) # reshape to make each channel's matrix of events
 	    V_average = np.average(V, axis = 0)   #average all events taken
-	    baseline[ch_ind] = (np.average(V_average[:int(wsize*(1-post_trigger)/4)]))  #average the 1/4 of all pre-trigger sampels
+	    baseline[ch_ind] = (np.average(V_average[int(wsize*(1-post_trigger)/5):int(wsize*(1-post_trigger)/2)]))  #average the 1/4 of all pre-trigger sampels
 
 	#calculate triggers
 	triggers = (baseline+threshold/vscale)
