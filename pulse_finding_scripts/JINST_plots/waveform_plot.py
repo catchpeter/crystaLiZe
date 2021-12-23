@@ -1,9 +1,10 @@
-
 import numpy as np
 import matplotlib.pyplot as pl
 import matplotlib as mpl
 import time
 import sys
+
+sys.path.insert(0, '../')
 
 import PulseFinderScipy as pf
 import PulseQuantities as pq
@@ -379,10 +380,11 @@ def make_rq(data_dir):
                 #pl.plot( x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],'blue' )
                 #pl.xlim([0,wsize])
                 #pl.xlim([0,event_window])
-                pl.xlim([start_times[0]*tscale-3,end_times[1]*tscale+1.5])
+                trigger_time_us = 12 # for some reason seems to be consistently closer to 12 than 12.5
+                pl.xlim([start_times[0]*tscale-3-trigger_time_us,end_times[1]*tscale+1.5-trigger_time_us])
                 #pl.ylim( [-1, 1.01*np.max(v_bls_matrix_all_ch[-1,i-j*block_size,:])])
                 pl.ylim( [-1, 1.1*np.max(v_bls_matrix_all_ch[:-1,i-j*block_size,:])])
-                pl.xlabel('Time (us)')
+                pl.xlabel('Time ($\mu$s)')
                 #pl.xlabel('Samples')
                 pl.ylabel('phd/sample')
                 #pl.title("Sum, event "+ str(i))
@@ -392,7 +394,7 @@ def make_rq(data_dir):
                 dead_channels = [2,7]
                 for i_chan in range(n_channels - 1):
                     if i_chan in dead_channels: continue
-                    pl.plot(t, v_bls_matrix_all_ch[i_chan, i - j * block_size, :], color=ch_colors[i_chan],
+                    pl.plot(t-trigger_time_us, v_bls_matrix_all_ch[i_chan, i - j * block_size, :], color=ch_colors[i_chan],
                             label=ch_labels[i_chan])
                     # pl.plot( x, v_bls_matrix_all_ch[i_chan,i,:],color=ch_colors[i_chan],label=ch_labels[i_chan] )
                     #pl.xlim([trigger_time_us - 8, trigger_time_us + 8])
@@ -404,10 +406,14 @@ def make_rq(data_dir):
                     #pl.legend()
 
                 for pulse in range(len(start_times)):
-                    ax.axvspan(start_times[pulse] * tscale, end_times[pulse] * tscale, alpha=0.25, color=pulse_class_colors[p_class[i, pulse]])
-                    ax.text((end_times[pulse]) * tscale, 0.9 * ax.get_ylim()[1], 'Area = {:.1f} phd'.format(p_area[i, pulse]),
+                    class_name = "S1"
+                    if p_class[i,pulse] == 3 or p_class[i,pulse] == 4: class_name = "S2"
+                    ax.axvspan(start_times[pulse] * tscale-trigger_time_us, end_times[pulse] * tscale-trigger_time_us, alpha=0.1, color=pulse_class_colors[p_class[i, pulse]])
+                    ax.text((end_times[pulse]) * tscale+0.1-trigger_time_us, 0.9 * ax.get_ylim()[1], class_name,
+                        fontsize=10, color=pulse_class_colors[p_class[i, pulse]])
+                    ax.text((end_times[pulse]) * tscale+0.1-trigger_time_us, 0.84 * ax.get_ylim()[1], 'Area = {:.1f} phd'.format(p_area[i, pulse]),
                             fontsize=10, color=pulse_class_colors[p_class[i, pulse]])
-                    ax.text((end_times[pulse]) * tscale, 0.8 * ax.get_ylim()[1], 'TBA = {:.1f}'.format(p_tba[i, pulse]),
+                    ax.text((end_times[pulse]) * tscale+0.1-trigger_time_us, 0.73 * ax.get_ylim()[1], '$A_{{TB}}$ = {:.1f}'.format(p_tba[i, pulse]),
                         fontsize=10, color=pulse_class_colors[p_class[i, pulse]])
                 
                 #ax.axhline( 0.276, 0, wsize, linestyle='--', lw=1, color='orange')
@@ -415,8 +421,8 @@ def make_rq(data_dir):
                 # Draw drift time w/ arrow
                 arrow_alpha = 0.8
                 head_length = 0.1
-                pl.arrow(start_times[0] * tscale, 0.5 * ax.get_ylim()[1], drift_Time[i]-head_length, 0, head_width=1.2, head_length=head_length, width=0.05, color='b', alpha=arrow_alpha)
-                ax.text(start_times[0] * tscale + drift_Time[i]/5, 0.57 * ax.get_ylim()[1], r'Drift time={:.1f} $\mu$s'.format(drift_Time[i]),
+                pl.arrow(start_times[0] * tscale-trigger_time_us, 0.5 * ax.get_ylim()[1], drift_Time[i]-head_length, 0, head_width=1.2, head_length=head_length, width=0.05, color='b', alpha=arrow_alpha)
+                ax.text(start_times[0] * tscale-trigger_time_us + drift_Time[i]/5, 0.57 * ax.get_ylim()[1], r'Drift time={:.1f} $\mu$s'.format(drift_Time[i]),
                         fontsize=10, color='b')
 
                 # Create a set of inset Axes: these should fill the bounding box allocated to
@@ -439,7 +445,7 @@ def make_rq(data_dir):
                 inset_end = end_times[0]
                 for i_chan in range(n_channels - 1):
                     if i_chan in dead_channels: continue
-                    ax2.plot(t[inset_start:inset_end], v_bls_matrix_all_ch[i_chan, i - j * block_size, inset_start:inset_end], color=ch_colors[i_chan],
+                    ax2.plot(t[inset_start:inset_end]-trigger_time_us, v_bls_matrix_all_ch[i_chan, i - j * block_size, inset_start:inset_end], color=ch_colors[i_chan],
                             label=ch_labels[i_chan])
                 #ax2.plot(t[inset_start:inset_end],v_bls_matrix_all_ch[-1,i,inset_start:inset_end],'blue')
                 #ax2.xlim((start_times[0]*tscale-1,end_times[0]*tscale+1))
