@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as pl
 import gzip
 import h5py
-import shutil
 import time
 
 start_t = time.time()
@@ -16,77 +15,95 @@ save_dir = ""
 
 n_boards = 3
 n_sipms = [16,8,8]
+n_all_ch = int(np.sum(n_sipms))
 
 wsize = 3000+8 # 8 = size of header 
+block_size = 5000 # This will also be number of events saved per file
+n_blocks = 1
 
 load_dtype = "int16"
 
+# Loop over blocks of events
+for bk in range(n_blocks):
 
-# First, check board alignment 
-# Get list of event numbers in header
-evNum = np.array([])
-n_events = []
-for bd in range(n_boards):
-    ch0_data = np.fromfile(data_dir+"waveforms_"+str(bd)+"_0.dat", dtype="int16")
-    n_events.append(int(ch0_data.size/wsize))
-    evNum = np.concatenate((evNum, ch0_data[2::wsize]))
+    # First, check board alignment 
+    # Get list of event numbers in header
+    evNum = np.array([])
+    n_events = []
+    for bd in range(n_boards):
+        ch0_data = np.fromfile(data_dir+"waveforms_"+str(bd)+"_0.dat", dtype=load_dtype, offset=block_size*wsize*bk, count=wsize*block_size)
+        n_events.append(int(ch0_data.size/wsize))
+        evNum = np.concatenate((evNum, ch0_data[2::wsize]))
 
-
-
-# Check for misaligned events
-tosser = []
-lastToCheck = int(np.max(evNum) )
-for i in range(1,lastToCheck):
-    if np.count_nonzero(evNum == i) != 3: tosser.append(i)
+    max_n_events = int(np.max(n_events))
 
 
+    # Check for misaligned events
+    tosser = []
+    lastToCheck = int(np.max(evNum) )
+    for i in range(1,lastToCheck):
+        if np.count_nonzero(evNum == i) != 3: tosser.append(i)
 
-# Do compression and remove any misaligned events
 
-# Loop over boards
-for bd in range(n_boards):
-    print("Board",bd)
+    # Load data, loop over all boards and channels
+    all_data = np.zeros((n_all_ch, max_n_events, wsize-8))
+    ch_ind = 0
+    for bd in range(n_boards):
+        for ch in range(n_sipms[bd]):
+            ch_data = np.fromfile(data_dir + "waveforms_"+str(bd)+"_"+str(ch)+".dat", dtype=load_dtype, offset=block_size*wsize*bk, count=wsize*block_size)
+            ch_data = np.reshape(ch_data, (n_events[bd], wsize))
+            
+            # Loop over events to check alignment, then to place in all data array
+            toss_counts = 0
+            for ev in range(n_events[bd]):
+                if ch_data[ev, 2] in tosser:
+                    toss_counts += 1
+                else:
+                    all_data[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] 
+                    # need to scale by spe size!!!
+            
+            ch_ind += 1
 
-    # Loop over channels
-    for si in range(n_sipms[bd]):
 
-        # Load data
-        ch_data = np.fromfile(data_dir + "waveforms_"+str(bd)+"_"+str(si)+".dat", dtype=load_dtype)
-        ch_data = np.reshape(ch_data, (n_events[bd], wsize))
-        only_header = ch_data[:,0:7]
-        only_data = ch_data[:,8:wsize]
-        stuffToSave = np.zeros_like(only_data)
+    # Reshape into pods
+    pod_size = 5 # samples. 5 samples = 10 ns
+    n_pods = int( (wsize-8)/pod_size )
+    all_data_pods = np.reshape(all_data, (n_all_ch, max_n_events, n_pods, pod_size) )
 
-        # Loop over events
-        toss_counts = 0
-        for ev in range(n_events[bd]):
-            baseline = np.mean(only_data[ev,0:50])
-            sigma = np.std(only_data[ev,0:50])
 
-            if only_header[ev,2] in tosser:
-                toss_counts += 1
-                continue
-            else:
-                toSaveOrNotToSave = only_data[ev,:] > baseline + 2*sigma
-                stuffToSave[ev-toss_counts, toSaveOrNotToSave] = only_data[ev, toSaveOrNotToSave] - baseline
+    # Take sum, do baseline subtraction, do cut on area of pods
+    sum_data_pods = np.sum(all_data_pods, axis=0)
+    baselines = np.mean(sum_data_pods[:,0:10,:], axis=(1,2))
+    sum_data_pods_area = np.sum( np.subtract(sum_data_pods, baselines[:,None,None]) , axis=2)
+    area_threshold = 100 # one day this will be phe 
+    toSaveOrNotToSave = sum_data_pods_area > area_threshold 
 
-        # Save that mf
-        if save_mode == "npy":
-            with open(save_dir+"compressed_"+str(bd)+"_"+str(si)+".npy", "wb") as f:
-                np.savez_compressed(f, stuffToSave.flatten() )
-        elif save_mode == "h5py":
-            with h5py.File(save_dir+"compressed_"+str(bd)+"_"+str(si)+".h5", "w") as f:
-                f.create_dataset("dataset", data=stuffToSave.flatten(), compression="gzip" )
-        else:
-            with open(save_dir+"compressed_"+str(bd)+"_"+str(si)+".npy", "wb") as f:
-                np.savez_compressed(f, stuffToSave.flatten() )
 
-                   
+    # Create array to save
+    stuffToSave = np.zeros_like(all_data_pods)
+    for ch in range(n_all_ch):
+        stuffToSave[ch, toSaveOrNotToSave, :] = all_data_pods[ch, toSaveOrNotToSave, :]
+
+    stuffToSave = np.reshape(stuffToSave, (n_all_ch, max_n_events*(wsize-8)))
+    print("Percentage suppressed: "+str(np.count_nonzero(stuffToSave)/stuffToSave.size) )
+
+
+    # Save that mf
+    if save_mode == "npy":
+        with open(save_dir+"compressed_"+str(bk)+".npy", "wb") as f:
+            np.savez_compressed(f, stuffToSave.flatten() )
+    elif save_mode == "h5py":
+        with h5py.File(save_dir+"compressed_"+str(bk)+".h5", "w") as f:
+            f.create_dataset("dataset", data=stuffToSave, compression="gzip" )
+    else:
+        with open(save_dir+"compressed_"+str(bk)+".npy", "wb") as f:
+            np.savez_compressed(f, stuffToSave )
+
+    
+
+
 end_t = time.time()
-
-
 print("Finished zero baseline reduction", end_t-start_t, "sec")
 
 
-#test = np.load(save_dir+"compressed_0_0.npy")
-#print(np.sum(test["arr_0"])/3000)
+
