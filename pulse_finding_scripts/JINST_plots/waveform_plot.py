@@ -431,7 +431,7 @@ def make_rq(data_dir):
                                                                   mark_inset)
                 ax2 = pl.axes([0, 0, 1, 1])
                 # Manually set the position and relative size of the inset axes within ax1
-                ip = InsetPosition(ax, [0.05, 0.5, 0.25, 0.3])
+                ip = InsetPosition(ax, [0.05, 0.43, 0.25, 0.5])
                 ax2.set_axes_locator(ip)
                 #ax2.set_ylabel('phd/sample')
                 #ax2.set_xlabel('Time (us)')
