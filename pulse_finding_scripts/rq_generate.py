@@ -24,6 +24,7 @@ def make_rq(data_dir, handscan = False):
     # define DAQ and other parameters
     #wsize = 12500             # size of event window in samples. 1 sample = 2 ns.
     #read event window width from the folder name
+    print(data_dir)
     if data_dir.find("3us") != -1: 
         event_window = 3
     if data_dir.find("25us") != -1:
@@ -39,7 +40,7 @@ def make_rq(data_dir, handscan = False):
     trigger_time_us = event_window*(1-post_trigger)
     trigger_time = int(trigger_time_us/tscale)
 
-    n_sipms = 8
+    n_sipms = 32
     n_channels = n_sipms+1 # includes sum
 
     # define top, bottom channels
@@ -63,7 +64,12 @@ def make_rq(data_dir, handscan = False):
     chF_spe_size = spe["ch5"]#30.44
     chG_spe_size = spe["ch6"]#30.84
     chH_spe_size = spe["ch7"]#30.3*1.8 # scale factor (1.6-2.2) empirical as of Dec 9, 2020
-    spe_sizes = [chA_spe_size, chB_spe_size, chC_spe_size, chD_spe_size, chE_spe_size, chF_spe_size, chG_spe_size, chH_spe_size]
+    spe_sizes = 4*[chA_spe_size, chB_spe_size, chC_spe_size, chD_spe_size, chE_spe_size, chF_spe_size, chG_spe_size, chH_spe_size]
+
+    #names of raw data files
+    raw_file_names = ["waveforms_0_"+str(ch_ind) for ch_ind in range(16)]
+    raw_file_names = raw_file_names + ["waveforms_1_"+str(ch_ind) for ch_ind in range(8)]
+    raw_file_names = raw_file_names + ["waveforms_2_"+str(ch_ind) for ch_ind in range(8)]
 
     # ==================================================================
 
@@ -159,7 +165,7 @@ def make_rq(data_dir, handscan = False):
     for j in range(n_block):
         ch_data = []
         for ch_ind in range(n_sipms):
-            ch_data.append(np.fromfile(data_dir + "wave"+str(ch_ind)+".dat", dtype=load_dtype, offset = block_size*wsize*j, count=wsize*block_size))
+            ch_data.append(np.fromfile(data_dir + raw_file_names[ch_ind]+".dat", dtype=load_dtype, offset = block_size*wsize*j, count=wsize*block_size))
 
         #t_end_load = time.time()
         #print("Time to load files: ", t_end_load-t_start)
