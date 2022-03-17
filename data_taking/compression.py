@@ -42,7 +42,7 @@ for bk in range(n_blocks):
     tosser = []
     lastToCheck = int(np.max(evNum) )
     for i in range(1,lastToCheck):
-        if np.count_nonzero(evNum == i) != 3: tosser.append(i)
+        if np.count_nonzero(evNum == i) != 3 && np.count_nonzero(evNum == i) > 0: tosser.append(i)
 
 
     # Load data, loop over all boards and channels
