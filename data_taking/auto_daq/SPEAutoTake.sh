@@ -20,11 +20,11 @@ do
     # Basline calc
     cd /home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq
     wavedumpMB /home/xaber/Data/oneBaseConfig.txt 5 1 
-    python3 /home/xaber/Analysis/testing/calcBase.py 
+    python3 /home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq/calcBase.py 
     sleep 1s
     
     # Change config file
-    python3 /home/xaber/Analysis/testing/calcBaseSPE.py $x
+    python3 /home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq/calcBaseSPE.py $x
     
     # Take data for that channel
     cd $dirDayTime
