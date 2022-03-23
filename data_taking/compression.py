@@ -4,27 +4,41 @@ import gzip
 import h5py
 import time
 
+
+
 start_t = time.time()
 
 save_mode = "npy" # options are "npy" or "h5py"
 
 #data_dir = "C:/Users/ryanm/Documents/Research/Work zone/20220111_test/20220111_test/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202110/20211012/20211012_1656_Po_Co_OCVtop_0.0g_0.0c_1.19bar_3mv_25us_circ_20min/"
-data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202201/20220131/testForAlign/"
-save_dir = ""
+#data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202201/20220131/testForAlign/"
+data_dir = "/home/xaber/Data/20220322/202203221719_1.4bar_2600C2400G0A_54B/"
+save_dir = data_dir #""
 
 n_boards = 3
 n_sipms = [16,8,8]
 n_all_ch = int(np.sum(n_sipms))
 
-wsize = 3000+8 # 8 = size of header 
-block_size = 5000 # This will also be number of events saved per file
-n_blocks = 1
+wsize = 12500+8 #12500+8 #3000+8 # 8 = size of header 
+block_size = 1500 # This will also be number of events saved per file
+n_blocks = 1000
+
+delay = 24 #  48 #48
 
 load_dtype = "int16"
 
+
+ch0_data = np.fromfile(data_dir+"waveforms_"+str(0)+"_0.dat",dtype=load_dtype)
+tot_ev = int(ch0_data.size/wsize)
+tot_fi = int(np.ceil(tot_ev/block_size))
+print("Total events: "+str(tot_ev) )
+print("Number of compressed files = "+str(tot_fi))
+time.sleep(5)
+
+
 # Loop over blocks of events
-for bk in range(n_blocks):
+for bk in range(tot_fi+1):
 
     # First, check board alignment 
     # Get list of event numbers in header
@@ -42,7 +56,7 @@ for bk in range(n_blocks):
     tosser = []
     lastToCheck = int(np.max(evNum) )
     for i in range(1,lastToCheck):
-        if np.count_nonzero(evNum == i) != 3 && np.count_nonzero(evNum == i) > 0: tosser.append(i)
+        if np.count_nonzero(evNum == i) != 3 and np.count_nonzero(evNum == i) > 0: tosser.append(i)
 
 
     # Load data, loop over all boards and channels
@@ -59,10 +73,26 @@ for bk in range(n_blocks):
                 if ch_data[ev, 2] in tosser:
                     toss_counts += 1
                 else:
-                    all_data[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] 
+                    if bd == 0:
+                        all_data[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] 
+                    elif bd == 1:
+                        all_data[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:wsize-delay]
+                    elif bd == 2:
+                        all_data[ch_ind, ev-toss_counts, 2*delay:] = ch_data[ev, 8:wsize-2*delay]
                     # need to scale by spe size!!!
             
             ch_ind += 1
+
+
+
+
+
+
+    for ch in range(n_all_ch):
+        #print(np.mean(all_data[ch,0,8+2*delay:100+2*delay]))
+        all_data[ch,:,:] -= np.mean(all_data[ch,0,8+2*delay:100+2*delay])
+        if ch < 4:
+            all_data[ch,:,:] = np.zeros_like(all_data[0,:,:])
 
 
     # Reshape into pods
@@ -73,9 +103,9 @@ for bk in range(n_blocks):
 
     # Take sum, do baseline subtraction, do cut on area of pods
     sum_data_pods = np.sum(all_data_pods, axis=0)
-    baselines = np.mean(sum_data_pods[:,0:10,:], axis=(1,2))
-    sum_data_pods_area = np.sum( np.subtract(sum_data_pods, baselines[:,None,None]) , axis=2)
-    area_threshold = 100 # one day this will be phe 
+    #baselines = np.mean(sum_data_pods[:,0:10,:], axis=(1,2))
+    sum_data_pods_area = np.sum(sum_data_pods, axis=2)  #np.sum( np.subtract(sum_data_pods, baselines[:,None,None]) , axis=2)
+    area_threshold = 50 # one day this will be phe 
     toSaveOrNotToSave = sum_data_pods_area > area_threshold 
 
 
