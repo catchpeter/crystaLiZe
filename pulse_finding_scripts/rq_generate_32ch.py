@@ -29,7 +29,7 @@ def make_rq(data_dir, handscan = False):
     #if data_dir.find("25us") != -1:
     #    event_window = 25   # in us. 
     
-    event_window = 25 #25 #25
+    event_window = 15 #25 #25 #25
 
     wsize = int(500 * event_window)  # samples per waveform # 12500 for 25 us
     vscale = (2000.0/16384.0) # = 0.122 mV/ADCC, vertical scale
@@ -83,7 +83,7 @@ def make_rq(data_dir, handscan = False):
 
 
     
-    n_events = 200000
+    n_events = 450000
 
     
     
@@ -171,29 +171,30 @@ def make_rq(data_dir, handscan = False):
 
 
     
-    for j in range(28):
+    for j in range(300):
     
         # load compressed data
-        with np.load(data_dir+"compressed_"+str(j)+".npy") as data:
-            ch_data = data["arr_0"]
+        try:
+            with np.load(data_dir+"compressed_"+str(j)+".npy") as data:
+                ch_data = data["arr_0"]
+        except:
+            continue
         
         n_tot_samp_per_ch = int( (ch_data.size)/n_sipms )
         n_events_b = int((ch_data.size)/(n_sipms*wsize))
     
         ch_data = np.concatenate((ch_data.astype(int), np.zeros(n_tot_samp_per_ch, dtype="int")), dtype="int")
         ch_data = np.reshape(ch_data, (n_channels,n_events_b,wsize))
-    
-        ch_data[-1,:,:] = np.sum(ch_data[:,:,:], axis=0)
-    
+
         v_matrix_all_ch = ch_data*vscale
     
     
         v_bls_matrix_all_ch = np.zeros_like(v_matrix_all_ch)
-        for ch in range(n_channels):
+        for ch in range(n_channels-1):
             v_bls_matrix_all_ch[ch,:,:] = v_matrix_all_ch[ch,:,:] - np.mean(v_matrix_all_ch[ch,:,0:100])
+            v_bls_matrix_all_ch[ch,:,:] = v_matrix_all_ch[ch,:,:]*tscale*(1000)/spe_sizes[ch] # scaled by tscale and spe size
     
-        
-        
+        v_bls_matrix_all_ch[-1,:,:] = np.sum(v_bls_matrix_all_ch[:,:,:], axis=0)
     
     
     
@@ -252,10 +253,9 @@ def make_rq(data_dir, handscan = False):
             # Find pulse locations; other quantities for pf tuning/debugging
             start_times, end_times, peaks, data_conv, properties = pf.findPulses( v_bls_matrix_all_ch[-1,i-j*block_size,:], max_pulses , SPEMode=False)
 
-
             # Sort pulses by start times, not areas
             startinds = np.argsort(start_times)
-            n_pulses[i] = len(start_times)
+            n_pulses[i] = min(max_pulses,len(start_times))
             if (n_pulses[i] < 1):
                 #print("No pulses found for event {0}; skipping".format(i))
                 empty_evt_ind[i] = i
@@ -340,8 +340,41 @@ def make_rq(data_dir, handscan = False):
                 center_bot_y[i,pp] += -3*(p_area_ch[i,pp,b0+11]+p_area_ch[i,pp,b0+12]+p_area_ch[i,pp,b0+15]+p_area_ch[i,pp,b0+16])
                 center_bot_y[i,pp] /= p_area_bottom[i,pp]
                 
-                center_top_x[i,pp] = (p_area_ch[i,pp,1]+p_area_ch[i,pp,3]-p_area_ch[i,pp,0]-p_area_ch[i,pp,2])/p_area_top[i,pp]
-                center_top_y[i,pp] = (p_area_ch[i,pp,0]+p_area_ch[i,pp,1]-p_area_ch[i,pp,2]-p_area_ch[i,pp,3])/p_area_top[i,pp]
+                
+                t0 = -1
+                
+                # X
+                # +1: 5,8,9,12
+                # +3: 6,7,10,11
+                # -1: 2,3,14,15
+                # -3: 1,4,13,16
+                
+                # Y
+                # +1: 4,3,8,7
+                # +3: 1,2,5,6
+                # -1: 13,14,9,10
+                # -3: 11,12,15,16
+                
+                center_top_x[i,pp] += p_area_ch[i,pp,t0+2]+p_area_ch[i,pp,t0+3]+p_area_ch[i,pp,t0+14]+p_area_ch[i,pp,t0+15]
+                center_top_x[i,pp] += 3*(p_area_ch[i,pp,t0+1]+p_area_ch[i,pp,t0+4]+p_area_ch[i,pp,t0+13]+p_area_ch[i,pp,t0+16])
+                center_top_x[i,pp] += -(p_area_ch[i,pp,t0+5]+p_area_ch[i,pp,t0+8]+p_area_ch[i,pp,t0+9]+p_area_ch[i,pp,t0+12])
+                center_top_x[i,pp] += -3*(p_area_ch[i,pp,t0+6]+p_area_ch[i,pp,t0+7]+p_area_ch[i,pp,t0+10]+p_area_ch[i,pp,t0+11])
+                center_top_x[i,pp] /= - p_area_top[i,pp]
+                
+                center_top_y[i,pp] += p_area_ch[i,pp,t0+7]+p_area_ch[i,pp,t0+8]+p_area_ch[i,pp,t0+3]+p_area_ch[i,pp,t0+4]
+                center_top_y[i,pp] += 3*(p_area_ch[i,pp,t0+6]+p_area_ch[i,pp,t0+5]+p_area_ch[i,pp,t0+2]+p_area_ch[i,pp,t0+1])
+                center_top_y[i,pp] += -(p_area_ch[i,pp,t0+10]+p_area_ch[i,pp,t0+9]+p_area_ch[i,pp,t0+14]+p_area_ch[i,pp,t0+13])
+                center_top_y[i,pp] += -3*(p_area_ch[i,pp,t0+11]+p_area_ch[i,pp,t0+12]+p_area_ch[i,pp,t0+15]+p_area_ch[i,pp,t0+16])
+                center_top_y[i,pp] /= p_area_top[i,pp]
+                
+                
+                
+                
+                
+                
+                
+              #  center_top_x[i,pp] = (p_area_ch[i,pp,1]+p_area_ch[i,pp,3]-p_area_ch[i,pp,0]-p_area_ch[i,pp,2])/p_area_top[i,pp]
+              #  center_top_y[i,pp] = (p_area_ch[i,pp,0]+p_area_ch[i,pp,1]-p_area_ch[i,pp,2]-p_area_ch[i,pp,3])/p_area_top[i,pp]
                 #center_bot_x[i,pp] = (p_area_ch[i,pp,5]+p_area_ch[i,pp,7]-p_area_ch[i,pp,4]-p_area_ch[i,pp,6])/p_area_bottom[i,pp]
                 #center_bot_y[i,pp] = (p_area_ch[i,pp,4]+p_area_ch[i,pp,5]-p_area_ch[i,pp,6]-p_area_ch[i,pp,7])/p_area_bottom[i,pp]
                 
@@ -386,7 +419,7 @@ def make_rq(data_dir, handscan = False):
 
             # Condition to plot now includes this rise time calc, not necessary
             riseTimeCondition = ((p_afs_50[i,:n_pulses[i]]-p_afs_2l[i,:n_pulses[i]] )*tscale < 0.6)*((p_afs_50[i,:n_pulses[i]]-p_afs_2l[i,:n_pulses[i]] )*tscale > 0.2)
-            
+            afs50_2 = (p_afs_50[i,:n_pulses[i]]-p_afs_2l[i,:n_pulses[i]])*tscale
             po_test = np.any((p_area[i,:]>5.0e4)*((p_afs_50[i,:]-p_afs_2l[i,:] )*tscale<1.0))
             
             # Condition to skip the individual plotting, hand scan condition
@@ -399,6 +432,11 @@ def make_rq(data_dir, handscan = False):
             #plotyn = True #np.any((p_class[i,:] == 3) + (p_class[i,:] == 4))#np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1000))
             #plotyn = np.any((p_tba[i,:]>-1)*(p_tba[i,:]<-0.25)*(p_area[i,:]<30000)*(p_area[i,:]>3000))#np.any((np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<3.4) )#False#
             # Pulse area condition
+            afs50_2 = p_afs_50[i,:]-p_afs_2l[i,:]
+            plotyn = True 
+            #np.any((np.log10(afs50_2)<(-0.05*(np.log10(p_area[i,:])-5.5)**2-0.4))*(np.log10(p_area[i,:])<1.8))
+            
+            
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
                 dt[i] = abs(p_start[i,1] - p_start[i,0]) # For weird double s1 data
@@ -418,14 +456,22 @@ def make_rq(data_dir, handscan = False):
 
             if inn == 's': sys.exit()
             
-            if not inn == 'q' and 1: #plot_event_ind == i and plotyn:
+            if not inn == 'q' and plotyn: #plot_event_ind == i and plotyn:
 
 
                 pl.figure()
                 pl.plot()
-                pl.plot( x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],'blue' )
-                for ch in range(32):
-                    pl.plot( x*tscale, v_bls_matrix_all_ch[ch,i-j*block_size,:])
+                pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],'black' )
+                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0), "red")
+                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0), "green")
+                for ps in range(n_pulses[i]):
+                    pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.25,color="m")
+                pl.legend(["All","Summed Top","Summed Bottom"])
+                
+                #for ch in range(32):
+                    #if ch < 16:
+                    #pl.plot( x*tscale, v_bls_matrix_all_ch[ch,i-j*block_size,:], "r")
+                    #if ch > 15 and ch < 23
                 #pl.plot( x*tscale, v_bls_matrix_all_ch[20,i-j*block_size,:], "m" )
                 #pl.plot( x*tscale, v_bls_matrix_all_ch[30,i-j*block_size,:], "black" )
                 pl.grid("both","both")
@@ -440,7 +486,7 @@ def make_rq(data_dir, handscan = False):
                 ax = pl.subplot2grid((2,2),(0,0))
                 #pl.title("Top array, event "+str(i))
                 #pl.grid(b=True,which='major',color='lightgray',linestyle='--')
-                #ch_labels = ['A','B','C','D','E','F','G','H']
+                #ch_labels = [int(i) for i in range(n_channels)]
                 ch_colors = [pl.cm.tab10(ii) for ii in range(n_channels)]
                 for pulse in range(len(start_times)): # fill found pulse regions for top
                     ax.axvspan(start_times[pulse] * tscale, end_times[pulse] * tscale, alpha=0.25,
@@ -535,7 +581,7 @@ def make_rq(data_dir, handscan = False):
     list_rq['s1_before_s2'] = s1_before_s2
     list_rq['n_pulses'] = n_pulses
     list_rq['n_events'] = n_events
-    list_rq['p_area'] = p_area*(8/4096)/0.040
+    list_rq['p_area'] = p_area
     list_rq['p_class'] = p_class
     list_rq['drift_Time'] = drift_Time
     list_rq['drift_Time_AS'] = drift_Time_AS
@@ -571,7 +617,7 @@ def make_rq(data_dir, handscan = False):
 
 def main():
     #with open("path.txt", 'r') as path:
-    data_dir = "/home/xaber/Data/20220322/202203221719_1.4bar_2600C2400G0A_54B/"
+    data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
     #data_dir = path.read()
     #data_dir = data_dir[:-1]
     

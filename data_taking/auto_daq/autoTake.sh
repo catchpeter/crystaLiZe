@@ -7,24 +7,25 @@ while [ $x -le 1 ]
 do
 
     # Basline calc
+    # Future: keep base here, pass to py script
     cd /home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq
     wavedumpMB /home/xaber/Data/oneBaseConfig.txt 5 1 #> /dev/null 2>&1 
     python3 /home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq/calcBase.py #> /dev/null 2>&1 
     sleep 1s
     
     # Make data folder
-	dir="/home/xaber/Data/dir-"
+	dir="/home/xaber/Data/data-"
 	month=$(date +%Y%m)
 	day=$(date +%Y%m%d)
 	time=$(date +%H%M)
-	extra="_1.4bar_2600C2400G0A_54B"
+	extra="_1.4bar_3200C3000G1500A_54B_5us_0.5Vpp"
 	dirDayTime="$dir$month/$day/$day$time$extra"
 	mkdir $dirDayTime -p
 	cd $dirDayTime
 
-    # Take data, then sleep for rest of hour
-	wavedumpMB ../../../config_25us_2V.txt 1200 0 
-	sleep 59m
+    # Take data, then sleep 
+	wavedumpMB ../../../config_25us_2V.txt 600 0 # wavedumpMB configfile time(s) 0
+	sleep 1s
 	x=$(( $x + 1))
 done
 

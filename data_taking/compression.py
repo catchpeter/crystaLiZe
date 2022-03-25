@@ -13,14 +13,14 @@ save_mode = "npy" # options are "npy" or "h5py"
 #data_dir = "C:/Users/ryanm/Documents/Research/Work zone/20220111_test/20220111_test/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202110/20211012/20211012_1656_Po_Co_OCVtop_0.0g_0.0c_1.19bar_3mv_25us_circ_20min/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202201/20220131/testForAlign/"
-data_dir = "/home/xaber/Data/20220322/202203221719_1.4bar_2600C2400G0A_54B/"
+data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
 save_dir = data_dir #""
 
 n_boards = 3
 n_sipms = [16,8,8]
 n_all_ch = int(np.sum(n_sipms))
 
-wsize = 12500+8 #12500+8 #3000+8 # 8 = size of header 
+wsize = 12500+8 #12500+8 #12500+8 #12500+8 #3000+8 # 8 = size of header 
 block_size = 1500 # This will also be number of events saved per file
 n_blocks = 1000
 
@@ -53,14 +53,18 @@ for bk in range(tot_fi+1):
 
 
     # Check for misaligned events
+    
     tosser = []
     lastToCheck = int(np.max(evNum) )
-    for i in range(1,lastToCheck):
+    firstToCheck = int(np.min(evNum) ) 
+    for i in range(firstToCheck,lastToCheck+1):
         if np.count_nonzero(evNum == i) != 3 and np.count_nonzero(evNum == i) > 0: tosser.append(i)
 
+    print("Number of misaligned events: "+str(len(tosser)))
 
     # Load data, loop over all boards and channels
     all_data = np.zeros((n_all_ch, max_n_events, wsize-8))
+    test_ev = np.zeros((n_boards, max_n_events))
     ch_ind = 0
     for bd in range(n_boards):
         for ch in range(n_sipms[bd]):
@@ -75,10 +79,13 @@ for bk in range(tot_fi+1):
                 else:
                     if bd == 0:
                         all_data[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] 
+                        test_ev[bd,ev-toss_counts] = ch_data[ev,2]
                     elif bd == 1:
                         all_data[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:wsize-delay]
+                        test_ev[bd,ev-toss_counts] = ch_data[ev,2]
                     elif bd == 2:
                         all_data[ch_ind, ev-toss_counts, 2*delay:] = ch_data[ev, 8:wsize-2*delay]
+                        test_ev[bd,ev-toss_counts] = ch_data[ev,2]
                     # need to scale by spe size!!!
             
             ch_ind += 1
@@ -115,7 +122,19 @@ for bk in range(tot_fi+1):
         stuffToSave[ch, toSaveOrNotToSave, :] = all_data_pods[ch, toSaveOrNotToSave, :]
 
     stuffToSave = np.reshape(stuffToSave, (n_all_ch, max_n_events*(wsize-8)))
-    print("Percentage suppressed: "+str(np.count_nonzero(stuffToSave)/stuffToSave.size) )
+    
+    #for i in range(max_n_events):
+        #print(test_ev[:,i])
+        #pl.figure()
+        #pl.plot(np.sum(stuffToSave[0:15, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"r")
+        #pl.plot(np.sum(stuffToSave[16:22, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"b")
+        #pl.plot(np.sum(stuffToSave[23:31, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"m")
+        
+        #pl.show()
+    
+    
+    
+    print("Percentage saved: "+str(np.count_nonzero(stuffToSave)/stuffToSave.size) )
 
 
     # Save that mf
