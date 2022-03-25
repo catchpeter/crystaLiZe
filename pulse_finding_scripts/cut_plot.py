@@ -136,7 +136,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     # define DAQ and other parameters
     tscale = (8.0/4096.0)     # = 0.002 µs/sample, time scale
 
-    n_sipms = 8
+    n_sipms = 32
     n_channels = n_sipms+1 # includes sum
     d_between_SiPM_center_x = 1.23 # cm
     d_between_SiPM_center_y = 1.14 # cm
@@ -207,18 +207,20 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
 
     # Define some standard cuts for plotting
     cut_dict = {}
-    cut_dict['ValidPulse'] = p_area > 0
+    cut_dict['ValidPulse'] = p_area > 0.1
     cut_dict['PulseClass0'] = p_class == 0
-    cut_dict['S1'] = (p_class == 1) + (p_class == 2)
-    cut_dict['S2'] = (p_class == 3) + (p_class == 4)
+    cut_dict['S1'] = ((p_class == 1) + (p_class == 2))*cut_dict['ValidPulse']
+    n_s1 = np.sum(cut_dict['S1'], axis=1) # redefine to only include valid pulses
+    cut_dict['S2'] = ((p_class == 3) + (p_class == 4))*cut_dict['ValidPulse']
+    n_s2 = np.sum(cut_dict['S2'], axis=1)
     cut_dict['Co_peak'] = (p_area>30)*(p_area<60)
     cut_dict['SmallS1'] = cut_dict['S1']*(p_area<500)
     cut_dict['LargeS1'] = cut_dict['S1']*(p_area>500)
     cut_dict['TopCo'] = cut_dict['S1']*(p_tba>0.0)*(p_area>200)
     cut_dict['TopS1'] = cut_dict['S1']*(p_tba>0.75)
-    cut_dict['PoS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-1)*(p_area>3000)*(p_area<30000)
-    cut_dict['PoUpS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-0.8)*(p_area>3000)*(p_area<30000)
-    cut_dict['PoDownS1'] = cut_dict['S1']*(p_tba<-0.8)*(p_tba>-1)*(p_area>3000)*(p_area<30000)
+    cut_dict['PoS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-1)*(p_area>10000)*(p_area<40000)
+    cut_dict['PoUpS1'] = cut_dict['S1']*(p_tba<0)*(p_tba>-0.7)*(p_area>10000)*(p_area<40000)
+    cut_dict['PoDownS1'] = cut_dict['S1']*(p_tba<-0.7)*(p_tba>-1)*(p_area>10000)*(p_area<40000)
     cut_dict['PoSmallS1'] = cut_dict['S1']*(p_tba<-0.25)*(p_tba>-1)*(p_area>0)*(p_area<2000)
     cut_dict['PoMedS1'] = cut_dict['S1']*(p_tba<-0.25)*(p_tba>-1)*(p_area>2000)*(p_area<5000)
     cut_dict['PoMedLgS1'] = cut_dict['S1']*(p_tba<-0.75)*(p_tba>-1)*(p_area>5000)*(p_area<10000)
@@ -291,18 +293,20 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
 
     # Event level quantities
     event_cut_dict = {}
-    event_cut_dict["SS"] = drift_Time > 0
+    event_cut_dict["SS"] = (drift_Time > 0)*(n_s1==1)*(n_s2==1) # only include valid pulses
     event_cut_dict["AllEvents"] = n_pulses > 0
-    event_cut_dict["All_Scatter"] = drift_Time_AS > 0
+    event_cut_dict["All_Scatter"] = (drift_Time_AS > 0)*(n_s1==1)*(n_s2>0)
     event_cut_dict["MS"] = (n_s1 == 1)*(n_s2 > 1)*s1_before_s2
-    event_cut_dict["Po"] = (drift_Time>0)*np.any((p_tba<-0.0)*(p_tba>-1)*(p_area>3000)*(p_area<30000)*cut_dict["S1"], axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
+    event_cut_dict["Po"] = event_cut_dict["SS"]*np.any((p_tba<-0.0)*(p_tba>-1)*(p_area>10000)*(p_area<40000)*cut_dict["S1"], axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
     event_cut_dict["Po_AS"] = (drift_Time_AS>0.)*(drift_Time_AS<1.5)*np.any((p_tba<-0.6)*(p_tba>-1)*(p_area>5000)*(p_area<20000), axis=1)#np.any((p_tba<-0.85)*(p_tba>-0.91)*(p_area>1500)*(p_area<2700), axis=1) # true if any pulse in event matches these criteria
-    event_cut_dict["lg_S1"] = (drift_Time>0)*np.any((p_area>1000.)*cut_dict["S1"], axis=1) # true if any S1 has area>1000
-    event_cut_dict["2S2"] = (n_s2 == 2)
-    event_cut_dict["SS_1-2us"] = (drift_Time > 1)*(drift_Time < 2)
+    event_cut_dict["Co-like"] = event_cut_dict["SS"]*np.any((p_area<1000.)*cut_dict["S1"], axis=1)
+    event_cut_dict["Co-like_AS"] = event_cut_dict["All_Scatter"]*np.any((p_area<1000.)*cut_dict["S1"], axis=1)
+    event_cut_dict["lg_S1"] = event_cut_dict["SS"]*np.any((p_area>1000.)*cut_dict["S1"], axis=1) # true if any S1 has area>1000
+    event_cut_dict["2S2"] = (np.sum(cut_dict['S2'], axis=1)==2)
+    event_cut_dict["SS_1-2us"] = event_cut_dict["SS"]*(drift_Time > 1)*(drift_Time < 2)
     event_cut_dict["PoS1"] = (np.sum(cut_dict['PoS1'], axis=1)==1)#*(n_s2>0)
 
-    event_cut_name = "SS"#"Po"#"lg_S1"
+    event_cut_name = "SS"#"Co-like_AS"#"Po"#"lg_S1"
     event_cut = event_cut_dict[event_cut_name]
     cleanSumS1 = sum_s1_area[event_cut]
     cleanSumS2 = sum_s2_area[event_cut]
@@ -339,21 +343,21 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
         basicScatter(cleanArea, cleanRiseTime, s=1.2, c=pulse_class_colors[cleanPulseClass], logx=True, logy=True, xlim=[5,10**6], ylim=[.01,4], xlabel="Pulse area (phd)", ylabel="Rise time, 50-2 (us)", legHand=pc_legend_handles, name="RiseTime_vs_PulseArea_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         #xlim=[0.7*min(p_area.flatten()), 1.5*max(p_area.flatten())]
 
-        basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 30000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
+        basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 50000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 1000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_small_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
-        basicHeatmap(cleanTBA, cleanArea, xlim=[-1.01,1.01], ylim=[2000, 30000], bins=100, xlabel="TBA", ylabel="Pulse area (phd)", logz=True, name="PulseArea_vs_TBA_map_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
+        basicHeatmap(cleanTBA, cleanArea, xlim=[-1.01,1.01], ylim=[2000, 50000], bins=100, xlabel="TBA", ylabel="Pulse area (phd)", logz=True, name="PulseArea_vs_TBA_map_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
 
         basicScatter(cleanCenterBottomX, cleanCenterBottomY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="BottomCentroid_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
-        basicHeatmap(cleanCenterBottomX, cleanCenterBottomY, xlim=[-0.7, 0.7], ylim=[-0.7, 0.7], xlabel="x (cm)",
+        basicHeatmap(cleanCenterBottomX, cleanCenterBottomY, xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], bins=80, xlabel="x (cm)",
                  ylabel="y (cm)", name="BottomCentroidMap_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         basicScatter(cleanCenterTopX, cleanCenterTopY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="TopCentroid_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
-        basicHeatmap(cleanCenterTopX, cleanCenterTopY, xlim=[-0.7, 0.7], ylim=[-0.7, 0.7], xlabel="x (cm)", ylabel="y (cm)",
+        basicHeatmap(cleanCenterTopX, cleanCenterTopY, xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], bins=80, xlabel="x (cm)", ylabel="y (cm)",
                  name="TopCentroidMap_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
 
     # Channel fractional area for all pulses
     pl.figure()
     for j in range(0, n_channels-1):
-        pl.subplot(4,2,j+1)
+        pl.subplot(int(n_channels/4),4,j+1)
         pl.hist(cleanAreaChFrac[:,j],bins=100,range=(0,1), histtype='step')
         pl.axvline(x=np.mean(cleanAreaChFrac[:,j]), ls='--', color='r')
         #print("ch {0} area frac mean: {1}".format(j,np.mean(cleanAreaChFrac[:,j])))
@@ -365,7 +369,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     # Plots of all S1 or all S2 pulses
     pl.figure()
     for j in range(0, n_channels-1):
-        pl.subplot(4,2,j+1)
+        pl.subplot(int(n_channels/4),4,j+1)
         pl.hist(cleanS1AreaChFrac[:,j],bins=100,range=(0,1), histtype='step')
         pl.axvline(x=np.mean(cleanS1AreaChFrac[:,j]), ls='--', color='r')
         #print("S1 ch {0} area frac mean: {1}".format(j,np.mean(cleanS1AreaChFrac[:,j])))
@@ -376,7 +380,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
 
     pl.figure()
     for j in range(0, n_channels-1):
-        pl.subplot(4,2,j+1)
+        pl.subplot(int(n_channels/4),4,j+1)
         pl.hist(cleanS2AreaChFrac[:,j],bins=100,range=(0,1), histtype='step')
         pl.axvline(x=np.mean(cleanS2AreaChFrac[:,j]), ls='--', color='r')
         #print("S2 ch {0} area frac mean: {1}".format(j,np.mean(cleanS2AreaChFrac[:,j])))
@@ -394,16 +398,16 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     basicHist(cleanS1Area, bins=125, mean=True, xlabel="S1 area (phd)", name="S1_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(cleanS1Area, bins=100, hRange=[0, 200], mean=True, xlabel="S1 area (phd)", name="S1_small_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(cleanS1Area, bins=100, hRange=[0, 1000], mean=True, xlabel="S1 area (phd)", name="S1_med_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
-    basicHist(cleanS1Area, bins=100, hRange=[0, 30000], mean=True, xlabel="S1 area (phd)", name="S1_lg_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanS1Area, bins=100, hRange=[0, 50000], mean=True, xlabel="S1 area (phd)", name="S1_lg_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(cleanS2Area, bins=500, mean=True, xlabel="S2 area (phd)", name="S2_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(cleanS2Area, bins=500, hRange=[0, 1000], mean=True, xlabel="S2 area (phd)", name="S2_small_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(cleanS2Area, bins=500, hRange=[0, 10000], mean=True, xlabel="S2 area (phd)", name="S2_med_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(cleanS2Area, bins=500, hRange=[0, 500000], mean=True, xlabel="S2 area (phd)", name="S2_lg_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     # Temp: Po-specific S1 histograms
-    basicHist(p_area[pulse_cut*cut_dict["PoS1"]], bins=100, hRange=[0, 20000], mean=True, xlabel="S1 area (phd), Po", name="S1_lg_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
-    basicHist(p_area[pulse_cut*cut_dict["PoUpS1"]], bins=100, hRange=[0, 20000], mean=True, xlabel="S1 area (phd), up Po", name="S1_lg_Up_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
-    basicHist(p_area[pulse_cut*cut_dict["PoDownS1"]], bins=100, hRange=[0, 20000], mean=True, xlabel="S1 area (phd), down Po", name="S1_lg_Down_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(p_area[pulse_cut*cut_dict["PoS1"]], bins=100, hRange=[0, 50000], mean=True, xlabel="S1 area (phd), Po", name="S1_lg_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(p_area[pulse_cut*cut_dict["PoUpS1"]], bins=100, hRange=[0, 50000], mean=True, xlabel="S1 area (phd), up Po", name="S1_lg_Up_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(p_area[pulse_cut*cut_dict["PoDownS1"]], bins=100, hRange=[0, 50000], mean=True, xlabel="S1 area (phd), down Po", name="S1_lg_Down_Po_"+pulse_cut_name, save=save_S1S2_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     # Plots of event-level variables
     if fig_dict is None:  # save time, don't make scatter/heatmap plots if we're comparing multiple files
@@ -465,7 +469,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
         pl.xlabel("Drift Time (us)")
         pl.ylabel("Sum S1 area (phd)")
         pl.xlim(0,9)
-        pl.ylim(10,30000)
+        pl.ylim(10,50000)
         pl.yscale('log')
         pl.clim(-1,1)
         cbar=pl.colorbar()
