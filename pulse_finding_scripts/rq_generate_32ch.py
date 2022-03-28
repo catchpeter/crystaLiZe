@@ -7,7 +7,7 @@ import sys
 
 import PulseFinderScipy as pf
 import PulseQuantities as pq
-import Pulsefication as pc
+import PulseClassification as pc
 
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202103/031121/Po_2.8g_3.0c_0.78bar_circ_30min_1312/"
 #data_dir = "/home/xaber/caen/wavedump-3.8.2/data/041921/Po_2.8g_3.0c_0.72bar_circ_20min_0928/"

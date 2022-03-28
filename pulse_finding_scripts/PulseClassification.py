@@ -8,13 +8,16 @@ def ClassifyPulses(tba, t_rise, n_pulses, p_area):
     # Tricky bc discrimination space for gas-like pulses looks pretty different when voltages are on vs off
     # Clearly want to keep green as normal S1, always below ~0.125
     #max_t_rise = (1.5/100/np.log10(2))*(np.sign(p_area)*(np.absolute(p_area)**(np.log10(2)/2.5))) #8 sipms setup
+    
+
     log_rise = np.log10(t_rise)
     log_area = np.log10(p_area)
+    log_rise = np.nan_to_num(log_rise, nan = -0.7, posinf = -0.7, neginf = -0.7)
+    log_area = np.nan_to_num(log_area, nan = 3.5, posinf = 3.5, neginf = 3.5)
+
     s2_lower_limit = -0.225*(log_area-4)**2-0.3
-    if log_rise>2.5 and log_rise<4.1:
-        s1_upper_limit = -0.8
-    else:
-        s1_upper_limit = s2_lower_limit
+    s1_upper_limit = s2_lower_limit
+    s1_upper_limit[(log_area>2.5)*(log_area<4.1)] = -0.8
 
     case1 = (tba < 0)*(log_rise < s1_upper_limit) # normal S1s
     case2 = (tba >= 0)*(log_rise < s1_upper_limit) # top-focused S1s; e.g. in gas or LXe above top array
