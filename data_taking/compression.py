@@ -3,6 +3,7 @@ import matplotlib.pyplot as pl
 import gzip
 import h5py
 import time
+import os
 
 
 
@@ -13,8 +14,10 @@ save_mode = "npy" # options are "npy" or "h5py"
 #data_dir = "C:/Users/ryanm/Documents/Research/Work zone/20220111_test/20220111_test/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202110/20211012/20211012_1656_Po_Co_OCVtop_0.0g_0.0c_1.19bar_3mv_25us_circ_20min/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202201/20220131/testForAlign/"
-data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
-save_dir = data_dir #""
+data_dir = "/home/xaber/Data/data-202203/20220324/202203241628_1.4bar_2600C2400G500A_54B/"
+save_dir = data_dir+"compressed_data/"
+
+os.mkdir(save_dir)
 
 n_boards = 3
 n_sipms = [16,8,8]
