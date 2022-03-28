@@ -165,7 +165,7 @@ def make_rq(data_dir, handscan = False):
     for j in range(n_block):
         ch_data = []
         for ch_ind in range(n_sipms):
-            ch_data.append(np.fromfile(data_dir + raw_file_names[ch_ind]+".dat", dtype=load_dtype, offset = block_size*wsize*j, count=wsize*block_size))
+            ch_data.append(np.fromfile(data_dir + raw_file_names[ch_indsdat", dtype=load_dtype, offset = block_size*wsize*j, count=wsize*block_size))
 
         #t_end_load = time.time()
         #print("Time to load files: ", t_end_load-t_start)
@@ -178,7 +178,7 @@ def make_rq(data_dir, handscan = False):
         # matrix of all channels including the sum waveform
         v_matrix_all_ch = []
         for ch_ind in range(n_sipms):
-            V = vscale * ch_data[ch_ind].astype(array_dtype) / spe_sizes[ch_ind]
+            V = vscale * ch_data[c h_ind].astype(array_dtype) / spe_sizes[ch_ind]
             V = V[:int(len(V) / wsize) * wsize]
             V = V.reshape(int(V.size / wsize), wsize) # reshape to make each channel's matrix of events
             v_matrix_all_ch.append(V)

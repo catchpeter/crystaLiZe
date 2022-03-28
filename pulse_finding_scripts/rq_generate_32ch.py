@@ -7,7 +7,7 @@ import sys
 
 import PulseFinderScipy as pf
 import PulseQuantities as pq
-import PulseClassification as pc
+import Pulsefication as pc
 
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202103/031121/Po_2.8g_3.0c_0.78bar_circ_30min_1312/"
 #data_dir = "/home/xaber/caen/wavedump-3.8.2/data/041921/Po_2.8g_3.0c_0.72bar_circ_20min_0928/"
@@ -432,9 +432,15 @@ def make_rq(data_dir, handscan = False):
             #plotyn = True #np.any((p_class[i,:] == 3) + (p_class[i,:] == 4))#np.any((p_tba[i,:]>-0.75)*(p_tba[i,:]<-0.25)*(p_area[i,:]<3000)*(p_area[i,:]>1000))
             #plotyn = np.any((p_tba[i,:]>-1)*(p_tba[i,:]<-0.25)*(p_area[i,:]<30000)*(p_area[i,:]>3000))#np.any((np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<3.4) )#False#
             # Pulse area condition
-            afs50_2 = p_afs_50[i,:]-p_afs_2l[i,:]
-            plotyn = True 
-            #np.any((np.log10(afs50_2)<(-0.05*(np.log10(p_area[i,:])-5.5)**2-0.4))*(np.log10(p_area[i,:])<1.8))
+            # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
+            # lower_limit = -0.13*(np.log10(p_area[i,:])-3.2)**2-1.25
+            # higher_limit = -0.2*(np.log10(p_area[i,:])-4)**2-0.4
+            plotyn = False
+            # for ii in range(max_pulses):
+            #     if ((np.log10(afs50_2[ii])<0.2)*(np.log10(afs50_2[ii])>-0.1)*(np.log10(p_area[i,ii])>5)*(np.log10(p_area[i,ii])<5.2)):
+            #         id_check = ii
+            #         plotyn = True
+            #         break
             
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
@@ -459,11 +465,14 @@ def make_rq(data_dir, handscan = False):
             if not inn == 'q' and plotyn: #plot_event_ind == i and plotyn:
 
 
-                pl.figure()
+                fig = pl.figure()
+                ax = pl.gca()
+
                 pl.plot()
                 pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],'black' )
                 pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0), "red")
                 pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0), "green")
+                pl.text(0.8, 0.8, "{0:d}: Pulse area = {1:.1f} phd\nTBA = {2:.1f}\nWidth = {3:.1f} us".format(id_check, p_area[i,id_check], p_tba[i,id_check], p_width[i,id_check]*tscale), transform=ax.transAxes)
                 for ps in range(n_pulses[i]):
                     pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.25,color="m")
                 pl.legend(["All","Summed Top","Summed Bottom"])
@@ -555,20 +564,20 @@ def make_rq(data_dir, handscan = False):
                 
         # end of pulse finding and plotting event loop
 
-    if save_avg_wfm:
-        avg_wfm /= n_wfms_summed
-        np.savetxt(data_dir+'average_waveform.txt',avg_wfm)
-        print("Average waveform saved")
+        if save_avg_wfm:
+            avg_wfm /= n_wfms_summed
+            np.savetxt(data_dir+'average_waveform.txt',avg_wfm)
+            print("Average waveform saved")
 
-    n_events = i
-    t_end = time.time()
-    print("total number of events processed:", n_events)
-    #print("Time used: {}".format(t_end-t_start))
+        n_events = i
+        t_end = time.time()
+        print("total number of events processed:", n_events)
+        #print("Time used: {}".format(t_end-t_start))
 
-    print("empty events: {0}".format(np.sum(empty_evt_ind>0)))
-    # pl.hist(empty_evt_ind[empty_evt_ind>0], bins=1000)
-    # pl.xlabel('Empty event index')
-    # pl.show()
+        print("empty events: {0}".format(np.sum(empty_evt_ind>0)))
+        # pl.hist(empty_evt_ind[empty_evt_ind>0], bins=1000)
+        # pl.xlabel('Empty event index')
+        # pl.show()
 
     #create a dictionary with all RQs
     list_rq = {}
@@ -616,10 +625,10 @@ def make_rq(data_dir, handscan = False):
 
 
 def main():
-    #with open("path.txt", 'r') as path:
-    data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
-    #data_dir = path.read()
-    #data_dir = data_dir[:-1]
+    with open("path.txt", 'r') as path:
+        data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
+        data_dir = path.read()
+        data_dir = data_dir[:-1]
     
     make_rq(data_dir)
 
