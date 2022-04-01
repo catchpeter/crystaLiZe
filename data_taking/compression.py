@@ -9,21 +9,24 @@ import os
 
 start_t = time.time()
 
-save_mode = "npy" # options are "npy" or "h5py"
+save_mode = "npy" #"npy" # options are "npy", "h5py", "none"
 
 #data_dir = "C:/Users/ryanm/Documents/Research/Work zone/20220111_test/20220111_test/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202110/20211012/20211012_1656_Po_Co_OCVtop_0.0g_0.0c_1.19bar_3mv_25us_circ_20min/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202201/20220131/testForAlign/"
-data_dir = "/home/xaber/Data/data-202203/20220324/202203241628_1.4bar_2600C2400G500A_54B/"
+data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
 save_dir = data_dir+"compressed_data/"
 
-os.mkdir(save_dir)
+try:
+    os.mkdir(save_dir)
+except:
+    print("Directory already exists")
 
 n_boards = 3
 n_sipms = [16,8,8]
 n_all_ch = int(np.sum(n_sipms))
 
-wsize = 12500+8 #12500+8 #12500+8 #12500+8 #3000+8 # 8 = size of header 
+wsize = 7500+8 #12500+8 #12500+8 #12500+8 #12500+8 #3000+8 # 8 = size of header 
 block_size = 1500 # This will also be number of events saved per file
 n_blocks = 1000
 
@@ -66,7 +69,8 @@ for bk in range(tot_fi+1):
     print("Number of misaligned events: "+str(len(tosser)))
 
     # Load data, loop over all boards and channels
-    all_data = np.zeros((n_all_ch, max_n_events, wsize-8))
+    all_data_front = np.zeros((n_all_ch, max_n_events, wsize-8))
+    all_data_back = np.zeros((n_all_ch, max_n_events, wsize-8))
     test_ev = np.zeros((n_boards, max_n_events))
     ch_ind = 0
     for bd in range(n_boards):
@@ -81,13 +85,16 @@ for bk in range(tot_fi+1):
                     toss_counts += 1
                 else:
                     if bd == 0:
-                        all_data[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] 
+                        all_data_front[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] - np.mean(ch_data[ev, 8:8+150])
+                        all_data_back[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] - np.mean(ch_data[ev, -150:-1])
                         test_ev[bd,ev-toss_counts] = ch_data[ev,2]
                     elif bd == 1:
-                        all_data[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:wsize-delay]
+                        all_data_front[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:(wsize-delay)] - np.mean(ch_data[ev, 8:8+150])
+                        all_data_back[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:(wsize-delay)] - np.mean(ch_data[ev, -150:-1])
                         test_ev[bd,ev-toss_counts] = ch_data[ev,2]
                     elif bd == 2:
-                        all_data[ch_ind, ev-toss_counts, 2*delay:] = ch_data[ev, 8:wsize-2*delay]
+                        all_data_front[ch_ind, ev-toss_counts, 2*delay:] = ch_data[ev, 8:(wsize-2*delay)] - np.mean(ch_data[ev, 8:8+150])
+                        all_data_back[ch_ind, ev-toss_counts, 2*delay:] = ch_data[ev, 8:(wsize-2*delay)] - np.mean(ch_data[ev, -150:-1])
                         test_ev[bd,ev-toss_counts] = ch_data[ev,2]
                     # need to scale by spe size!!!
             
@@ -99,41 +106,61 @@ for bk in range(tot_fi+1):
 
 
     for ch in range(n_all_ch):
-        #print(np.mean(all_data[ch,0,8+2*delay:100+2*delay]))
-        all_data[ch,:,:] -= np.mean(all_data[ch,0,8+2*delay:100+2*delay])
+        #print(np.mean(all_data_front[ch,0,8+2*delay:100+2*delay]))
+        #all_data_front[ch,:,:] -= np.mean(all_data_front[ch,0,200:300])
         if ch < 4:
-            all_data[ch,:,:] = np.zeros_like(all_data[0,:,:])
+            all_data_front[ch,:,:] = np.zeros_like(all_data_front[0,:,:])
+            all_data_back[ch,:,:] = np.zeros_like(all_data_back[0,:,:])
 
 
     # Reshape into pods
-    pod_size = 5 # samples. 5 samples = 10 ns
+    pod_size = 10 #5 # samples. 5 samples = 10 ns
     n_pods = int( (wsize-8)/pod_size )
-    all_data_pods = np.reshape(all_data, (n_all_ch, max_n_events, n_pods, pod_size) )
+    all_data_front_pods = np.reshape(all_data_front, (n_all_ch, max_n_events, n_pods, pod_size) )
+    all_data_back_pods = np.reshape(all_data_back, (n_all_ch, max_n_events, n_pods, pod_size) )
 
+    # Sum channels
+    sum_data_front_pods = np.sum(all_data_front_pods, axis=0)
+    sum_data_back_pods = np.sum(all_data_back_pods, axis=0)
 
-    # Take sum, do baseline subtraction, do cut on area of pods
-    sum_data_pods = np.sum(all_data_pods, axis=0)
-    #baselines = np.mean(sum_data_pods[:,0:10,:], axis=(1,2))
-    sum_data_pods_area = np.sum(sum_data_pods, axis=2)  #np.sum( np.subtract(sum_data_pods, baselines[:,None,None]) , axis=2)
-    area_threshold = 50 # one day this will be phe 
-    toSaveOrNotToSave = sum_data_pods_area > area_threshold 
+    # Sum within pods
+    sum_data_front_pods_area = np.sum(sum_data_front_pods, axis=2) 
+    sum_data_back_pods_area = np.sum(sum_data_back_pods, axis=2) 
 
+    # Do cuts on areas
+    area_threshold_front = 200 # one day this will be phe 
+    area_threshold_back = 475 #area_threshold_front
+    toSaveOrNotToSave = (np.abs(sum_data_front_pods_area) > area_threshold_front)*(np.abs(sum_data_back_pods_area) > area_threshold_back)
+   
+    nBefore = 25
+    for i in range(nBefore):
+        diffSave = np.diff(toSaveOrNotToSave, axis=1)
+        #print(np.sum(diffSave[diffSave==1]))
+        if i < 8: toSaveOrNotToSave[:,:-1][diffSave != 0] = 1
+        toSaveOrNotToSave[:,1:][diffSave != 0] = 1
+   
 
     # Create array to save
-    stuffToSave = np.zeros_like(all_data_pods)
+    stuffToSave = np.zeros_like(all_data_front_pods)
     for ch in range(n_all_ch):
-        stuffToSave[ch, toSaveOrNotToSave, :] = all_data_pods[ch, toSaveOrNotToSave, :]
+        stuffToSave[ch, toSaveOrNotToSave, :] = all_data_front_pods[ch, toSaveOrNotToSave, :]
 
     stuffToSave = np.reshape(stuffToSave, (n_all_ch, max_n_events*(wsize-8)))
     
-    #for i in range(max_n_events):
+    """
+    for i in range(max_n_events):
         #print(test_ev[:,i])
-        #pl.figure()
-        #pl.plot(np.sum(stuffToSave[0:15, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"r")
+        pl.figure()
+        #for ch in range(24,32):
+        #    pl.plot(all_data_front[ch, i, :],"g")
+        pl.plot(np.sum(all_data_front[:, i, :],axis=0),"b")
+        pl.plot(np.sum(stuffToSave[:, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"r")
+        #pl.legend(["Raw","Compressed"])
         #pl.plot(np.sum(stuffToSave[16:22, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"b")
         #pl.plot(np.sum(stuffToSave[23:31, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"m")
         
-        #pl.show()
+        pl.show()
+    """
     
     
     
@@ -147,9 +174,8 @@ for bk in range(tot_fi+1):
     elif save_mode == "h5py":
         with h5py.File(save_dir+"compressed_"+str(bk)+".h5", "w") as f:
             f.create_dataset("dataset", data=stuffToSave, compression="gzip" )
-    else:
-        with open(save_dir+"compressed_"+str(bk)+".npy", "wb") as f:
-            np.savez_compressed(f, stuffToSave )
+    elif save_mode == "none":
+        continue
 
     
 
