@@ -4,6 +4,7 @@ import matplotlib.pyplot as pl
 import matplotlib as mpl
 import time
 import sys
+import glob
 
 import PulseFinderScipy as pf
 import PulseQuantities as pq
@@ -32,7 +33,7 @@ def make_rq(data_dir, handscan = False):
     event_window = 15 #6 #15 #25 #15 #25 #25 #25
 
     wsize = int(500 * event_window)  # samples per waveform # 12500 for 25 us
-    vscale = (500.0/16384.0) # = 0.122 mV/ADCC, vertical scale
+    vscale = (2000.0/16384.0) # = 0.122 mV/ADCC, vertical scale
     tscale = (8.0/4096.0)     # = 0.002 µs/sample, time scale
 
     save_avg_wfm = False # get the average waveform passing some cut and save to file
@@ -171,16 +172,20 @@ def make_rq(data_dir, handscan = False):
 
     empty_evt_ind = np.zeros(n_events)
 
+    compressed_file_list = sorted(glob.glob(data_dir+"compressed_data/compressed_*.npy") )
+    if len(compressed_file_list) < 1:
+        print("No compressed files found in "+data_dir+"compressed_data/")
+        return
 
-    
-    for j in range(100):
+    j = 0
+    for compressed_file in compressed_file_list:
     
         # load compressed data
         try:
-            with np.load(data_dir+"compressed_data/compressed_"+str(j)+".npy") as data:
+            with np.load(compressed_file) as data:
                 ch_data = data["arr_0"]
         except:
-            print(j,"compressed not found")
+            print("Error in loading "+compressed_file)
             continue
         
         n_tot_samp_per_ch = int( (ch_data.size)/n_sipms )
@@ -589,6 +594,8 @@ def make_rq(data_dir, handscan = False):
         # pl.hist(empty_evt_ind[empty_evt_ind>0], bins=1000)
         # pl.xlabel('Empty event index')
         # pl.show()
+
+        j += 1
 
     #create a dictionary with all RQs
     list_rq = {}
