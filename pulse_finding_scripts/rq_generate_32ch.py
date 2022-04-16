@@ -29,10 +29,10 @@ def make_rq(data_dir, handscan = False):
     #if data_dir.find("25us") != -1:
     #    event_window = 25   # in us. 
     
-    event_window = 15 #25 #25 #25
+    event_window = 15 #6 #15 #25 #15 #25 #25 #25
 
     wsize = int(500 * event_window)  # samples per waveform # 12500 for 25 us
-    vscale = (2000.0/16384.0) # = 0.122 mV/ADCC, vertical scale
+    vscale = (500.0/16384.0) # = 0.122 mV/ADCC, vertical scale
     tscale = (8.0/4096.0)     # = 0.002 µs/sample, time scale
 
     save_avg_wfm = False # get the average waveform passing some cut and save to file
@@ -73,17 +73,19 @@ def make_rq(data_dir, handscan = False):
     spe_sizes = [chA_spe_size, chB_spe_size, chC_spe_size, chD_spe_size, chE_spe_size, chF_spe_size, chG_spe_size, chH_spe_size]
     """
     #spe_sizes = np.ones(n_sipms)
-    spe_sizes_0 = np.array([1,38,40,39,43,43,39,44,39,38,45,44,45,43,43,44,])
+    spe_sizes_0 = np.array([40,38,40,39,43,43,39,44,39,38,45,44,45,43,43,44,])
     spe_sizes_1 = np.array([40,44,39,45,45,41,45,38])
     spe_sizes_2 = np.array([42,42,46,44,44,36,44,41])
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
+
+    spe_sizes = np.ones(32)*25
 
     # ==================================================================
 
 
 
     
-    n_events = 450000
+    n_events = 100000# 450000
 
     
     
@@ -171,13 +173,14 @@ def make_rq(data_dir, handscan = False):
 
 
     
-    for j in range(300):
+    for j in range(100):
     
         # load compressed data
         try:
-            with np.load(data_dir+"compressed_"+str(j)+".npy") as data:
+            with np.load(data_dir+"compressed_data/compressed_"+str(j)+".npy") as data:
                 ch_data = data["arr_0"]
         except:
+            print(j,"compressed not found")
             continue
         
         n_tot_samp_per_ch = int( (ch_data.size)/n_sipms )
@@ -462,19 +465,27 @@ def make_rq(data_dir, handscan = False):
 
             if inn == 's': sys.exit()
             
-            if not inn == 'q' and plotyn: #plot_event_ind == i and plotyn:
+            if not inn == 'q': # and np.any((p_area[i,:] > 350)*(p_area[i,:] < 600)): # and drift_Time[i] > 0: # plotyn: #plot_event_ind == i and plotyn:
 
 
                 fig = pl.figure()
                 ax = pl.gca()
 
-                pl.plot()
+                #pl.plot(x*tscale, v_bls_matrix_all_ch[23,i-j*block_size,:]/(tscale*(1000)/spe_sizes[23]) , "black")
                 pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],'black' )
                 pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0), "red")
                 pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0), "green")
-                pl.text(0.8, 0.8, "{0:d}: Pulse area = {1:.1f} phd\nTBA = {2:.1f}\nWidth = {3:.1f} us".format(id_check, p_area[i,id_check], p_tba[i,id_check], p_width[i,id_check]*tscale), transform=ax.transAxes)
+                #for ch in range(32):
+                #    pl.plot(x*tscale, v_bls_matrix_all_ch[ch,i-j*block_size,:])
+                #pl.ylabel("mV")
+                #pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:]/np.max(v_bls_matrix_all_ch[-1,i-j*block_size,:]),'black' )
+                #pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0)/np.max(np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0)), "red")
+                #pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0)/np.max(np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0)), "green")
+                pl.xlabel("Time [us]")
+                #pl.title("Channel 23")
+                #pl.text(0.8, 0.8, "{0:d}: Pulse area = {1:.1f} phd\nTBA = {2:.1f}\nWidth = {3:.1f} us".format(id_check, p_area[i,id_check], p_tba[i,id_check], p_width[i,id_check]*tscale), transform=ax.transAxes)
                 for ps in range(n_pulses[i]):
-                    pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.25,color="m")
+                    pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.20,color="b")
                 pl.legend(["All","Summed Top","Summed Bottom"])
                 
                 #for ch in range(32):
@@ -626,7 +637,7 @@ def make_rq(data_dir, handscan = False):
 
 def main():
     with open("path.txt", 'r') as path:
-        data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
+        #data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
         data_dir = path.read()
         data_dir = data_dir[:-1]
     
