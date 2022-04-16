@@ -15,9 +15,11 @@ def ClassifyPulses(tba, t_rise, n_pulses, p_area):
     log_rise = np.nan_to_num(log_rise, nan = -0.7, posinf = -0.7, neginf = -0.7)
     log_area = np.nan_to_num(log_area, nan = 3.5, posinf = 3.5, neginf = 3.5)
 
-    s2_lower_limit = -0.225*(log_area-4)**2-0.3
+    s2_lower_limit = np.minimum(1.6/1.7*(log_area-2.2), -0.92)
     s1_upper_limit = s2_lower_limit
-    s1_upper_limit[(log_area>2.5)*(log_area<4.1)] = -0.8
+    #s2_lower_limit = -0.225*(log_area-4)**2-0.3
+    #s1_upper_limit = s2_lower_limit
+    #s1_upper_limit[(log_area>2.5)*(log_area<4.1)] = -0.8
 
     case1 = (tba < 0)*(log_rise < s1_upper_limit) # normal S1s
     case2 = (tba >= 0)*(log_rise < s1_upper_limit) # top-focused S1s; e.g. in gas or LXe above top array

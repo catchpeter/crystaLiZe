@@ -56,11 +56,11 @@ def basicScatter(xdata, ydata, s=[], c=[], save=False, name="", mean=False, show
         r2 = pl.Rectangle((d_x/2.-w/2., -d_y/2.-w/2.), w, w, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
         r3 = pl.Rectangle((-d_x/2.-w/2., -d_y/2.-w/2.), w, w, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
         r4 = pl.Rectangle((-d_x/2.-w/2., d_y/2.-w/2.), w, w, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
-        pl.gca().add_patch(c1)
-        pl.gca().add_patch(r1)
-        pl.gca().add_patch(r2)
-        pl.gca().add_patch(r3)
-        pl.gca().add_patch(r4)
+        #pl.gca().add_patch(c1)
+        #pl.gca().add_patch(r1)
+        #pl.gca().add_patch(r2)
+        #pl.gca().add_patch(r3)
+        #pl.gca().add_patch(r4)
         pl.axis('square')
     pl.scatter(xdata, ydata, s=s, c=c)
 
@@ -343,6 +343,8 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
         basicScatter(cleanArea, cleanRiseTime, s=1.2, c=pulse_class_colors[cleanPulseClass], logx=True, logy=True, xlim=[5,10**6], ylim=[.01,4], xlabel="Pulse area (phd)", ylabel="Rise time, 50-2 (us)", legHand=pc_legend_handles, name="RiseTime_vs_PulseArea_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         #xlim=[0.7*min(p_area.flatten()), 1.5*max(p_area.flatten())]
 
+        basicScatter(cleanArea, cleanHeight, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[0,1000], ylim=[0,20], xlabel="Pulse area [phd]", ylabel="Pulse height [phd/sample]", name="PulseArea_vs_PulseHeight"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
+
         basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 50000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 1000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_small_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         basicHeatmap(cleanTBA, cleanArea, xlim=[-1.01,1.01], ylim=[2000, 50000], bins=100, xlabel="TBA", ylabel="Pulse area (phd)", logz=True, name="PulseArea_vs_TBA_map_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
@@ -353,6 +355,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
         basicScatter(cleanCenterTopX, cleanCenterTopY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="TopCentroid_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
         basicHeatmap(cleanCenterTopX, cleanCenterTopY, xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], bins=80, xlabel="x (cm)", ylabel="y (cm)",
                  name="TopCentroidMap_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
+        
 
     # Channel fractional area for all pulses
     pl.figure()
@@ -439,7 +442,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     basicHist(cleanSumS2, bins=100, hRange=[0,400000], mean=True, xlabel="Sum S2 area (phd)", name="SumS2_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
     # Only ever plot this for SS events?
-    basicHist(cleanDT, bins=50, hRange=[0,10], mean=True, xlabel="Drift time (us)", name="DriftTime_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(cleanDT, bins=200, hRange=[0,10], mean=True, xlabel="Drift time (us)", name="DriftTime_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(drift_Time_AS[drift_Time_AS>0], bins=50, hRange=[0,10], mean=True, xlabel="Drift time AS (us)", name="DriftTime_AS", save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(cleanDT_AS, bins=50, hRange=[0,10], mean=True, xlabel="Drift time AS (us)", name="DriftTime_AS_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
 
