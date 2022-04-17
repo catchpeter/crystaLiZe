@@ -151,6 +151,7 @@ def make_rq(data_dir, handscan = False):
     sum_s1_area = np.zeros(n_events)
     sum_s2_area = np.zeros(n_events)
     drift_Time = np.zeros(n_events)
+    drift_Time_AF = np.zeros(n_events)
     drift_Time_AS = np.zeros(n_events) # for multi-scatter drift time, defined by the first S2. 
     s1_before_s2 = np.zeros(n_events, dtype=bool)
 
@@ -402,6 +403,7 @@ def make_rq(data_dir, handscan = False):
             if n_s1[i] == 1:
                 if n_s2[i] == 1:
                     drift_Time[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)])
+                    drift_Time_AF[i] = tscale*(p_afs_1[i, np.argmax(index_s2)] - p_afs_1[i, np.argmax(index_s1)])
                     drift_Time_AS[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)])
                 if n_s2[i] > 1:
                     s1_before_s2[i] = np.argmax(index_s1) < np.argmax(index_s2) 
@@ -486,11 +488,13 @@ def make_rq(data_dir, handscan = False):
                 #pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:]/np.max(v_bls_matrix_all_ch[-1,i-j*block_size,:]),'black' )
                 #pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0)/np.max(np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0)), "red")
                 #pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0)/np.max(np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0)), "green")
-                pl.xlabel("Time [us]")
+                pl.xlabel(r"Time [$\mu$s]")
+                pl.ylabel("phd/sample")
                 #pl.title("Channel 23")
                 #pl.text(0.8, 0.8, "{0:d}: Pulse area = {1:.1f} phd\nTBA = {2:.1f}\nWidth = {3:.1f} us".format(id_check, p_area[i,id_check], p_tba[i,id_check], p_width[i,id_check]*tscale), transform=ax.transAxes)
                 for ps in range(n_pulses[i]):
-                    pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.20,color="b")
+                    #pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.20,color="b")
+                    pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
                 pl.legend(["All","Summed Top","Summed Bottom"])
                 
                 #for ch in range(32):
@@ -499,7 +503,8 @@ def make_rq(data_dir, handscan = False):
                     #if ch > 15 and ch < 23
                 #pl.plot( x*tscale, v_bls_matrix_all_ch[20,i-j*block_size,:], "m" )
                 #pl.plot( x*tscale, v_bls_matrix_all_ch[30,i-j*block_size,:], "black" )
-                pl.grid("both","both")
+                pl.grid(which="both",axis="both",linestyle="--")
+                pl.xlim(0,event_window)
                 #pl.legend(("Summed waveform"))
                 pl.show()
 
@@ -611,10 +616,13 @@ def make_rq(data_dir, handscan = False):
     list_rq['p_area'] = p_area
     list_rq['p_class'] = p_class
     list_rq['drift_Time'] = drift_Time
+    list_rq['drift_Time_AF'] = drift_Time_AF
     list_rq['drift_Time_AS'] = drift_Time_AS
     list_rq['p_max_height'] = p_max_height
     list_rq['p_min_height'] = p_min_height
     list_rq['p_width'] = p_width
+    list_rq['p_afs_1'] = p_afs_1
+    list_rq['p_afs_99'] = p_afs_99
     list_rq['p_afs_2l'] = p_afs_2l
     list_rq['p_afs_50'] = p_afs_50
     list_rq['p_area_ch'] = p_area_ch
@@ -646,7 +654,7 @@ def main():
     with open("path.txt", 'r') as path:
         #data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
         data_dir = path.read()
-        data_dir = data_dir[:-1]
+        #data_dir = data_dir[:-1]
     
     make_rq(data_dir)
 
