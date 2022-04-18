@@ -495,6 +495,7 @@ def make_rq(data_dir, handscan = False):
                 for ps in range(n_pulses[i]):
                     #pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.20,color="b")
                     pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
+                    pl.axvline(tscale*p_afs_1[i,ps],color=pulse_class_colors[p_class[i,ps]],zorder=0,linestyle='--')
                 pl.legend(["All","Summed Top","Summed Bottom"])
                 
                 #for ch in range(32):
