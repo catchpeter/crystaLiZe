@@ -20,7 +20,7 @@ def gaussian(x,a,mu,sigma):
 
 #data_dir = "/home/xaber/Data/20220304/202203041344SPE/"
 
-data_dir = "/home/xaber/Data/20220321/202203211637SPE/"
+data_dir = "/home/xaber/Data/data-202204/20220418/202204181307_SPE/"
 
 plotyn = False # Waveform plotting
 saveplot = True # Save RQ plots
@@ -48,7 +48,7 @@ list_rq = {}
 
 
 # DAQ parameters
-wsize = 3000+8  # samples per waveform # 12500 for 25 us
+wsize = 1000+8  # samples per waveform # 12500 for 25 us
 vscale = (500.0/16384.0) # vertical scale, = 0.031 mV/ADCC for 0.5 Vpp dynamic range
 tscale = (8.0/4096.0)     # = 0.002 µs/sample, time scale
 
@@ -115,11 +115,25 @@ for bd in range(n_boards):
                 
                 #p_max_height[ev,ps] = pq.GetPulseMaxHeight(start_times[ps], end_times[ps], ch_data[ev,:]-baselines[ps])
             
-            p_sarea[ev] = np.sum(ch_data[ev,1350:1500])
-
+            l_bound = 380
+            r_bound = 550
             
+
+            rms = np.sqrt(np.sum(np.power(ch_data[ev,l_bound:r_bound],2) )/(r_bound-l_bound) )
+
+            #if rms < 0.0008: continue
+
+
+            p_sarea[ev] = np.sum(ch_data[ev,l_bound:r_bound])
+            
+            # Pulse = 0.0011
+
+
             # Event plotter
-            if not inn == "q" and plotyn and ch>3 and p_sarea[ev] < 0.1/tscale and p_sarea[ev] > 0.01/tscale:
+            if not inn == "q" and p_sarea[ev] > 0.00: #plotyn and ch>3 and p_sarea[ev] < 0.1/tscale and p_sarea[ev] > 0.01/tscale:
+                print(p_sarea[ev])
+                print(rms)
+                print()
                 fig = pl.figure(1,figsize=(10, 7))
                 pl.grid(b=True,which='major',color='lightgray',linestyle='--')
                 pl.plot(t, ch_data[ev,:], color="blue")
@@ -127,8 +141,10 @@ for bd in range(n_boards):
                 #for ps in range(min(n_pulses,max_pulses)):
                 #    pl.axvspan(start_times[ps]*tscale, end_times[ps]*tscale, alpha=0.25, color="green", label="Pulse area = {:0.3f} mV*ns".format(p_area[ev,ps]*tscale*1000))
                 #    pl.axvspan(baselines_start[ps]*tscale, baselines_end[ps]*tscale, alpha=0.25, color='purple', label="baseline")
-                pl.hlines(0,0,6,color="black")
-                pl.xlim([0,6])
+                pl.hlines(0,0,2,color="black")
+                pl.axvline(l_bound*tscale,0,1,color="black")
+                pl.axvline(r_bound*tscale,0,1,color="black")
+                pl.xlim([0,2])
                 pl.title("Board "+str(bd)+", Channel "+str(ch)+", Event "+str(ev))  
                 pl.xlabel('Time (us)')
                 pl.ylabel('mV')
@@ -159,22 +175,22 @@ for bd in range(n_boards):
 
         vals, bins = np.histogram(clean_sarea, bins=nBins, range=(0.025,0.060) )
         binsC = np.array([0.5*(bins[i] + bins[i+1]) for i in range(len(bins)-1)])
-        popt, pcov = curve_fit(gaussian, binsC, vals, p0=(100,0.04,0.02))
+        #popt, pcov = curve_fit(gaussian, binsC, vals, p0=(100,0.04,0.02))
 
         x = np.linspace(0.025,0.060,10000)
-        y = gaussian(x, *popt)
+        #y = gaussian(x, *popt)
 
 
         pl.figure()
-        pl.hist(clean_sarea, bins=100, range=(-0.02,0.20), histtype="step")
-        pl.plot(x,y,"r")
-        pl.annotate("$\mu$ = ("+str( round(popt[1],3) )+"$\pm$"+str( round(np.sqrt(pcov[1,1]),3)) +") mV*$\mu$s", xy=(0.1,1000))
-        pl.annotate("$\sigma$ = ("+str( round(np.abs(popt[2]),3) )+"$\pm$"+str( round(np.sqrt(pcov[2,2]),3)) +") mV*$\mu$s", xy=(0.1,600))
+        pl.hist(clean_sarea, bins=200, range=(-0.02,0.3), histtype="step")
+        #pl.plot(x,y,"r")
+        #pl.annotate("$\mu$ = ("+str( round(popt[1],3) )+"$\pm$"+str( round(np.sqrt(pcov[1,1]),3)) +") mV*$\mu$s", xy=(0.1,1000))
+        #pl.annotate("$\sigma$ = ("+str( round(np.abs(popt[2]),3) )+"$\pm$"+str( round(np.sqrt(pcov[2,2]),3)) +") mV*$\mu$s", xy=(0.1,600))
         #pl.hist(clean_sarea, bins=200, range=(-0.015,0.040), histtype="step")
         #pl.xlim([0,10])
-        #pl.ylim([0,500])
+        pl.ylim([0,300])
         pl.title("Board "+str(bd)+", Channel "+str(ch))
-        pl.yscale("log")
+        #pl.yscale("log")
         pl.grid("both","both")
         pl.xlabel("Pulse area [mV*us]")
         pl.savefig(data_dir+"area"+image_basename)

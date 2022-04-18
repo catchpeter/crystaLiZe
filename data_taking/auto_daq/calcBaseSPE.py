@@ -8,7 +8,7 @@ def configFile(ch_num):
 
     if ch_num > 31: return
 
-    data_dir = "/home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq"
+    data_dir = "/home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq/"
 
 
     n_boards = 3
@@ -19,14 +19,17 @@ def configFile(ch_num):
 
 
     # Lines in config file to change
-    trig_lines_0 = np.arange(141,201+4,4,dtype=int)
-    trig_lines_1 = np.arange(209,237+4,4,dtype=int)
-    trig_lines_2 = np.arange(245,273+4,4,dtype=int)
+    t_start = 161 #141
+
+
+    trig_lines_0 = np.arange(t_start,t_start+60+4,4,dtype=int)
+    trig_lines_1 = np.arange(t_start+68,t_start+96+4,4,dtype=int)
+    trig_lines_2 = np.arange(t_start+104,t_start+132+4,4,dtype=int)
     trig_lines_all = np.concatenate((trig_lines_0,trig_lines_1,trig_lines_2), dtype=int)
 
-    trig_enable_0 = np.arange(140,200+4,4,dtype=int)
-    trig_enable_1 = np.arange(208,236+4,4,dtype=int)
-    trig_enable_2 = np.arange(244,272+4,4,dtype=int)
+    trig_enable_0 = np.arange(t_start-1,t_start-1+60+4,4,dtype=int)
+    trig_enable_1 = np.arange(t_start-1+68,t_start-1+96+4,4,dtype=int)
+    trig_enable_2 = np.arange(t_start-1+104,t_start-1+132+4,4,dtype=int)
     trig_enable_all = np.concatenate((trig_enable_0,trig_enable_1,trig_enable_2))
 
     # Copy over previous file
@@ -53,7 +56,7 @@ def configFile(ch_num):
             baseline = int(np.mean(ch_data[:,8:8+100]))   
             
             # Change trigger threshold
-            prev_lines[trig_lines_all[i]] = "TriggerThreshold "+str(baseline+20)+"\n"
+            prev_lines[trig_lines_all[i]] = "TriggerThreshold "+str(baseline+60)+"\n"
 
             if i==ch_num:
                 prev_lines[trig_enable_all[i]] = "EnableInput 1\n"

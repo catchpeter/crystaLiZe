@@ -21,7 +21,7 @@ do
     cd /home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq
     wavedumpMB /home/xaber/Data/oneBaseConfig.txt 5 1 
     python3 /home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq/calcBase.py 
-    sleep 1s
+    sleep 2s
     
     # Change config file
     python3 /home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq/calcBaseSPE.py $x

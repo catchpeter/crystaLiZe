@@ -15,11 +15,15 @@ wsize = 3000+8 # 8 = size of header
 load_dtype = "int16"
 
 
-# Lines in config file to change
-trig_lines_0 = np.arange(141,201+4,4,dtype=int)
-trig_lines_1 = np.arange(209,237+4,4,dtype=int)
-trig_lines_2 = np.arange(245,273+4,4,dtype=int)
+t_start = 161 #141
+
+
+trig_lines_0 = np.arange(t_start,t_start+60+4,4,dtype=int)
+trig_lines_1 = np.arange(t_start+68,t_start+96+4,4,dtype=int)
+trig_lines_2 = np.arange(t_start+104,t_start+132+4,4,dtype=int)
 trig_lines_all = np.concatenate((trig_lines_0,trig_lines_1,trig_lines_2), dtype=int)
+
+
 
 
 # Copy over previous file
@@ -46,7 +50,7 @@ for bd in range(n_boards):
         baseline = int(np.mean(ch_data[:,8:8+100]))   
         
         # Change trigger threshold
-        prev_lines[trig_lines_all[i]] = "TriggerThreshold "+str(baseline+50)+"\n"
+        prev_lines[trig_lines_all[i]] = "TriggerThreshold "+str(baseline+100)+"\n"
 
         i += 1
         
