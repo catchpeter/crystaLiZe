@@ -152,6 +152,8 @@ def make_rq(data_dir, handscan = False):
     sum_s2_area = np.zeros(n_events)
     drift_Time = np.zeros(n_events)
     drift_Time_AF = np.zeros(n_events)
+    drift_Time_AF50 = np.zeros(n_events)
+    drift_Time_AF150 = np.zeros(n_events)
     drift_Time_AS = np.zeros(n_events) # for multi-scatter drift time, defined by the first S2. 
     s1_before_s2 = np.zeros(n_events, dtype=bool)
 
@@ -404,6 +406,8 @@ def make_rq(data_dir, handscan = False):
                 if n_s2[i] == 1:
                     drift_Time[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)])
                     drift_Time_AF[i] = tscale*(p_afs_1[i, np.argmax(index_s2)] - p_afs_1[i, np.argmax(index_s1)])
+                    drift_Time_AF50[i] = tscale*(p_afs_50[i, np.argmax(index_s2)] - p_afs_50[i, np.argmax(index_s1)])
+                    drift_Time_AF150[i] = tscale*(p_afs_50[i, np.argmax(index_s2)] - p_afs_1[i, np.argmax(index_s1)])
                     drift_Time_AS[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)])
                 if n_s2[i] > 1:
                     s1_before_s2[i] = np.argmax(index_s1) < np.argmax(index_s2) 
@@ -618,6 +622,8 @@ def make_rq(data_dir, handscan = False):
     list_rq['p_class'] = p_class
     list_rq['drift_Time'] = drift_Time
     list_rq['drift_Time_AF'] = drift_Time_AF
+    list_rq['drift_Time_AF50'] = drift_Time_AF50
+    list_rq['drift_Time_AF150'] = drift_Time_AF150
     list_rq['drift_Time_AS'] = drift_Time_AS
     list_rq['p_max_height'] = p_max_height
     list_rq['p_min_height'] = p_min_height
