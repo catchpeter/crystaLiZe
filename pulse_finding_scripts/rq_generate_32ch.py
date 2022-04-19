@@ -476,16 +476,16 @@ def make_rq(data_dir, handscan = False):
 
             if inn == 's': sys.exit()
             
-            if not inn == 'q': # and np.any((p_area[i,:] > 350)*(p_area[i,:] < 600)): # and drift_Time[i] > 0: # plotyn: #plot_event_ind == i and plotyn:
+            if not inn == 'q': # and drift_Time[i] > 0 and s1s2 and p_area[i,0]<500. and p_area[i,0]>20.: # and np.any((p_area[i,:] > 350)*(p_area[i,:] < 600)): # and drift_Time[i] > 0: # plotyn: #plot_event_ind == i and plotyn:
 
 
                 fig = pl.figure()
                 ax = pl.gca()
 
                 #pl.plot(x*tscale, v_bls_matrix_all_ch[23,i-j*block_size,:]/(tscale*(1000)/spe_sizes[23]) , "black")
-                pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],'black' )
-                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0), "red")
-                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0), "green")
+                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0), color="red",lw=0.7)
+                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0), color="green",lw=0.7)
+                pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],color='black',lw=0.7 )
                 #for ch in range(32):
                 #    pl.plot(x*tscale, v_bls_matrix_all_ch[ch,i-j*block_size,:])
                 #pl.ylabel("mV")
@@ -500,6 +500,12 @@ def make_rq(data_dir, handscan = False):
                     #pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.20,color="b")
                     pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
                     pl.axvline(tscale*p_afs_1[i,ps],color=pulse_class_colors[p_class[i,ps]],zorder=0,linestyle='--')
+                    
+                    ax.text((end_times[ps]) * tscale, 0.9 * ax.get_ylim()[1], '{:.1f} phd'.format(p_area[i, ps]),
+                            fontsize=9, color=pulse_class_colors[p_class[i, ps]])
+                    ax.text((end_times[ps]) * tscale, 0.8 * ax.get_ylim()[1], 'TBA={:.1f}'.format(p_tba[i, ps]),
+                        fontsize=9, color=pulse_class_colors[p_class[i, ps]])
+                    
                 pl.legend(["All","Summed Top","Summed Bottom"])
                 
                 #for ch in range(32):
