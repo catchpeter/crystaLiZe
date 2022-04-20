@@ -1,21 +1,52 @@
 import numpy as np
 import sys
 
-#data_dir = "/home/xaber/Data/20220208/darkCounts_cold_52V/"
-#save_dir = "/home/xaber/Analysis/testing/"
-#save_file_name = "baselines.txt"
+
+data_dir = "/home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq/"
+
+n_boards = 3
+n_sipms = [16,8,8]
+n_all_ch = int(np.sum(n_sipms))
+wsize = 3000+8 # 8 = size of header
+load_dtype = "int16"
+
+
+
+def getBoard(i):
+    if i < 16: return 0
+    elif i < 24 and i > 15: return 1
+    elif i < 32 and i > 23: return 2
+    else: return -1
+
+
+def getBase(bd):
+
+    baselines = []
+    for ch in range(n_sipms[bd]):
+        
+        # Load data
+        ch_data = np.fromfile(data_dir + "waveforms_"+str(bd)+"_"+str(ch)+".dat", dtype=load_dtype)
+            
+        # Reshape 
+        n_events = int(ch_data.size/wsize)
+        ch_data = np.reshape(ch_data, (n_events, wsize))
+
+        # Calculate baseline
+        baselines.append( int(np.mean(ch_data[:,8:8+100])) )
+
+    baselines = np.asarray(baselines)
+
+    return baselines
+
+
+
+
+
 def configFile(ch_num):
 
     if ch_num > 31: return
 
-    data_dir = "/home/xaber/Analysis/solid_xenon_tpc/data_taking/auto_daq/"
-
-
-    n_boards = 3
-    n_sipms = [16,8,8]
-    n_all_ch = int(np.sum(n_sipms))
-    wsize = 3000+8 # 8 = size of header
-    load_dtype = "int16"
+    
 
 
     # Lines in config file to change
@@ -41,30 +72,47 @@ def configFile(ch_num):
 
 
 
-    i=0
-    for bd in range(n_boards):
-        for ch in range(n_sipms[bd]):
-        
-            # Load data
-            ch_data = np.fromfile(data_dir + "waveforms_"+str(bd)+"_"+str(ch)+".dat", dtype=load_dtype)
-            
-            # Reshape 
-            n_events = int(ch_data.size/wsize)
-            ch_data = np.reshape(ch_data, (n_events, wsize))
+    this_bd = getBoard(ch_num)
 
-            # Calculate baseline
-            baseline = int(np.mean(ch_data[:,8:8+100]))   
-            
-            # Change trigger threshold
-            prev_lines[trig_lines_all[i]] = "TriggerThreshold "+str(baseline+60)+"\n"
+    if this_bd == 0:
+        prev_lines[23] = "[BOARD 0] Open USB 0 76540000\n"
 
-            if i==ch_num:
-                prev_lines[trig_enable_all[i]] = "EnableInput 1\n"
+        baselines = getBase(this_bd) 
+        for i in range(n_sipms[this_bd]):
+            prev_lines[trig_lines_0[i]] = "TriggerThreshold "+str(baselines[i]+44)+"\n"
+            if i == ch_num:
+                prev_lines[trig_enable_0[i]] = "EnableInput 1\n"
             else:
-                prev_lines[trig_enable_all[i]] = "EnableInput 0\n"
+                prev_lines[trig_enable_0[i]] = "EnableInput 0\n"
 
-            i += 1
-            
+
+
+    elif this_bd == 1:
+        prev_lines[23] = "[BOARD 0] Open USB 0 32100000\n"
+
+        baselines = getBase(this_bd) 
+        for i in range(n_sipms[this_bd]):
+            prev_lines[trig_lines_0[i]] = "TriggerThreshold "+str(baselines[i]+44)+"\n"
+            if i == ch_num - 16:
+                prev_lines[trig_enable_0[i]] = "EnableInput 1\n"
+            else:
+                prev_lines[trig_enable_0[i]] = "EnableInput 0\n"
+
+
+
+    elif this_bd == 2:
+        prev_lines[23] = "[BOARD 0] Open USB 0 42100000\n"
+
+        baselines = getBase(this_bd) 
+        for i in range(n_sipms[this_bd]):
+            prev_lines[trig_lines_0[i]] = "TriggerThreshold "+str(baselines[i]+44)+"\n"
+            if i == ch_num - 24:
+                prev_lines[trig_enable_0[i]] = "EnableInput 1\n"
+            else:
+                prev_lines[trig_enable_0[i]] = "EnableInput 0\n"
+        
+
+
 
     with open(cf_name, "w") as f:
         for line in prev_lines:
@@ -73,6 +121,10 @@ def configFile(ch_num):
 
 
     return
+
+
+
+
 
 def main():
     args = sys.argv[1:]

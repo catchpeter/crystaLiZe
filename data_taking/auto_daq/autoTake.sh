@@ -18,7 +18,7 @@ do
 	month=$(date +%Y%m)
 	day=$(date +%Y%m%d)
 	time=$(date +%H%M)
-	extra="_1.2bar_2200C_2000G_0A_54B_15us_0.5Vpp_2coin_3mVtrig_CoBotSide"
+	extra="_1.2bar_3500C_3200G_1000A_54B_15us_0.5Vpp_2coin_3mVtrig"
 	dirDayTime="$dir$month/$day/$day$time$extra"
 	mkdir $dirDayTime -p
 	cd $dirDayTime

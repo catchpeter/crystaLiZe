@@ -74,12 +74,12 @@ def make_rq(data_dir, handscan = False):
     spe_sizes = [chA_spe_size, chB_spe_size, chC_spe_size, chD_spe_size, chE_spe_size, chF_spe_size, chG_spe_size, chH_spe_size]
     """
     #spe_sizes = np.ones(n_sipms)
-    spe_sizes_0 = np.array([40,38,40,39,43,43,39,44,39,38,45,44,45,43,43,44,])
-    spe_sizes_1 = np.array([40,44,39,45,45,41,45,38])
-    spe_sizes_2 = np.array([42,42,46,44,44,36,44,41])
+    spe_sizes_0 = np.array([85.406,86.876,84.763,83.986,85.470,85.032,85,968,85.452,84.126,84.825,84.340,85.217,84.285,85.226,83.753,84.609])
+    spe_sizes_1 = np.array([79.897,78.625,81.818,81.189,74.952,77.289,79.880,76.970])
+    spe_sizes_2 = np.array([79.597,79.023,80.213,81.023,78.173,79.883,79.069,75.496])
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
-    spe_sizes = np.ones(32)*25
+    #spe_sizes = np.ones(32)*25
 
     # ==================================================================
 

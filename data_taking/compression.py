@@ -14,7 +14,7 @@ save_mode = "npy" #"npy" # options are "npy", "h5py", "none"
 #data_dir = "C:/Users/ryanm/Documents/Research/Work zone/20220111_test/20220111_test/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202110/20211012/20211012_1656_Po_Co_OCVtop_0.0g_0.0c_1.19bar_3mv_25us_circ_20min/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202201/20220131/testForAlign/"
-data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
+data_dir = "/home/xaber/Data/data-202204/20220419/202204191736_1.2bar_3500C_3200G_1000A_54B_15us_0.5Vpp_2coin_3mVtrig/"
 save_dir = data_dir+"compressed_data/"
 
 try:
@@ -26,7 +26,7 @@ n_boards = 3
 n_sipms = [16,8,8]
 n_all_ch = int(np.sum(n_sipms))
 
-wsize = 7500+8 #12500+8 #12500+8 #12500+8 #12500+8 #3000+8 # 8 = size of header 
+wsize = 7500+8 #7500+8 #12500+8 #12500+8 #12500+8 #12500+8 #3000+8 # 8 = size of header 
 block_size = 1500 # This will also be number of events saved per file
 n_blocks = 1000
 
@@ -105,12 +105,12 @@ for bk in range(tot_fi+1):
 
 
 
-    for ch in range(n_all_ch):
+    #for ch in range(n_all_ch):
         #print(np.mean(all_data_front[ch,0,8+2*delay:100+2*delay]))
         #all_data_front[ch,:,:] -= np.mean(all_data_front[ch,0,200:300])
-        if ch < 4:
-            all_data_front[ch,:,:] = np.zeros_like(all_data_front[0,:,:])
-            all_data_back[ch,:,:] = np.zeros_like(all_data_back[0,:,:])
+        #if ch < 4:
+        #    all_data_front[ch,:,:] = np.zeros_like(all_data_front[0,:,:])
+        #    all_data_back[ch,:,:] = np.zeros_like(all_data_back[0,:,:])
 
 
     # Reshape into pods
@@ -128,8 +128,8 @@ for bk in range(tot_fi+1):
     sum_data_back_pods_area = np.sum(sum_data_back_pods, axis=2) 
 
     # Do cuts on areas
-    area_threshold_front = 200 # one day this will be phe 
-    area_threshold_back = 475 #area_threshold_front
+    area_threshold_front = 1000 #200 # one day this will be phe 
+    area_threshold_back = 1000 #475 #area_threshold_front
     toSaveOrNotToSave = (np.abs(sum_data_front_pods_area) > area_threshold_front)*(np.abs(sum_data_back_pods_area) > area_threshold_back)
    
     nBefore = 25

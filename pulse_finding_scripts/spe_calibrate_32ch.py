@@ -20,7 +20,7 @@ def gaussian(x,a,mu,sigma):
 
 #data_dir = "/home/xaber/Data/20220304/202203041344SPE/"
 
-data_dir = "/home/xaber/Data/data-202204/20220418/202204181307_SPE/"
+data_dir = "/home/xaber/Data/data-202204/20220419/202204191509_SPE_liquid/"
 
 plotyn = False # Waveform plotting
 saveplot = True # Save RQ plots
@@ -70,7 +70,7 @@ for bd in range(n_boards):
         print("Channel "+str(n_order+1)+"/32")
 
         # Open data
-        filename = data_dir+"waveforms_"+str(bd)+"_"+str(ch)+".dat"
+        filename = data_dir+"b"+str(bd)+"/"+"waveforms_0_"+str(ch)+".dat"
         try:
             ch_data = np.fromfile(filename, dtype=load_dtype)
         except:
@@ -94,6 +94,7 @@ for bd in range(n_boards):
         p_area = np.zeros((n_events,max_pulses))
         p_sarea = np.zeros(n_events)
         p_max_height = np.zeros((n_events,max_pulses))
+        rms = np.zeros(n_events)
 
         # Loop over events
         for ev in range(n_events):
@@ -119,9 +120,9 @@ for bd in range(n_boards):
             r_bound = 550
             
 
-            rms = np.sqrt(np.sum(np.power(ch_data[ev,l_bound:r_bound],2) )/(r_bound-l_bound) )
+            rms[ev] = np.sqrt(np.sum(np.power(ch_data[ev,l_bound:r_bound],2) )/(r_bound-l_bound) )
 
-            #if rms < 0.0008: continue
+            if rms[ev] < 0.425: continue
 
 
             p_sarea[ev] = np.sum(ch_data[ev,l_bound:r_bound])
@@ -130,7 +131,7 @@ for bd in range(n_boards):
 
 
             # Event plotter
-            if not inn == "q" and p_sarea[ev] > 0.00: #plotyn and ch>3 and p_sarea[ev] < 0.1/tscale and p_sarea[ev] > 0.01/tscale:
+            if not inn == "q" and p_sarea[ev] > 9999999.00: #plotyn and ch>3 and p_sarea[ev] < 0.1/tscale and p_sarea[ev] > 0.01/tscale:
                 print(p_sarea[ev])
                 print(rms)
                 print()
@@ -166,34 +167,46 @@ for bd in range(n_boards):
         #clean_area = p_area[clean_cut]*tscale 
         #clean_width = p_width[clean_cut]*tscale 
 
-        clean_sarea = p_sarea*tscale
+        clean_sarea = p_sarea*tscale*1000
 
         image_basename = "_"+str(bd)+"_"+str(ch)+".png"
 
+        full_range = (-100,300)
+        full_bins = 200
 
-        nBins = int(100*(0.060-0.025)/(0.2+0.02))
+        fit_range = (65,110)
+        fit_bins = int( full_bins*(fit_range[1] - fit_range[0])/(full_range[1] - full_range[0]) )
 
-        vals, bins = np.histogram(clean_sarea, bins=nBins, range=(0.025,0.060) )
+    
+       
+        vals, bins = np.histogram(clean_sarea, bins=fit_bins, range=fit_range)
         binsC = np.array([0.5*(bins[i] + bins[i+1]) for i in range(len(bins)-1)])
-        #popt, pcov = curve_fit(gaussian, binsC, vals, p0=(100,0.04,0.02))
+        popt, pcov = curve_fit(gaussian, binsC, vals, p0=(100,85,20))
 
-        x = np.linspace(0.025,0.060,10000)
-        #y = gaussian(x, *popt)
+        x = np.linspace(fit_range[0],fit_range[1],10000)
+        y = gaussian(x, *popt)
 
+        spe_h = popt[0]
 
         pl.figure()
-        pl.hist(clean_sarea, bins=200, range=(-0.02,0.3), histtype="step")
-        #pl.plot(x,y,"r")
-        #pl.annotate("$\mu$ = ("+str( round(popt[1],3) )+"$\pm$"+str( round(np.sqrt(pcov[1,1]),3)) +") mV*$\mu$s", xy=(0.1,1000))
-        #pl.annotate("$\sigma$ = ("+str( round(np.abs(popt[2]),3) )+"$\pm$"+str( round(np.sqrt(pcov[2,2]),3)) +") mV*$\mu$s", xy=(0.1,600))
-        #pl.hist(clean_sarea, bins=200, range=(-0.015,0.040), histtype="step")
+        pl.hist(clean_sarea, bins=full_bins, range=full_range, histtype="step")
+        pl.plot(x,y,"r")
+        pl.annotate("$\mu$ = ("+str( round(popt[1],3) )+"$\pm$"+str( round(np.sqrt(pcov[1,1]),3)) +") mV*ns", xy=(100,spe_h*1.5))
+        pl.annotate("$\sigma$ = ("+str( round(np.abs(popt[2]),3) )+"$\pm$"+str( round(np.sqrt(pcov[2,2]),3)) +") mV*ns", xy=(100,spe_h*1.4))
         #pl.xlim([0,10])
-        pl.ylim([0,300])
+        pl.ylim([0,spe_h*2])
         pl.title("Board "+str(bd)+", Channel "+str(ch))
         #pl.yscale("log")
         pl.grid("both","both")
-        pl.xlabel("Pulse area [mV*us]")
+        pl.xlabel("Pulse area [mV*ns]")
         pl.savefig(data_dir+"area"+image_basename)
+        pl.close()
+
+
+        pl.figure()
+        pl.hist2d(clean_sarea, rms, bins=full_bins, range=(full_range,[0.42,1]) ,  cmin=1, norm=mpl.colors.LogNorm() )
+        pl.grid("both","both")
+        pl.savefig(data_dir+"area_rms"+image_basename)
         pl.close()
 
         #pl.figure()
