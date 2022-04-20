@@ -14,7 +14,13 @@ save_mode = "npy" #"npy" # options are "npy", "h5py", "none"
 #data_dir = "C:/Users/ryanm/Documents/Research/Work zone/20220111_test/20220111_test/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202110/20211012/20211012_1656_Po_Co_OCVtop_0.0g_0.0c_1.19bar_3mv_25us_circ_20min/"
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202201/20220131/testForAlign/"
-data_dir = "/home/xaber/Data/data-202204/20220419/202204191736_1.2bar_3500C_3200G_1000A_54B_15us_0.5Vpp_2coin_3mVtrig/"
+
+with open("/home/xaber/Analysis/solid_xenon_tpc/pulse_finding_scripts/path.txt", 'r') as path:
+    data_dir = path.read()
+    data_dir = data_dir[:-1]
+
+#data_dir = "/home/xaber/Data/data-202204/20220419/202204191736_1.2bar_3500C_3200G_1000A_54B_15us_0.5Vpp_2coin_3mVtrig/"
+
 save_dir = data_dir+"compressed_data/"
 
 try:
