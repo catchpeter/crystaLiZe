@@ -86,7 +86,7 @@ def make_rq(data_dir, handscan = False):
 
 
     
-    n_events = 100000# 450000
+    n_events = 450000
 
     
     
@@ -446,10 +446,10 @@ def make_rq(data_dir, handscan = False):
             # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
             # lower_limit = -0.13*(np.log10(p_area[i,:])-3.2)**2-1.25
             # higher_limit = -0.2*(np.log10(p_area[i,:])-4)**2-0.4
-            afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
-            temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
-            plotyn = np.any(temp_condition)
-            
+            # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
+            # temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
+            # plotyn = np.any(temp_condition)
+            plotyn = False
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
@@ -488,7 +488,7 @@ def make_rq(data_dir, handscan = False):
                 #pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0)/np.max(np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0)), "green")
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
-                #pl.title("Channel 23")
+                pl.title("Event {}".format(i))
                 for ps in range(n_pulses[i]):
                     #pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.20,color="b")
                     pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
@@ -500,8 +500,8 @@ def make_rq(data_dir, handscan = False):
                         fontsize=9, color=pulse_class_colors[p_class[i, ps]])
                     ax.text((end_times[ps]) * tscale, (0.86-ps*0.2) * ax.get_ylim()[1], 'Rise={:.1f} us'.format(afs50_2[ps]),
                         fontsize=9, color=pulse_class_colors[p_class[i, ps]])
-                    ax.text((end_times[ps]) * tscale, (0.82-ps*0.2) * ax.get_ylim()[1], 'Check={}'.format(temp_condition[ps]),
-                        fontsize=9, color=pulse_class_colors[p_class[i, ps]])
+                    #ax.text((end_times[ps]) * tscale, (0.82-ps*0.2) * ax.get_ylim()[1], 'Check={}'.format(temp_condition[ps]),
+                        #fontsize=9, color=pulse_class_colors[p_class[i, ps]])
                     
                 pl.legend(["All","Summed Top","Summed Bottom"])
                 

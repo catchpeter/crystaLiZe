@@ -1,4 +1,6 @@
-from rq_generate import make_rq
+from matplotlib.pyplot import phase_spectrum
+from rq_generate_32ch import make_rq
+from compression import compression
 from glob import glob
 from pathlib import Path
 from sys import argv
@@ -31,5 +33,9 @@ if flag == "q": exit()
 
 for data_dir in list_dir:
     print("Now start to process:"+data_dir)
-
+    compressed_folder = Path(data_dir+"compressed_data/compressed_0.npy")
+    if compressed_folder.exists(): 
+        pass 
+    else:
+        compression(data_dir)
     make_rq(data_dir)
