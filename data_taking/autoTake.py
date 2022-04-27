@@ -25,13 +25,13 @@ trigger_threshold_mV = 6 # Per channel in mV
 run_time_s = 10 # sec
 
 # Run conditions you need to input
-anode_v = 0 # kV
+anode_v = 0 # V
 sipm_bias = 54 # V
 extra = "" # any other info you want to include in dir
 
 # Run conditions that are automatically read
-cathode_v = read_cathode() # kV
-gate_v = read_gate() # kV
+cathode_v = read_cathode() # V
+gate_v = read_gate() # V
 icv_pressure = read_pressure() # bar
 icv_bot_temperature = read_temp() # deg C
 
