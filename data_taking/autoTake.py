@@ -209,7 +209,7 @@ def main():
 
     # Create data directory
     data_dir = makeDataDir()
-    #if data_dir: return
+    if data_dir == 1: return
 
     # Take data
     takeData(data_dir)
