@@ -160,8 +160,8 @@ def makeDataDir():
 
     # Format data_dir
     data_dir_dt = "data-"+ym+"/"+ymd+"/"+ymd+"-"+hm+"_"
-    data_dir_daq = dr+"DR_"+str(trigger_threshold_mV)+"mVtrig_"+str(cathode_v)
-    data_dir_v = "C_"+str(gate_v)+"G_"+str(anode_v)+"A_"+str(sipm_bias)+"SiPM_"
+    data_dir_daq = dr+"DR_"+str(trigger_threshold_mV)+"mVtrig_"+str(event_window_us)+"us_"
+    data_dir_v = str(cathode_v)+"C_"+str(gate_v)+"G_"+str(anode_v)+"A_"+str(sipm_bias)+"SiPM_"
     data_dir_tp = str(icv_pressure)+"bar_"+str(icv_bot_temperature)+"ICVbot_"+extra+"/"
     data_dir = data_dir_high + data_dir_dt + data_dir_daq + data_dir_v + data_dir_tp
 
