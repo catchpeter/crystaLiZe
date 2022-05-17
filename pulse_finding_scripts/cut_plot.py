@@ -51,16 +51,58 @@ def basicScatter(xdata, ydata, s=[], c=[], save=False, name="", mean=False, show
         d_x = 1.23 # cm
         d_y = 1.14 # cm
         r = 1.5 # cm, active TPC radius
-        c1 = pl.Circle((0., 0.), r, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
-        r1 = pl.Rectangle((d_x/2.-w/2., d_y/2.-w/2.), w, w, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
-        r2 = pl.Rectangle((d_x/2.-w/2., -d_y/2.-w/2.), w, w, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
-        r3 = pl.Rectangle((-d_x/2.-w/2., -d_y/2.-w/2.), w, w, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
-        r4 = pl.Rectangle((-d_x/2.-w/2., d_y/2.-w/2.), w, w, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
-        #pl.gca().add_patch(c1)
-        #pl.gca().add_patch(r1)
-        #pl.gca().add_patch(r2)
-        #pl.gca().add_patch(r3)
-        #pl.gca().add_patch(r4)
+
+
+
+        board_offset = 0 # Gap between SiPM quadrants (0 = assuming flush)
+        l = 0.59 # SiPM width/length (not exactly a square...see specs)
+        d1 = 0.75 + board_offset # distance from center of board to quadrant center 
+        d2 = 0.025 # distance from quadrant center to near SiPM edge
+        d3 = d2 + l # distance from quadrant center to far SiPM edge
+        d4 = 0.32 # distance from quadrant center to SiPM center
+        r_tpc = (1.175/2)*2.54 # TPC (inner) radius
+        # Make SiPM outlines
+
+        r1 = pl.Rectangle((d1+d2,d1+d2), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r2 = pl.Rectangle((d1-d3,d1+d2), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r3 = pl.Rectangle((d1-d3,d1-d3), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r4 = pl.Rectangle((d1+d2,d1-d3), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r5 = pl.Rectangle((-d1+d2,d1+d2), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r6 = pl.Rectangle((-d1-d3,d1+d2), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r7 = pl.Rectangle((-d1-d3,d1-d3), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r8 = pl.Rectangle((-d1+d2,d1-d3), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r9 = pl.Rectangle((-d1+d2,-d1+d2), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r10 = pl.Rectangle((-d1-d3,-d1+d2), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r11 = pl.Rectangle((-d1-d3,-d1-d3), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r12 = pl.Rectangle((-d1+d2,-d1-d3), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r13 = pl.Rectangle((d1+d2,-d1+d2), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r14 = pl.Rectangle((d1-d3,-d1+d2), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r15 = pl.Rectangle((d1-d3,-d1-d3), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        r16 = pl.Rectangle((d1+d2,-d1-d3), l, l, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        pl.gca().add_patch(r1)
+        pl.gca().add_patch(r2)
+        pl.gca().add_patch(r3)
+        pl.gca().add_patch(r4)
+        pl.gca().add_patch(r5)
+        pl.gca().add_patch(r6)
+        pl.gca().add_patch(r7)
+        pl.gca().add_patch(r8)
+        pl.gca().add_patch(r9)
+        pl.gca().add_patch(r10)
+        pl.gca().add_patch(r11)
+        pl.gca().add_patch(r12)
+        pl.gca().add_patch(r13)
+        pl.gca().add_patch(r14)
+        pl.gca().add_patch(r15)
+        pl.gca().add_patch(r16)
+
+        # ICV outline
+        c1 = pl.Circle((0., 0.), r_tpc, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        pl.gca().add_patch(c1)
+
+
+
+
         pl.axis('square')
     pl.scatter(xdata, ydata, s=s, c=c)
 
@@ -349,11 +391,12 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
         basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 1000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_small_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         basicHeatmap(cleanTBA, cleanArea, xlim=[-1.01,1.01], ylim=[2000, 50000], bins=100, xlabel="TBA", ylabel="Pulse area (phd)", logz=True, name="PulseArea_vs_TBA_map_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
 
-        basicScatter(cleanCenterBottomX, cleanCenterBottomY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="BottomCentroid_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
-        basicHeatmap(cleanCenterBottomX, cleanCenterBottomY, xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], bins=80, xlabel="x (cm)",
+        fudge = 1
+        basicScatter(fudge*cleanCenterBottomX, fudge*cleanCenterBottomY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-2, 2], ylim=[-2, 2], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="BottomCentroid_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
+        basicHeatmap(fudge*cleanCenterBottomX, fudge*cleanCenterBottomY, xlim=[-2, 2], ylim=[-2, 2], bins=80, xlabel="x (cm)",
                  ylabel="y (cm)", name="BottomCentroidMap_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
-        basicScatter(cleanCenterTopX, cleanCenterTopY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="TopCentroid_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
-        basicHeatmap(cleanCenterTopX, cleanCenterTopY, xlim=[-1.5, 1.5], ylim=[-1.5, 1.5], bins=80, xlabel="x (cm)", ylabel="y (cm)",
+        basicScatter(fudge*cleanCenterTopX, fudge*cleanCenterTopY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-2, 2], ylim=[-2, 2], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="TopCentroid_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
+        basicHeatmap(fudge*cleanCenterTopX, fudge*cleanCenterTopY, xlim=[-2, 2], ylim=[-2, 2], bins=80, xlabel="x (cm)", ylabel="y (cm)",
                  name="TopCentroidMap_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         
 
