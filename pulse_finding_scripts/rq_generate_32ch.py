@@ -324,6 +324,23 @@ def make_rq(data_dir, handscan = False):
                 p_area_bottom[i,pp] = sum(p_area_ch[i,pp,bottom_channels])
                 p_tba[i, pp] = (p_area_top[i, pp] - p_area_bottom[i, pp]) / (p_area_top[i, pp] + p_area_bottom[i, pp])
                 
+
+                # Centroids
+
+                board_offset = 0 # Gap between SiPM quadrants (0 = assuming flush)
+                l = 0.59 # SiPM width/length (not exactly a square...see specs)
+                d1 = 0.75 + board_offset # distance from center of board to quadrant center 
+                d2 = 0.025 # distance from quadrant center to near SiPM edge
+                d3 = d2 + l # distance from quadrant center to far SiPM edge
+                d4 = 0.32 # distance from quadrant center to SiPM center
+                r_tpc = (1.175/2)*2.54 # TPC (inner) radius
+
+                w1 = (d1-d4) # Weight for near SiPMs
+                w2 = (d1+d4) # Weight for far SiPMs
+
+                fudge = 1
+
+
                 # X
                 # +1: 2,3,14,15
                 # +3: 1,4,13,16
@@ -336,20 +353,19 @@ def make_rq(data_dir, handscan = False):
                 # -1: 10,9,14,13
                 # -3: 11,12,15,16
                 
-                
                 b0 = 15 - 1
                 
-                center_bot_x[i,pp] += p_area_ch[i,pp,b0+2]+p_area_ch[i,pp,b0+3]+p_area_ch[i,pp,b0+14]+p_area_ch[i,pp,b0+15]
-                center_bot_x[i,pp] += 3*(p_area_ch[i,pp,b0+1]+p_area_ch[i,pp,b0+4]+p_area_ch[i,pp,b0+13]+p_area_ch[i,pp,b0+16])
-                center_bot_x[i,pp] += -(p_area_ch[i,pp,b0+5]+p_area_ch[i,pp,b0+8]+p_area_ch[i,pp,b0+9]+p_area_ch[i,pp,b0+12])
-                center_bot_x[i,pp] += -3*(p_area_ch[i,pp,b0+6]+p_area_ch[i,pp,b0+7]+p_area_ch[i,pp,b0+10]+p_area_ch[i,pp,b0+11])
-                center_bot_x[i,pp] /= p_area_bottom[i,pp]
+                center_bot_x[i,pp] += w1*(p_area_ch[i,pp,b0+2]+p_area_ch[i,pp,b0+3]+p_area_ch[i,pp,b0+14]+p_area_ch[i,pp,b0+15])
+                center_bot_x[i,pp] += w2*(p_area_ch[i,pp,b0+1]+p_area_ch[i,pp,b0+4]+p_area_ch[i,pp,b0+13]+p_area_ch[i,pp,b0+16])
+                center_bot_x[i,pp] += -w1*(p_area_ch[i,pp,b0+5]+p_area_ch[i,pp,b0+8]+p_area_ch[i,pp,b0+9]+p_area_ch[i,pp,b0+12])
+                center_bot_x[i,pp] += -w2*(p_area_ch[i,pp,b0+6]+p_area_ch[i,pp,b0+7]+p_area_ch[i,pp,b0+10]+p_area_ch[i,pp,b0+11])
+                center_bot_x[i,pp] *= (fudge/p_area_bottom[i,pp])
                 
-                center_bot_y[i,pp] += p_area_ch[i,pp,b0+7]+p_area_ch[i,pp,b0+8]+p_area_ch[i,pp,b0+3]+p_area_ch[i,pp,b0+4]
-                center_bot_y[i,pp] += 3*(p_area_ch[i,pp,b0+6]+p_area_ch[i,pp,b0+5]+p_area_ch[i,pp,b0+2]+p_area_ch[i,pp,b0+1])
-                center_bot_y[i,pp] += -(p_area_ch[i,pp,b0+10]+p_area_ch[i,pp,b0+9]+p_area_ch[i,pp,b0+14]+p_area_ch[i,pp,b0+13])
-                center_bot_y[i,pp] += -3*(p_area_ch[i,pp,b0+11]+p_area_ch[i,pp,b0+12]+p_area_ch[i,pp,b0+15]+p_area_ch[i,pp,b0+16])
-                center_bot_y[i,pp] /= p_area_bottom[i,pp]
+                center_bot_y[i,pp] += w1*(p_area_ch[i,pp,b0+7]+p_area_ch[i,pp,b0+8]+p_area_ch[i,pp,b0+3]+p_area_ch[i,pp,b0+4])
+                center_bot_y[i,pp] += w2*(p_area_ch[i,pp,b0+6]+p_area_ch[i,pp,b0+5]+p_area_ch[i,pp,b0+2]+p_area_ch[i,pp,b0+1])
+                center_bot_y[i,pp] += -w1*(p_area_ch[i,pp,b0+10]+p_area_ch[i,pp,b0+9]+p_area_ch[i,pp,b0+14]+p_area_ch[i,pp,b0+13])
+                center_bot_y[i,pp] += -w2*(p_area_ch[i,pp,b0+11]+p_area_ch[i,pp,b0+12]+p_area_ch[i,pp,b0+15]+p_area_ch[i,pp,b0+16])
+                center_bot_y[i,pp] *= (fudge/p_area_bottom[i,pp])
                 
                 
                 t0 = -1
@@ -366,28 +382,27 @@ def make_rq(data_dir, handscan = False):
                 # -1: 13,14,9,10
                 # -3: 11,12,15,16
                 
-                center_top_x[i,pp] += p_area_ch[i,pp,t0+2]+p_area_ch[i,pp,t0+3]+p_area_ch[i,pp,t0+14]+p_area_ch[i,pp,t0+15]
-                center_top_x[i,pp] += 3*(p_area_ch[i,pp,t0+1]+p_area_ch[i,pp,t0+4]+p_area_ch[i,pp,t0+13]+p_area_ch[i,pp,t0+16])
-                center_top_x[i,pp] += -(p_area_ch[i,pp,t0+5]+p_area_ch[i,pp,t0+8]+p_area_ch[i,pp,t0+9]+p_area_ch[i,pp,t0+12])
-                center_top_x[i,pp] += -3*(p_area_ch[i,pp,t0+6]+p_area_ch[i,pp,t0+7]+p_area_ch[i,pp,t0+10]+p_area_ch[i,pp,t0+11])
-                center_top_x[i,pp] /= - p_area_top[i,pp]
+                center_top_x[i,pp] += w1*(p_area_ch[i,pp,t0+2]+p_area_ch[i,pp,t0+3]+p_area_ch[i,pp,t0+14]+p_area_ch[i,pp,t0+15])
+                center_top_x[i,pp] += w2*(p_area_ch[i,pp,t0+1]+p_area_ch[i,pp,t0+4]+p_area_ch[i,pp,t0+13]+p_area_ch[i,pp,t0+16])
+                center_top_x[i,pp] += -w1*(p_area_ch[i,pp,t0+5]+p_area_ch[i,pp,t0+8]+p_area_ch[i,pp,t0+9]+p_area_ch[i,pp,t0+12])
+                center_top_x[i,pp] += -w2*(p_area_ch[i,pp,t0+6]+p_area_ch[i,pp,t0+7]+p_area_ch[i,pp,t0+10]+p_area_ch[i,pp,t0+11])
+                center_top_x[i,pp] *= (-fudge/p_area_top[i,pp])
                 
-                center_top_y[i,pp] += p_area_ch[i,pp,t0+7]+p_area_ch[i,pp,t0+8]+p_area_ch[i,pp,t0+3]+p_area_ch[i,pp,t0+4]
-                center_top_y[i,pp] += 3*(p_area_ch[i,pp,t0+6]+p_area_ch[i,pp,t0+5]+p_area_ch[i,pp,t0+2]+p_area_ch[i,pp,t0+1])
-                center_top_y[i,pp] += -(p_area_ch[i,pp,t0+10]+p_area_ch[i,pp,t0+9]+p_area_ch[i,pp,t0+14]+p_area_ch[i,pp,t0+13])
-                center_top_y[i,pp] += -3*(p_area_ch[i,pp,t0+11]+p_area_ch[i,pp,t0+12]+p_area_ch[i,pp,t0+15]+p_area_ch[i,pp,t0+16])
-                center_top_y[i,pp] /= p_area_top[i,pp]
+                center_top_y[i,pp] += w1*(p_area_ch[i,pp,t0+7]+p_area_ch[i,pp,t0+8]+p_area_ch[i,pp,t0+3]+p_area_ch[i,pp,t0+4])
+                center_top_y[i,pp] += w2*(p_area_ch[i,pp,t0+6]+p_area_ch[i,pp,t0+5]+p_area_ch[i,pp,t0+2]+p_area_ch[i,pp,t0+1])
+                center_top_y[i,pp] += -w1*(p_area_ch[i,pp,t0+10]+p_area_ch[i,pp,t0+9]+p_area_ch[i,pp,t0+14]+p_area_ch[i,pp,t0+13])
+                center_top_y[i,pp] += -w2*(p_area_ch[i,pp,t0+11]+p_area_ch[i,pp,t0+12]+p_area_ch[i,pp,t0+15]+p_area_ch[i,pp,t0+16])
+                center_top_y[i,pp] *= (fudge/p_area_top[i,pp])
                 
-                
-                
-                
-                
+
+
                 
                 
-              #  center_top_x[i,pp] = (p_area_ch[i,pp,1]+p_area_ch[i,pp,3]-p_area_ch[i,pp,0]-p_area_ch[i,pp,2])/p_area_top[i,pp]
-              #  center_top_y[i,pp] = (p_area_ch[i,pp,0]+p_area_ch[i,pp,1]-p_area_ch[i,pp,2]-p_area_ch[i,pp,3])/p_area_top[i,pp]
-                #center_bot_x[i,pp] = (p_area_ch[i,pp,5]+p_area_ch[i,pp,7]-p_area_ch[i,pp,4]-p_area_ch[i,pp,6])/p_area_bottom[i,pp]
-                #center_bot_y[i,pp] = (p_area_ch[i,pp,4]+p_area_ch[i,pp,5]-p_area_ch[i,pp,6]-p_area_ch[i,pp,7])/p_area_bottom[i,pp]
+                
+                
+                
+                
+
                 
             # Pulse classifier, work in progress
             p_class[i,:] = pc.ClassifyPulses(p_tba[i, :], (p_afs_50[i, :]-p_afs_2l[i, :])*tscale, n_pulses[i], p_area[i,:])
