@@ -100,6 +100,10 @@ def basicScatter(xdata, ydata, s=[], c=[], save=False, name="", mean=False, show
         c1 = pl.Circle((0., 0.), r_tpc, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
         pl.gca().add_patch(c1)
 
+        r_tpc_2 = (1.742/2)*2.54
+        c2 = pl.Circle((0., 0.), r_tpc_2, fill=False, facecolor='grey', edgecolor='grey',alpha=1)
+        pl.gca().add_patch(c2)
+
 
 
 
