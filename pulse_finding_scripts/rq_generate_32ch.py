@@ -23,17 +23,30 @@ def make_rq(data_dir, handscan = False):
 
     # ==================================================================
     # define DAQ and other parameters
-    #wsize = 12500             # size of event window in samples. 1 sample = 2 ns.
-    #read event window width from the folder name
-    #if data_dir.find("3us") != -1: 
-    #    event_window = 3
-    #if data_dir.find("25us") != -1:
-    #    event_window = 25   # in us. 
     
-    event_window = 15 #6 #15 #25 #15 #25 #25 #25
+    # Get vscale
+    if data_dir.find("0.5DR") != -1:
+        vscale = (500.0/16384.0)
+    elif data_dir.find("2DR") != -1:
+        vscale = (2000.0/16384.0) # = 0.122 mV/ADCC, vertical scale
+    else:
+        vscale = (2000.0/16384.0) # default to 2V
+
+    # Get window size
+    if data_dir.find("3us") != -1:
+        event_window = 3
+    elif data_dir.find("6us") != -1:
+        event_window = 6
+    elif data_dir.find("15us") != -1:
+        event_window = 15
+    elif data_dir.find("25us") != -1:
+        event_window = 25
+    else:
+        print("Need to input window size")
+        return
+    
 
     wsize = int(500 * event_window)  # samples per waveform # 12500 for 25 us
-    vscale = (2000.0/16384.0) # = 0.122 mV/ADCC, vertical scale
     tscale = (8.0/4096.0)     # = 0.002 µs/sample, time scale
 
     save_avg_wfm = False # get the average waveform passing some cut and save to file
@@ -54,39 +67,23 @@ def make_rq(data_dir, handscan = False):
     top_channels=np.array(range(n_top),int)
     bottom_channels=np.array(range(n_top,2*n_top),int)
 
-    """
-    # sphe sizes in mV*sample
-    ns_to_sample = 1024./2000. #convert spe size unit from mV*ns to mV*sample
-    spe = {}
-    with open(data_dir+"spe.txt", 'r') as file:
-        for line in file:
-            (key, val) = line.split()
-            spe[key] = float(val)*ns_to_sample
-
-    chA_spe_size = spe["ch0"]#29.02
-    chB_spe_size = spe["ch1"]#30.61
-    chC_spe_size = spe["ch2"]#28.87
-    chD_spe_size = spe["ch3"]#28.86*1.25 # scale factor (0.7-1.4) empirical as of Dec 9, 2020
-    chE_spe_size = spe["ch4"]#30.4
-    chF_spe_size = spe["ch5"]#30.44
-    chG_spe_size = spe["ch6"]#30.84
-    chH_spe_size = spe["ch7"]#30.3*1.8 # scale factor (1.6-2.2) empirical as of Dec 9, 2020
-    spe_sizes = [chA_spe_size, chB_spe_size, chC_spe_size, chD_spe_size, chE_spe_size, chF_spe_size, chG_spe_size, chH_spe_size]
-    """
-    #spe_sizes = np.ones(n_sipms)
+    # SPE sizes, as of spring 2022
     spe_sizes_0 = np.array([85.406,86.876,84.763,83.986,85.470,85.032,85,968,85.452,84.126,84.825,84.340,85.217,84.285,85.226,83.753,84.609])
     spe_sizes_1 = np.array([79.897,78.625,81.818,81.189,74.952,77.289,79.880,76.970])
     spe_sizes_2 = np.array([79.597,79.023,80.213,81.023,78.173,79.883,79.069,75.496])
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
-    #spe_sizes = np.ones(32)*25
 
     # ==================================================================
 
-
+    
+    compressed_file_list = sorted(glob.glob(data_dir+"compressed_data/compressed_*.npy") )
+    if len(compressed_file_list) < 1:
+        print("No compressed files found in "+data_dir+"compressed_data/")
+        return
 
     
-    n_events = 450000
+    n_events = (len(compressed_file_list)+5)*1500 # some extra room 
 
     
     
@@ -176,10 +173,6 @@ def make_rq(data_dir, handscan = False):
 
     empty_evt_ind = np.zeros(n_events)
 
-    compressed_file_list = sorted(glob.glob(data_dir+"compressed_data/compressed_*.npy") )
-    if len(compressed_file_list) < 1:
-        print("No compressed files found in "+data_dir+"compressed_data/")
-        return
 
     j = 0
     for compressed_file in compressed_file_list:
