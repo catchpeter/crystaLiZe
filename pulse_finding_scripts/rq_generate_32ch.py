@@ -157,6 +157,7 @@ def make_rq(data_dir, handscan = False):
     drift_Time_AS = np.zeros(n_events) # for multi-scatter drift time, defined by the first S2. 
     s1_before_s2 = np.zeros(n_events, dtype=bool)
 
+    waveform_area = np.zeros(n_events)  #integrate the whole waveform
     n_wfms_summed = 0
     avg_wfm = np.zeros(wsize)
 
@@ -395,6 +396,7 @@ def make_rq(data_dir, handscan = False):
                 center_top_y[i,pp] *= (fudge/p_area_top[i,pp])
                 
 
+            waveform_area[i] = np.sum(v_pulse_bls[-1])
 
                 
                 
@@ -659,6 +661,7 @@ def make_rq(data_dir, handscan = False):
     list_rq['p_end'] = p_end
     list_rq['sum_s1_area'] = sum_s1_area
     list_rq['sum_s2_area'] = sum_s2_area
+    list_rq['waveform_area'] = waveform_area
     #list_rq[''] =    #add more rq
 
     #remove zeros in the end of each RQ array. 
