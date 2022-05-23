@@ -12,8 +12,16 @@ import subprocess
 import sys
 import os
 
-if os.name == "posix": local_path = "/Users/maque/OneDrive/work/Sxe/log_plot/"
-if os.name == "nt": local_path = "C:/Users/maque/OneDrive/work/Sxe/log_plot/"
+if os.path.isdir("C:/Users/maque") or os.path.isdir("/Users/maque/"):
+    if os.name == "posix": local_path = "/Users/maque/OneDrive/work/Sxe/log_plot/"
+    if os.name == "nt": local_path = "C:/Users/maque/OneDrive/work/Sxe/log_plot/"
+elif os.path.isdir("C:/Users/ryanm"):
+    local_path = "C:/Users/ryanm/Documents/Research/logs/"
+else:
+    print("Please input where you want to save log: ")
+    local_path = input()
+
+
 
 #set the range to plot
 t_plot_start = 0 #in hours
