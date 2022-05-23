@@ -22,10 +22,22 @@ def compression(data_dir):
     n_sipms = [16,8,8]
     n_all_ch = int(np.sum(n_sipms))
 
-    wsize = 7500+8 #7500+8 #12500+8 #12500+8 #12500+8 #12500+8 #3000+8 # 8 = size of header 
-    block_size = 1500 # This will also be number of events saved per file
-    n_blocks = 1000
+    # Get window size
+    if data_dir.find("3us") != -1:
+        event_window = 3
+    elif data_dir.find("6us") != -1:
+        event_window = 6
+    elif data_dir.find("15us") != -1:
+        event_window = 15
+    elif data_dir.find("25us") != -1:
+        event_window = 25
+    else:
+        print("Need to input window size")
+        return
 
+    wsize = int(500 * event_window) + 8 # 8 is size of header 
+
+    block_size = 1500 # This will also be number of events saved per file
     delay = 24 #  48 #48
 
     load_dtype = "int16"
@@ -36,11 +48,12 @@ def compression(data_dir):
     tot_fi = int(np.ceil(tot_ev/block_size))
     print("Total events: "+str(tot_ev) )
     print("Number of compressed files = "+str(tot_fi))
-    time.sleep(5)
+    #if tot_fi > 10: return
+    time.sleep(2)
 
 
     # Loop over blocks of events
-    for bk in range(tot_fi+1):
+    for bk in range(tot_fi):
 
         # First, check board alignment 
         # Get list of event numbers in header
