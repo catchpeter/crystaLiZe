@@ -222,10 +222,14 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     center_top_y = listrq['center_top_y']
     center_bot_x = listrq['center_bot_x']
     center_bot_y = listrq['center_bot_y']
-    center_bot_x_d = center_bot_x * d_between_SiPM_center_x/2
-    center_bot_y_d = center_bot_y * d_between_SiPM_center_y/2
-    center_top_x_d = center_top_x * d_between_SiPM_center_x/2
-    center_top_y_d = center_top_y * d_between_SiPM_center_y/2
+    
+    fudge = 1.7
+    center_bot_x_d = center_bot_x * fudge # d_between_SiPM_center_x/2
+    center_bot_y_d = center_bot_y * fudge #d_between_SiPM_center_y/2
+    center_bot_r_d = np.sqrt(np.power(center_bot_x_d,2)+np.power(center_bot_y_d,2))
+    center_top_x_d = center_top_x * fudge #d_between_SiPM_center_x/2
+    center_top_y_d = center_top_y * fudge #d_between_SiPM_center_y/2
+    center_top_r_d = np.sqrt(np.power(center_top_x_d,2)+np.power(center_top_y_d,2))
 
     listrq.close()
     #end of RQ read
