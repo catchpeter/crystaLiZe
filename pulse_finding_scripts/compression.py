@@ -29,6 +29,8 @@ def compression(data_dir):
         event_window = 6
     elif data_dir.find("15us") != -1:
         event_window = 15
+    elif data_dir.find("18us") != -1:
+        event_window = 18
     elif data_dir.find("25us") != -1:
         event_window = 25
     else:

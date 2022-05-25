@@ -39,6 +39,8 @@ def make_rq(data_dir, handscan = False):
         event_window = 6
     elif data_dir.find("15us") != -1:
         event_window = 15
+    elif data_dir.find("18us") != -1:
+        event_window = 18
     elif data_dir.find("25us") != -1:
         event_window = 25
     else:
@@ -67,10 +69,16 @@ def make_rq(data_dir, handscan = False):
     top_channels=np.array(range(n_top),int)
     bottom_channels=np.array(range(n_top,2*n_top),int)
 
-    # SPE sizes, as of spring 2022
-    spe_sizes_0 = np.array([85.406,86.876,84.763,83.986,85.470,85.032,85,968,85.452,84.126,84.825,84.340,85.217,84.285,85.226,83.753,84.609])
-    spe_sizes_1 = np.array([79.897,78.625,81.818,81.189,74.952,77.289,79.880,76.970])
-    spe_sizes_2 = np.array([79.597,79.023,80.213,81.023,78.173,79.883,79.069,75.496])
+    # SPE sizes, as of April 2022
+    #spe_sizes_0 = np.array([85.406,86.876,84.763,83.986,85.470,85.032,85,968,85.452,84.126,84.825,84.340,85.217,84.285,85.226,83.753,84.609])
+    #spe_sizes_1 = np.array([79.897,78.625,81.818,81.189,74.952,77.289,79.880,76.970])
+    #spe_sizes_2 = np.array([79.597,79.023,80.213,81.023,78.173,79.883,79.069,75.496])
+
+    # SPE sizes, as of May 24, 2022
+    spe_sizes_0 = np.array([83.325,85.437,84.449,83.025,84.827,84.184,85.503,84.656,85.029,84.984,84.961,84.562,84.014,85.917,83.846,86.926])
+    spe_sizes_1 = np.array([79.617,79.891,81.203,80.859,75.585,77.097,79.112,78.256])
+    spe_sizes_2 = np.array([79.232,78.950,78.912,80.191,79.115,77.171,73.503,78.465])
+
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
 
@@ -388,8 +396,10 @@ def make_rq(data_dir, handscan = False):
                 center_top_y[i,pp] += -w2*(p_area_ch[i,pp,t0+11]+p_area_ch[i,pp,t0+12]+p_area_ch[i,pp,t0+15]+p_area_ch[i,pp,t0+16])
                 center_top_y[i,pp] *= (fudge/p_area_top[i,pp])
                 
-
-            waveform_area[i] = np.sum(v_pulse_bls[-1])
+            try:
+                waveform_area[i] = np.sum(v_pulse_bls[-1])
+            except:
+                1 == 2
 
                 
                 
@@ -459,7 +469,7 @@ def make_rq(data_dir, handscan = False):
             # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
             # temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
             # plotyn = np.any(temp_condition)
-            plotyn = False
+            plotyn = True
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
