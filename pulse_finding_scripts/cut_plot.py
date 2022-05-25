@@ -399,7 +399,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
         basicScatter(cleanTBA, cleanArea, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-1.01,1.01], ylim=[0, 1000], xlabel="TBA", ylabel="Pulse area (phd)", legHand=pc_legend_handles, name="PulseArea_small_vs_TBA_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
         basicHeatmap(cleanTBA, cleanArea, xlim=[-1.01,1.01], ylim=[2000, 50000], bins=100, xlabel="TBA", ylabel="Pulse area (phd)", logz=True, name="PulseArea_vs_TBA_map_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
 
-        fudge = 3
+        fudge = 1 # don't need to do here anymore, defined when loading rq
         basicScatter(fudge*cleanCenterBottomX, fudge*cleanCenterBottomY, s=1.2, c=pulse_class_colors[cleanPulseClass], xlim=[-2, 2], ylim=[-2, 2], xlabel="x (cm)", ylabel="y (cm)", legHand=pc_legend_handles, name="BottomCentroid_"+pulse_cut_name, save=save_pulse_plots, save_dir=save_dir, showsipms=True)
         basicHeatmap(fudge*cleanCenterBottomX, fudge*cleanCenterBottomY, xlim=[-2, 2], ylim=[-2, 2], bins=80, xlabel="x (cm)",
                  ylabel="y (cm)", name="BottomCentroidMap_" + pulse_cut_name, save=save_pulse_plots, save_dir=save_dir)
