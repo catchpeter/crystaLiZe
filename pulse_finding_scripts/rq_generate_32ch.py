@@ -33,15 +33,17 @@ def make_rq(data_dir, handscan = False):
         vscale = (2000.0/16384.0) # default to 2V
 
     # Get window size
-    if data_dir.find("3us") != -1:
+    if data_dir.find("_3us") != -1:
         event_window = 3
-    elif data_dir.find("6us") != -1:
+    elif data_dir.find("_6us") != -1:
         event_window = 6
-    elif data_dir.find("15us") != -1:
+    elif data_dir.find("_15us") != -1:
         event_window = 15
-    elif data_dir.find("18us") != -1:
+    elif data_dir.find("_16us") != -1:
+        event_window = 16
+    elif data_dir.find("_18us") != -1:
         event_window = 18
-    elif data_dir.find("25us") != -1:
+    elif data_dir.find("_25us") != -1:
         event_window = 25
     else:
         print("Need to input window size")
@@ -412,11 +414,18 @@ def make_rq(data_dir, handscan = False):
             # Pulse classifier, work in progress
             p_class[i,:] = pc.ClassifyPulses(p_tba[i, :], (p_afs_50[i, :]-p_afs_2l[i, :])*tscale, n_pulses[i], p_area[i,:])
 
+
             # Event level analysis. Look at events with both S1 and S2.
             index_s1 = (p_class[i,:] == 1) + (p_class[i,:] == 2) # S1's
             index_s2 = (p_class[i,:] == 3) + (p_class[i,:] == 4) # S2's
             n_s1[i] = np.sum(index_s1)
             n_s2[i] = np.sum(index_s2)
+
+            """
+            for ps in range(max_pulses):
+                if index_s1[ps] and p_area[i,:] < 30:
+                     p_area[i,ps] =  pq.GetPulseAreaChannel(p_start[i,pp]-20, p_end[i,pp]+30, v_pulse_bls )
+            """
             
             if n_s1[i] > 0:
                 sum_s1_area[i] = np.sum(p_area[i, index_s1])
@@ -469,7 +478,8 @@ def make_rq(data_dir, handscan = False):
             # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
             # temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
             # plotyn = np.any(temp_condition)
-            plotyn = True
+            plotyn = True   #(sum_s1_area[i] > 6000)*(sum_s1_area[i] < 7500)*(sum_s2_area[i] > 10**4.5)*(sum_s2_area[i] < 10**4.7)  #False #(n_s1[i] == 1)*(n_s2[i] > 0)*np.any(p_start[i,:] > 4750)*np.any(p_start[i,:] < 5750)*(p_area[i,0] < 20)
+            #(drift_Time[i] > 3)*(drift_Time[i] < 5)*(p_area[i,1] < 100)
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:

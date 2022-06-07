@@ -23,15 +23,17 @@ def compression(data_dir):
     n_all_ch = int(np.sum(n_sipms))
 
     # Get window size
-    if data_dir.find("3us") != -1:
+    if data_dir.find("_3us") != -1:
         event_window = 3
-    elif data_dir.find("6us") != -1:
+    elif data_dir.find("_6us") != -1:
         event_window = 6
-    elif data_dir.find("15us") != -1:
+    elif data_dir.find("_15us") != -1:
         event_window = 15
-    elif data_dir.find("18us") != -1:
+    elif data_dir.find("_16us") != -1:
+        event_window = 16
+    elif data_dir.find("_18us") != -1:
         event_window = 18
-    elif data_dir.find("25us") != -1:
+    elif data_dir.find("_25us") != -1:
         event_window = 25
     else:
         print("Need to input window size")
@@ -53,7 +55,7 @@ def compression(data_dir):
     #if tot_fi > 10: return
     time.sleep(2)
 
-
+    #tot_fi = 2 # custom number of files
     # Loop over blocks of events
     for bk in range(tot_fi):
 
@@ -139,8 +141,8 @@ def compression(data_dir):
         sum_data_back_pods_area = np.sum(sum_data_back_pods, axis=2) 
 
         # Do cuts on areas
-        area_threshold_front = 1000 #200 # one day this will be phe 
-        area_threshold_back = 1000 #475 #area_threshold_front
+        area_threshold_front = 300 #1000 #200 # one day this will be phe 
+        area_threshold_back = 300 #1000 #475 #area_threshold_front
         toSaveOrNotToSave = (np.abs(sum_data_front_pods_area) > area_threshold_front)*(np.abs(sum_data_back_pods_area) > area_threshold_back)
     
         nBefore = 25
