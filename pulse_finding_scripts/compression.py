@@ -46,7 +46,6 @@ def compression(data_dir):
 
     load_dtype = "int16"
 
-
     ch0_data = np.fromfile(data_dir+"waveforms_"+str(0)+"_0.dat",dtype=load_dtype)
     tot_ev = int(ch0_data.size/wsize)
     tot_fi = int(np.ceil(tot_ev/block_size))

@@ -101,7 +101,7 @@ def findPulses(waveform_bls, max_pulses, SPEMode=False):
     else:
         pulse_window = int(12.0 / tscale) # was 7 us; any reason this can't just always go to next pulse or end of wfm?
         conv_width = 70 #int(0.3 / tscale) # in samples
-        min_height = 0.2 # phd/sample
+        min_height = 0.05 #0.2 # phd/sample
         min_dist = int(0.3 / tscale) # in samples
         bounds_conv_width = 10 # in samples
         pulse_start_frac = 0.01  # pulse starts at this fraction of peak height above baseline

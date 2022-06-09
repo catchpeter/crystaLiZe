@@ -13,7 +13,7 @@ list_dir = glob(path_text+"*/")
 
 #remove all the calibration data
 for i in reversed(range(len(list_dir))):
-    if ("spe" in list_dir[i]) or ("dark" in list_dir[i]): list_dir.pop(i)
+    if ("spe" in list_dir[i]) or ("SPE" in list_dir[i]): list_dir.pop(i)
 
 #Remove the data set alreay processed before, if any argument given, then process all data. 
 if len(argv)==1:
@@ -37,5 +37,11 @@ for data_dir in list_dir:
     if compressed_folder.exists(): 
         pass 
     else:
-        compression(data_dir)
-    make_rq(data_dir)
+        try:
+            compression(data_dir)
+        except:
+            continue
+    try:
+        make_rq(data_dir)
+    except:
+        continue

@@ -1,5 +1,5 @@
 import numpy as np
-import os
+import os, sys
 import time
 import datetime
 
@@ -11,23 +11,29 @@ from read_hv import read_cathode, read_gate
 """Takes data automatically with wavedumbMB
 Input the settings you want below
 """
+t_delay = 0 #3500, will start data t_delay seconds later.
+process_flag = False # will compress and process data if this is true.
 
-
+while t_delay>0:
+    print("Start taking data in {} mins.".format(t_delay/60))
+    time.sleep(100)
+    t_delay -= 100
+    print("Start taking data in {} mins.".format(t_delay/60))
 # High-level location to save data. The full directory is created later
 data_dir_high = "/home/xaber/Data/"
 #data_dir_high = "/media/xaber/gpeter/data/"
 
 # Run settings you need to input
-dynamic_range = 1 # 0 = 2Vpp, 1 = 0.5Vpp
-event_window_us = 15 # us
+dynamic_range = 0 # 0 = 2Vpp, 1 = 0.5Vpp
+event_window_us = 15 #15 # us
 pre_trigger = 0.5 # Percentage of event window
 trigger_threshold_mV = 6 # Per channel in mV
-run_time_s = 10 # sec
+run_time_s =  10*60 # sec
 
 # Run conditions you need to input
-anode_v = 0 # V
+anode_v = 1000 # V
 sipm_bias = 54 # V
-extra = "" # any other info you want to include in dir
+extra = "2fold_circ_getter_10min" # any other info you want to include in dir
 
 # Run conditions that are automatically read
 cathode_v = read_cathode() # V
@@ -197,7 +203,19 @@ def takeData(data_dir):
 
     return
 
+def process_data(data_dir):
+    #Place the path of this data to path.txt ready to be processed
+    process_path = "/home/xaber/Analysis/solid_xenon_tpc/pulse_finding_scripts/"
+    sys.path.append(process_path)
 
+    from rq_generate_32ch import make_rq
+    from cut_plot import make_plots
+    from compression import compression
+
+    os.chdir(process_path)
+    compression(data_dir)
+    make_rq(data_dir)
+    make_plots(data_dir)
 
 def main():
 
@@ -213,7 +231,9 @@ def main():
 
     # Take data
     takeData(data_dir)
-    
+
+    # Process the data
+    if process_flag: process_data(data_dir)
     return
 
 

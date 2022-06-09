@@ -20,7 +20,7 @@ def gaussian(x,a,mu,sigma):
 
 #data_dir = "/home/xaber/Data/20220304/202203041344SPE/"
 
-data_dir = "/home/xaber/Data/data-202204/20220419/202204191509_SPE_liquid/"
+data_dir = "/home/xaber/Data/data-202205/20220524/20220524-1624_0.5DR_NAmVtrig_2us_5202.0C_5002.0G_1000A_54SiPM_1.2bar_-102.19ICVbot_SPE/"
 
 plotyn = False # Waveform plotting
 saveplot = True # Save RQ plots
@@ -63,9 +63,13 @@ max_pulses = 4
 inn=""
 
 # Loop over boards
-for bd in range(n_boards):
+for bd in range(2,3): #range(n_boards):
     # Loop over channels
-    for ch in range(n_sipms[bd]):
+    for ch in range(6,7): #range(n_sipms[bd]):
+
+       
+
+
 
         print("Channel "+str(n_order+1)+"/32")
 
@@ -122,7 +126,7 @@ for bd in range(n_boards):
 
             rms[ev] = np.sqrt(np.sum(np.power(ch_data[ev,l_bound:r_bound],2) )/(r_bound-l_bound) )
 
-            if rms[ev] < 0.425: continue
+            if rms[ev] < 0.52: continue #0.425: continue
 
 
             p_sarea[ev] = np.sum(ch_data[ev,l_bound:r_bound])
@@ -174,7 +178,10 @@ for bd in range(n_boards):
         full_range = (-100,300)
         full_bins = 200
 
-        fit_range = (65,110)
+        if bd == 0:
+            fit_range = (60,105)
+        else:
+            fit_range = (65,100) #(55,100)
         fit_bins = int( full_bins*(fit_range[1] - fit_range[0])/(full_range[1] - full_range[0]) )
 
     
