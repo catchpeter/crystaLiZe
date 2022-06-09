@@ -3,8 +3,11 @@ import sys
 
 def grid_voltage(gate, cathode):
 	ssh_server = "xaber@128.3.183.210"
-	cathode_command = "python /home/xaber/utilities/hv_ramping/cathode_hv_control.py {} 100 3".format(cathode)
-	gate_command = "python /home/xaber/utilities/hv_ramping/gate_hv_control.py {} 100 3".format(gate)
+
+	v_step = 300
+	time_interval = 3
+	cathode_command = "python /home/xaber/utilities/hv_ramping/cathode_hv_control.py {} {} {}".format(cathode, v_step, time_interval)
+	gate_command = "python /home/xaber/utilities/hv_ramping/gate_hv_control.py {} {} {}".format(gate, v_step, time_interval)
 
 	process_g = subprocess.Popen(['ssh', ssh_server, gate_command], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	out_g, err_g = process_g.communicate()
