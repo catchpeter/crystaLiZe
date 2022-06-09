@@ -161,6 +161,9 @@ def make_rq(data_dir, handscan = False):
     drift_Time_AF = np.zeros(n_events)
     drift_Time_AF50 = np.zeros(n_events)
     drift_Time_AF150 = np.zeros(n_events)
+    drift_Time_max = np.zeros(n_events)  # drift time defined by the interval between the biggest S1 and biggest S2 within an event window
+    index_max_s1 = np.zeros(n_events, dtype = "int")-1
+    index_max_s2 = np.zeros(n_events, dtype = "int")-1    # set default to -1
     drift_Time_AS = np.zeros(n_events) # for multi-scatter drift time, defined by the first S2. 
     s1_before_s2 = np.zeros(n_events, dtype=bool)
 
@@ -431,6 +434,15 @@ def make_rq(data_dir, handscan = False):
                 sum_s1_area[i] = np.sum(p_area[i, index_s1])
             if n_s2[i] > 0:
                 sum_s2_area[i] = np.sum(p_area[i, index_s2])
+            if n_s1[i] > 0 and n_s2[i] > 0:
+                s1_area_temp = np.copy(p_area[i,:])
+                s2_area_temp = np.copy(p_area[i,:])
+                s1_area_temp[(p_class[i,:]==3)+(p_class[i,:]==4)+(p_class[i,:]==0)] = 0
+                s2_area_temp[(p_class[i,:]==1)+(p_class[i,:]==2)+(p_class[i,:]==0)] = 0
+                index_max_s1[i] = np.argmax(s1_area_temp)
+                index_max_s2[i] = np.argmax(s2_area_temp)
+                if p_area[i, index_max_s2[i]]>100: drift_Time_max[i] = tscale*(p_afs_1[i, index_max_s2[i]]-p_afs_1[i, index_max_s1[i]])   #Careful
+                if drift_Time_max[i] < 0: drift_Time_max[i] = 0    
             if n_s1[i] == 1:
                 if n_s2[i] == 1:
                     drift_Time[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)])
@@ -478,7 +490,7 @@ def make_rq(data_dir, handscan = False):
             # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
             # temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
             # plotyn = np.any(temp_condition)
-            plotyn = True   #(sum_s1_area[i] > 6000)*(sum_s1_area[i] < 7500)*(sum_s2_area[i] > 10**4.5)*(sum_s2_area[i] < 10**4.7)  #False #(n_s1[i] == 1)*(n_s2[i] > 0)*np.any(p_start[i,:] > 4750)*np.any(p_start[i,:] < 5750)*(p_area[i,0] < 20)
+            plotyn = False   #(sum_s1_area[i] > 6000)*(sum_s1_area[i] < 7500)*(sum_s2_area[i] > 10**4.5)*(sum_s2_area[i] < 10**4.7)  #False #(n_s1[i] == 1)*(n_s2[i] > 0)*np.any(p_start[i,:] > 4750)*np.any(p_start[i,:] < 5750)*(p_area[i,0] < 20)
             #(drift_Time[i] > 3)*(drift_Time[i] < 5)*(p_area[i,1] < 100)
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
@@ -658,6 +670,9 @@ def make_rq(data_dir, handscan = False):
     list_rq['drift_Time_AF50'] = drift_Time_AF50
     list_rq['drift_Time_AF150'] = drift_Time_AF150
     list_rq['drift_Time_AS'] = drift_Time_AS
+    list_rq['drift_Time_max'] = drift_Time_max
+    list_rq['index_max_s1'] = index_max_s1
+    list_rq['index_max_s2'] = index_max_s2
     list_rq['p_max_height'] = p_max_height
     list_rq['p_min_height'] = p_min_height
     list_rq['p_width'] = p_width
