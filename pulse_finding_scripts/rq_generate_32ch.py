@@ -490,8 +490,7 @@ def make_rq(data_dir, handscan = False):
             # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
             # temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
             # plotyn = np.any(temp_condition)
-            R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
-            plotyn = (drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
+            plotyn = np.any(((p_class[i, :] == 1) + (p_class[i, :] == 2))*(p_area[i, :]>9300)*(p_area[i, :]<12300)*(p_tba[i, :]>-0.42)*(p_tba[i, :]<-0.3))
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
@@ -519,9 +518,9 @@ def make_rq(data_dir, handscan = False):
                 ax = pl.gca()
 
                 #pl.plot(x*tscale, v_bls_matrix_all_ch[23,i-j*block_size,:]/(tscale*(1000)/spe_sizes[23]) , "black")
-                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0), color="red",lw=0.7)
-                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0), color="green",lw=0.7)
-                pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],color='black',lw=0.7 )
+                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[0:15,i-j*block_size,:],axis=0), color="red",lw=0.7, label = "Summed Top")
+                pl.plot(x*tscale, np.sum(v_bls_matrix_all_ch[16:31,i-j*block_size,:],axis=0), color="green",lw=0.7, label = "Summed Bottom")
+                pl.plot(x*tscale, v_bls_matrix_all_ch[-1,i-j*block_size,:],color='black',lw=0.7, label = "Summed All" )
                 #for ch in range(32):
                 #    pl.plot(x*tscale, v_bls_matrix_all_ch[ch,i-j*block_size,:])
                 #pl.ylabel("mV")
@@ -545,7 +544,7 @@ def make_rq(data_dir, handscan = False):
                     #ax.text((end_times[ps]) * tscale, (0.82-ps*0.2) * ax.get_ylim()[1], 'Check={}'.format(temp_condition[ps]),
                         #fontsize=9, color=pulse_class_colors[p_class[i, ps]])
                     
-                pl.legend(["All","Summed Top","Summed Bottom"])
+                pl.legend()
                 
                 #for ch in range(32):
                     #if ch < 16:
