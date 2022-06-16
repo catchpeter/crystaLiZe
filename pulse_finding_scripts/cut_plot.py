@@ -204,6 +204,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     p_class = listrq['p_class']
     drift_Time = listrq['drift_Time']
     drift_Time_AS = listrq['drift_Time_AS']
+    drift_Time_max = listrq["drift_Time_max"]
     p_max_height = listrq['p_max_height']
     p_min_height = listrq['p_min_height']
     p_width = listrq['p_width']
@@ -496,6 +497,7 @@ def make_plots(data_dir, save_dir=None, fig_dict=None, label=None, color=None):
     basicHist(cleanDT, bins=200, hRange=[0,10], mean=True, xlabel="Drift time (us)", name="DriftTime_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(drift_Time_AS[drift_Time_AS>0], bins=50, hRange=[0,10], mean=True, xlabel="Drift time AS (us)", name="DriftTime_AS", save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
     basicHist(cleanDT_AS, bins=50, hRange=[0,10], mean=True, xlabel="Drift time AS (us)", name="DriftTime_AS_"+event_cut_name, save=save_event_plots, save_dir=save_dir, fig_dict=fig_dict, label=label, color=color)
+    basicHist(drift_Time_max[drift_Time_max>0], bins=50, hRange=[0,10], mean=True, xlabel="Drift time max (us)", name="DriftTime_max", save=save_event_plots, save_dir=save_dir, fig_dict= fig_dict, label=label, color=color)
 
     if fig_dict is None:  # save time, don't make scatter/heatmap plots if we're comparing multiple files
         pl.figure() # Only ever plot this for SS events?
