@@ -33,7 +33,9 @@ def make_rq(data_dir, handscan = False):
         vscale = (2000.0/16384.0) # default to 2V
 
     # Get window size
-    if data_dir.find("_3us") != -1:
+    if data_dir.find("_2us") != -1:
+        event_window = 2
+    elif data_dir.find("_3us") != -1:
         event_window = 3
     elif data_dir.find("_6us") != -1:
         event_window = 6
@@ -45,6 +47,8 @@ def make_rq(data_dir, handscan = False):
         event_window = 18
     elif data_dir.find("_25us") != -1:
         event_window = 25
+    elif data_dir.find("_40us") != -1:
+        event_window = 40
     else:
         print("Need to input window size")
         return
@@ -59,8 +63,7 @@ def make_rq(data_dir, handscan = False):
     trigger_time_us = event_window*(1-post_trigger)
     trigger_time = int(trigger_time_us/tscale)
 
-
-    n_sipms = 32
+    n_sipms = 32    
     n_channels = n_sipms + 1 # include sum
     
     block_size = 1500
@@ -77,9 +80,14 @@ def make_rq(data_dir, handscan = False):
     #spe_sizes_2 = np.array([79.597,79.023,80.213,81.023,78.173,79.883,79.069,75.496])
 
     # SPE sizes, as of May 24, 2022
-    spe_sizes_0 = np.array([83.325,85.437,84.449,83.025,84.827,84.184,85.503,84.656,85.029,84.984,84.961,84.562,84.014,85.917,83.846,86.926])
-    spe_sizes_1 = np.array([79.617,79.891,81.203,80.859,75.585,77.097,79.112,78.256])
-    spe_sizes_2 = np.array([79.232,78.950,78.912,80.191,79.115,77.171,73.503,78.465])
+    #spe_sizes_0 = np.array([83.325,85.437,84.449,83.025,84.827,84.184,85.503,84.656,85.029,84.984,84.961,84.562,84.014,85.917,83.846,86.926])
+    #spe_sizes_1 = np.array([79.617,79.891,81.203,80.859,75.585,77.097,79.112,78.256])
+    #spe_sizes_2 = np.array([79.232,78.950,78.912,80.191,79.115,77.171,73.503,78.465])
+
+    # SPE sizes in SOLID, June 15, 2022
+    spe_sizes_0 = np.array([89.524,87.773,85.071,86.106,86.781,86.102,86.417,86.840,86.919,86.675,85.908,86.630,85.881,87.946,87.629,88.216])
+    spe_sizes_1 = np.array([84.134,83.419,83.957,84.037,79.348,81.228,82.678,81.617])
+    spe_sizes_2 = np.array([82.342,82.528,82.477,82.523,84.209,81.481,78.693,81.669])
 
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
@@ -490,8 +498,8 @@ def make_rq(data_dir, handscan = False):
             # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
             # temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
             # plotyn = np.any(temp_condition)
-            R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
-            plotyn = (drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
+            #R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
+            plotyn = False#drift_Time_max[i]>3.1#(drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
