@@ -9,6 +9,7 @@ import glob
 import PulseFinderScipy as pf
 import PulseQuantities as pq
 import PulseClassification as pc
+from read_settings import get_event_window, get_vscale
 
 #data_dir = "G:/.shortcut-targets-by-id/11qeqHWCbcKfFYFQgvytKem8rulQCTpj8/crystalize/data/data-202103/031121/Po_2.8g_3.0c_0.78bar_circ_30min_1312/"
 #data_dir = "/home/xaber/caen/wavedump-3.8.2/data/041921/Po_2.8g_3.0c_0.72bar_circ_20min_0928/"
@@ -25,35 +26,15 @@ def make_rq(data_dir, handscan = False):
     # define DAQ and other parameters
     
     # Get vscale
-    if data_dir.find("0.5DR") != -1:
-        vscale = (500.0/16384.0)
-    elif data_dir.find("2DR") != -1:
-        vscale = (2000.0/16384.0) # = 0.122 mV/ADCC, vertical scale
-    else:
-        vscale = (2000.0/16384.0) # default to 2V
-
-    # Get window size
-    if data_dir.find("_2us") != -1:
-        event_window = 2
-    elif data_dir.find("_3us") != -1:
-        event_window = 3
-    elif data_dir.find("_6us") != -1:
-        event_window = 6
-    elif data_dir.find("_15us") != -1:
-        event_window = 15
-    elif data_dir.find("_16us") != -1:
-        event_window = 16
-    elif data_dir.find("_18us") != -1:
-        event_window = 18
-    elif data_dir.find("_25us") != -1:
-        event_window = 25
-    elif data_dir.find("_40us") != -1:
-        event_window = 40
-    else:
-        print("Need to input window size")
-        return
+    vscale = get_vscale(data_dir)
     
-
+    # Get window size
+    event_window = get_event_window(data_dir)
+    if event_window < 0: 
+        print("Invalid event window")
+        return
+   
+    
     wsize = int(500 * event_window)  # samples per waveform # 12500 for 25 us
     tscale = (8.0/4096.0)     # = 0.002 µs/sample, time scale
 
@@ -500,7 +481,7 @@ def make_rq(data_dir, handscan = False):
             # plotyn = np.any(temp_condition)
             #R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
             plotyn = False#drift_Time_max[i]>3.1#(drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
-            plotyn = np.any(((p_class[i, :] == 1) + (p_class[i, :] == 2))*(p_area[i, :]>9300)*(p_area[i, :]<12300)*(p_tba[i, :]>-0.42)*(p_tba[i, :]<-0.3))
+            #plotyn = np.any(((p_class[i, :] == 1) + (p_class[i, :] == 2))*(p_area[i, :]>9300)*(p_area[i, :]<12300)*(p_tba[i, :]>-0.42)*(p_tba[i, :]<-0.3))
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
