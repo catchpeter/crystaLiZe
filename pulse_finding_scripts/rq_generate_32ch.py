@@ -498,12 +498,9 @@ def make_rq(data_dir, handscan = False):
             # afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale
             # temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
             # plotyn = np.any(temp_condition)
-<<<<<<< HEAD
             #R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
             plotyn = False#drift_Time_max[i]>3.1#(drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
-=======
             plotyn = np.any(((p_class[i, :] == 1) + (p_class[i, :] == 2))*(p_area[i, :]>9300)*(p_area[i, :]<12300)*(p_tba[i, :]>-0.42)*(p_tba[i, :]<-0.3))
->>>>>>> 147db3032e1dafe69d55de0f435e89b45698d159
             
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
