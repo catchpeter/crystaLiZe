@@ -5,64 +5,52 @@ import h5py
 import time
 import os
 
+from read_settings import get_event_window
 
-def compression(data_dir, threshold=300):
+
+def compression(data_dir, threshold=300, save_mode="npy", save_everything=False, debug=False):
+
+    """Checks board alignment, does zero-baseline suppression, compresses data
+    """
+
     start_t = time.time()
 
-    save_mode = "npy" #"npy" # options are "npy", "h5py", "none"
-    if data_dir[-1] != "/": data_dir += "/"
-    save_dir = data_dir+"compressed_data/"
+    if data_dir[-1] != "/": data_dir += "/" # in case you forgot...
+    if save_everything: threshold = -9999999 # if you want to save everything
 
+    # Make save directory
+    save_dir = data_dir+"compressed_data/"
     try:
         os.mkdir(save_dir)
     except:
         print("Directory already exists")
 
+    # Channel variables
     n_boards = 3
     n_sipms = [16,8,8]
     n_all_ch = int(np.sum(n_sipms))
 
-    # Get window size
-    if data_dir.find("_3us") != -1:
-        event_window = 3
-    elif data_dir.find("_2us") != -1:
-        event_window = 2
-    elif data_dir.find("_6us") != -1:
-        event_window = 6
-    elif data_dir.find("_15us") != -1:
-        event_window = 15
-    elif data_dir.find("_16us") != -1:
-        event_window = 16
-    elif data_dir.find("_18us") != -1:
-        event_window = 18
-    elif data_dir.find("_25us") != -1:
-        event_window = 25
-    elif data_dir.find("_40us") != -1:
-        event_window = 40
-    elif data_dir.find("_200us") != -1:
-        event_window = 200
-    else:
-        print("Need to input window size")
+    # Get event window 
+    event_window = get_event_window(data_dir)
+    if event_window < 0: 
+        print("Invalid event window")
         return
 
-    wsize = int(500 * event_window) + 8 # 8 is size of header 
+    wsize = int(500 * event_window) + 8 # Calculate size of waveform + header
+    block_size = int(1500*15/event_window) # Number of events loaded, then saved per compressed file
+    delay = 24 # Hardcoded delay between boards. DO NOT CHANGE
+    load_dtype = "int16" # int16 saves on memory, fewer compressed files
 
-
-    block_size = int(1500*15/event_window) # This will also be number of events saved per file
-    delay = 24 #  48 #48
-
-    load_dtype = "int16"
-
+    # Get how many total events there are
     ch0_data = np.fromfile(data_dir+"waveforms_"+str(0)+"_0.dat",dtype=load_dtype)
     tot_ev = int(ch0_data.size/wsize)
     tot_fi = int(np.ceil(tot_ev/block_size))
     print("Total events: "+str(tot_ev) )
     print("Number of compressed files = "+str(tot_fi))
-    #if tot_fi > 10: return
     time.sleep(2)
 
-    #tot_fi = 2 # custom number of files
     # Loop over blocks of events
+    #tot_fi = 2 # custom number of files
     for bk in range(tot_fi):
 
         # First, check board alignment 
@@ -78,7 +66,6 @@ def compression(data_dir, threshold=300):
 
 
         # Check for misaligned events
-        
         tosser = []
         lastToCheck = int(np.max(evNum) )
         firstToCheck = int(np.min(evNum) ) 
@@ -120,18 +107,6 @@ def compression(data_dir, threshold=300):
                 ch_ind += 1
 
 
-
-
-
-
-        #for ch in range(n_all_ch):
-            #print(np.mean(all_data_front[ch,0,8+2*delay:100+2*delay]))
-            #all_data_front[ch,:,:] -= np.mean(all_data_front[ch,0,200:300])
-            #if ch < 4:
-            #    all_data_front[ch,:,:] = np.zeros_like(all_data_front[0,:,:])
-            #    all_data_back[ch,:,:] = np.zeros_like(all_data_back[0,:,:])
-
-
         # Reshape into pods
         pod_size = 10 #5 # samples. 5 samples = 10 ns
         n_pods = int( (wsize-8)/pod_size )
@@ -147,8 +122,8 @@ def compression(data_dir, threshold=300):
         sum_data_back_pods_area = np.sum(sum_data_back_pods, axis=2) 
 
         # Do cuts on areas
-        area_threshold_front = threshold #-999999 #300 #300 #1000 #200 # one day this will be phe 
-        area_threshold_back = threshold #-999999 #300 #300 #1000 #475 #area_threshold_front
+        area_threshold_front = threshold 
+        area_threshold_back = threshold 
         toSaveOrNotToSave = (np.abs(sum_data_front_pods_area) > area_threshold_front)*(np.abs(sum_data_back_pods_area) > area_threshold_back)
     
         nBefore = 25
@@ -166,24 +141,25 @@ def compression(data_dir, threshold=300):
 
         stuffToSave = np.reshape(stuffToSave, (n_all_ch, max_n_events*(wsize-8)))
         
-        """
-        for i in range(max_n_events):
-            #print(test_ev[:,i])
-            pl.figure()
-            #for ch in range(24,32):
-            #    pl.plot(all_data_front[ch, i, :],"g")
-            pl.plot(np.sum(all_data_front[:, i, :],axis=0),"b")
-            pl.plot(np.sum(stuffToSave[:, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"r")
-            #pl.legend(["Raw","Compressed"])
-            #pl.plot(np.sum(stuffToSave[16:22, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"b")
-            #pl.plot(np.sum(stuffToSave[23:31, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"m")
-            
-            pl.show()
-        """
+
+        # Some plotting code for debugging
+        if debug:
+            for i in range(max_n_events):
+                #print(test_ev[:,i])
+                pl.figure()
+                #for ch in range(24,32):
+                #    pl.plot(all_data_front[ch, i, :],"g")
+                pl.plot(np.sum(all_data_front[:, i, :],axis=0),"b")
+                pl.plot(np.sum(stuffToSave[:, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"r")
+                #pl.legend(["Raw","Compressed"])
+                #pl.plot(np.sum(stuffToSave[16:22, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"b")
+                #pl.plot(np.sum(stuffToSave[23:31, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"m")
+                
+                pl.show()
         
         
         
-        print("Percentage of data saved: "+str(np.count_nonzero(stuffToSave)/stuffToSave.size) )
+        print("File "+str(bk)+"/"+str(tot_fi-1)+", percentage of data saved: "+str(np.count_nonzero(stuffToSave)/stuffToSave.size) )
 
 
         # Save that mf
@@ -198,9 +174,10 @@ def compression(data_dir, threshold=300):
 
         
 
-
     end_t = time.time()
     print("Finished zero baseline reduction", end_t-start_t, "sec")
+
+    return
 
 
 
@@ -211,6 +188,9 @@ def main():
         #data_dir = data_dir[:-1]
     
     compression(data_dir)
+
+    return
+
 
 if __name__ == "__main__":
     main()
