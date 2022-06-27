@@ -6,7 +6,7 @@ import time
 import os
 
 
-def compression(data_dir):
+def compression(data_dir, threshold=300):
     start_t = time.time()
 
     save_mode = "npy" #"npy" # options are "npy", "h5py", "none"
@@ -25,6 +25,8 @@ def compression(data_dir):
     # Get window size
     if data_dir.find("_3us") != -1:
         event_window = 3
+    elif data_dir.find("_2us") != -1:
+        event_window = 2
     elif data_dir.find("_6us") != -1:
         event_window = 6
     elif data_dir.find("_15us") != -1:
@@ -35,13 +37,18 @@ def compression(data_dir):
         event_window = 18
     elif data_dir.find("_25us") != -1:
         event_window = 25
+    elif data_dir.find("_40us") != -1:
+        event_window = 40
+    elif data_dir.find("_200us") != -1:
+        event_window = 200
     else:
         print("Need to input window size")
         return
 
     wsize = int(500 * event_window) + 8 # 8 is size of header 
 
-    block_size = 1500 # This will also be number of events saved per file
+
+    block_size = int(1500*15/event_window) # This will also be number of events saved per file
     delay = 24 #  48 #48
 
     load_dtype = "int16"
@@ -140,8 +147,8 @@ def compression(data_dir):
         sum_data_back_pods_area = np.sum(sum_data_back_pods, axis=2) 
 
         # Do cuts on areas
-        area_threshold_front = 300 #1000 #200 # one day this will be phe 
-        area_threshold_back = 300 #1000 #475 #area_threshold_front
+        area_threshold_front = threshold #-999999 #300 #300 #1000 #200 # one day this will be phe 
+        area_threshold_back = threshold #-999999 #300 #300 #1000 #475 #area_threshold_front
         toSaveOrNotToSave = (np.abs(sum_data_front_pods_area) > area_threshold_front)*(np.abs(sum_data_back_pods_area) > area_threshold_back)
     
         nBefore = 25
@@ -176,7 +183,7 @@ def compression(data_dir):
         
         
         
-        print("Percentage saved: "+str(np.count_nonzero(stuffToSave)/stuffToSave.size) )
+        print("Percentage of data saved: "+str(np.count_nonzero(stuffToSave)/stuffToSave.size) )
 
 
         # Save that mf
