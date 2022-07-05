@@ -4,8 +4,8 @@ import sys
 def grid_voltage(gate, cathode):
 	ssh_server = "xaber@128.3.183.210"
 
-	v_step = 300
-	time_interval = 3
+	v_step = 100
+	time_interval = 2
 	cathode_command = "python /home/xaber/utilities/hv_ramping/cathode_hv_control.py {} {} {}".format(cathode, v_step, time_interval)
 	gate_command = "python /home/xaber/utilities/hv_ramping/gate_hv_control.py {} {} {}".format(gate, v_step, time_interval)
 

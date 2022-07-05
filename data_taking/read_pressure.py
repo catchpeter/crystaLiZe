@@ -11,3 +11,9 @@ def read_pressure():
 	info_list = all_info.split(",")
 
 	return round(float(info_list[5]),2)
+
+def main():
+	print("The pressure in the ICV is {}bar.".format(read_pressure()))
+
+if __name__ == "__main__":
+	main()

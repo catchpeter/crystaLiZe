@@ -21,3 +21,10 @@ def read_gate():
 
     return round(abs(float(all_info)),2)
 
+def main():
+    v_cathode = read_cathode()
+    v_gate = read_gate()
+    print("The cathode voltage is {}V, the gate voltage is {}V.".format(v_cathode, v_gate))
+if __name__ == "__main__":
+    main()
+
