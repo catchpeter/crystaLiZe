@@ -58,7 +58,8 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         evNum = np.array([])
         n_events = []
         for bd in range(n_boards):
-            ch0_data = np.fromfile(data_dir+"waveforms_"+str(bd)+"_0.dat", dtype=load_dtype, offset=block_size*wsize*bk, count=wsize*block_size)
+            # Offset is in bytes!!!!!!!! Each sample is 2 bytes (int16)
+            ch0_data = np.fromfile(data_dir+"waveforms_"+str(bd)+"_0.dat", dtype=load_dtype, offset=block_size*wsize*bk*2, count=wsize*block_size)
             n_events.append(int(ch0_data.size/wsize))
             evNum = np.concatenate((evNum, ch0_data[2::wsize]))
 
@@ -81,7 +82,7 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         ch_ind = 0
         for bd in range(n_boards):
             for ch in range(n_sipms[bd]):
-                ch_data = np.fromfile(data_dir + "waveforms_"+str(bd)+"_"+str(ch)+".dat", dtype=load_dtype, offset=block_size*wsize*bk, count=wsize*block_size)
+                ch_data = np.fromfile(data_dir + "waveforms_"+str(bd)+"_"+str(ch)+".dat", dtype=load_dtype, offset=block_size*wsize*bk*2, count=wsize*block_size)
                 ch_data = np.reshape(ch_data, (n_events[bd], wsize))
                 
                 # Loop over events to check alignment, then to place in all data array
