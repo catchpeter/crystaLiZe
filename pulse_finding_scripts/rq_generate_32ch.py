@@ -423,15 +423,19 @@ def make_rq(data_dir, handscan = False):
                 sum_s1_area[i] = np.sum(p_area[i, index_s1])
             if n_s2[i] > 0:
                 sum_s2_area[i] = np.sum(p_area[i, index_s2])
-            if n_s1[i] > 0 and n_s2[i] > 0:
-                s1_area_temp = np.copy(p_area[i,:])
-                s2_area_temp = np.copy(p_area[i,:])
-                s1_area_temp[(p_class[i,:]==3)+(p_class[i,:]==4)+(p_class[i,:]==0)] = 0
-                s2_area_temp[(p_class[i,:]==1)+(p_class[i,:]==2)+(p_class[i,:]==0)] = 0
-                index_max_s1[i] = np.argmax(s1_area_temp)
-                index_max_s2[i] = np.argmax(s2_area_temp)
-                if p_area[i, index_max_s2[i]]>100: drift_Time_max[i] = tscale*(p_afs_1[i, index_max_s2[i]]-p_afs_1[i, index_max_s1[i]])   #Careful
-                if drift_Time_max[i] < 0: drift_Time_max[i] = 0    
+            if n_s1[i] > 0 and (n_s1[i] + n_s2[i]) > 1:
+                index_max_s1[i] = 0
+                index_max_s2[i] = np.argmax(p_area[i, 1:]) + 1
+                if p_area[i, index_max_s1[i]] > 100 and p_area[i, index_max_s2[i]] > 100:
+                    drift_Time_max[i] = tscale*(p_afs_1[i, index_max_s2[i]]-p_afs_1[i, index_max_s1[i]])
+                # s1_area_temp = np.copy(p_area[i,:])
+                # s2_area_temp = np.copy(p_area[i,:])
+                # s1_area_temp[(p_class[i,:]==3)+(p_class[i,:]==4)+(p_class[i,:]==0)] = 0
+                # s2_area_temp[(p_class[i,:]==1)+(p_class[i,:]==2)+(p_class[i,:]==0)] = 0
+                # index_max_s1[i] = np.argmax(s1_area_temp)
+                # index_max_s2[i] = np.argmax(s2_area_temp)
+                # if p_area[i, index_max_s2[i]]>100: drift_Time_max[i] = tscale*(p_afs_1[i, index_max_s2[i]]-p_afs_1[i, index_max_s1[i]])   #Careful
+                # if drift_Time_max[i] < 0: drift_Time_max[i] = 0    
             if n_s1[i] == 1:
                 if n_s2[i] == 1:
                     drift_Time[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)])
@@ -480,9 +484,12 @@ def make_rq(data_dir, handscan = False):
             # temp_condition = (np.log10(afs50_2)>-0.75)*(np.log10(afs50_2)<-0.6)*(np.log10(p_area[i,:])>3.2)*(np.log10(p_area[i,:])<4.4)
             # plotyn = np.any(temp_condition)
             #R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
-            plotyn = False#drift_Time_max[i]>3.1#(drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
+            #plotyn = False#drift_Time_max[i]>3.1#(drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
             #plotyn = np.any(((p_class[i, :] == 1) + (p_class[i, :] == 2))*(p_area[i, :]>9300)*(p_area[i, :]<12300)*(p_tba[i, :]>-0.42)*(p_tba[i, :]<-0.3))
-            
+            p_rise = tscale*(p_afs_50[i, :]- p_afs_2l[i, :])
+            #plotyn = np.any((p_area[i, :]>10**3.8)*(p_area[i, :]<10**4.13)*(p_tba[i, :]>-1)*(p_tba[i, :]<1)*(p_rise>0.07)*(p_rise<0.11))
+            R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
+            plotyn = drift_Time_max[i] > 0 and drift_Time_max[i] < 4 and p_area[i, index_max_s1[i]] > 16000 and p_area[i, index_max_s1[i]] < 30000 and p_area[i, index_max_s2[i]] > 10**4.75 and p_area[i, index_max_s2[i]] < 10**5.15 and R_s2 < 0.45
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
                 dt[i] = abs(p_start[i,1] - p_start[i,0]) # For weird double s1 data
@@ -502,7 +509,7 @@ def make_rq(data_dir, handscan = False):
 
             if inn == 's': sys.exit()
             
-            if not inn == 'q' and plotyn: # and drift_Time[i] > 0 and s1s2 and p_area[i,0]<500. and p_area[i,0]>20.: # and np.any((p_area[i,:] > 350)*(p_area[i,:] < 600)): # and drift_Time[i] > 0: # plotyn: #plot_event_ind == i and plotyn:
+            if not inn == 'q' and plotyn and plot_event_ind == i: # and drift_Time[i] > 0 and s1s2 and p_area[i,0]<500. and p_area[i,0]>20.: # and np.any((p_area[i,:] > 350)*(p_area[i,:] < 600)): # and drift_Time[i] > 0: # plotyn: #plot_event_ind == i and plotyn:
 
 
                 fig = pl.figure()
