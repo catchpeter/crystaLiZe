@@ -488,8 +488,9 @@ def make_rq(data_dir, handscan = False):
             #plotyn = np.any(((p_class[i, :] == 1) + (p_class[i, :] == 2))*(p_area[i, :]>9300)*(p_area[i, :]<12300)*(p_tba[i, :]>-0.42)*(p_tba[i, :]<-0.3))
             p_rise = tscale*(p_afs_50[i, :]- p_afs_2l[i, :])
             #plotyn = np.any((p_area[i, :]>10**3.8)*(p_area[i, :]<10**4.13)*(p_tba[i, :]>-1)*(p_tba[i, :]<1)*(p_rise>0.07)*(p_rise<0.11))
-            R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
-            plotyn = drift_Time_max[i] > 0 and drift_Time_max[i] < 4 and p_area[i, index_max_s1[i]] > 16000 and p_area[i, index_max_s1[i]] < 30000 and p_area[i, index_max_s2[i]] > 10**4.75 and p_area[i, index_max_s2[i]] < 10**5.15 and R_s2 < 0.45
+            # R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
+            # plotyn = drift_Time_max[i] > 0 and drift_Time_max[i] < 4 and p_area[i, index_max_s1[i]] > 16000 and p_area[i, index_max_s1[i]] < 30000 and p_area[i, index_max_s2[i]] > 10**4.75 and p_area[i, index_max_s2[i]] < 10**5.15 and R_s2 < 0.45
+            plotyn = True
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
                 dt[i] = abs(p_start[i,1] - p_start[i,0]) # For weird double s1 data

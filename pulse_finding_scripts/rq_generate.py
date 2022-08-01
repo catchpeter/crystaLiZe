@@ -165,7 +165,7 @@ def make_rq(data_dir, handscan = False):
     for j in range(n_block):
         ch_data = []
         for ch_ind in range(n_sipms):
-            ch_data.append(np.fromfile(data_dir + raw_file_names[ch_indsdat", dtype=load_dtype, offset = block_size*wsize*j, count=wsize*block_size))
+            ch_data.append(np.fromfile(data_dir + raw_file_names[ch_indsdat], dtype=load_dtype, offset = block_size*wsize*j, count=wsize*block_size))
 
         #t_end_load = time.time()
         #print("Time to load files: ", t_end_load-t_start)
