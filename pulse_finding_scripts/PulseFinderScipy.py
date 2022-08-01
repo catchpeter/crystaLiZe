@@ -4,6 +4,8 @@ from scipy.signal import find_peaks
 
 tscale = (8.0/4096.0)
 
+# test
+
 # Calculate moving avg of waveform
 def wfm_convolve(data, window, avg=False):
     # Assumes data is already baseline-subtracted
