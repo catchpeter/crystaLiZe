@@ -15,6 +15,7 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
 
     start_t = time.time()
 
+    if data_dir[-1] == "\n": data_dir = data_dir[:-1]
     if data_dir[-1] != "/": data_dir += "/" # in case you forgot...
     if save_everything: threshold = -9999999 # if you want to save everything
 
@@ -48,6 +49,8 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
     print("Total events: "+str(tot_ev) )
     print("Number of compressed files = "+str(tot_fi))
     time.sleep(2)
+
+    headers = np.zeros((tot_ev+10,8),dtype=int)
 
     # Loop over blocks of events
     #tot_fi = 2 # custom number of files
@@ -83,7 +86,11 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         for bd in range(n_boards):
             for ch in range(n_sipms[bd]):
                 ch_data = np.fromfile(data_dir + "waveforms_"+str(bd)+"_"+str(ch)+".dat", dtype=load_dtype, offset=block_size*wsize*bk*2, count=wsize*block_size)
-                ch_data = np.reshape(ch_data, (n_events[bd], wsize))
+                try:
+                    ch_data = np.reshape(ch_data, (n_events[bd], wsize))
+                except:
+                    print("Error in reshaping array. If final block, ignore this.")
+                    continue
                 
                 # Loop over events to check alignment, then to place in all data array
                 toss_counts = 0
@@ -95,6 +102,8 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
                             all_data_front[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] - np.mean(ch_data[ev, 8:8+150])
                             all_data_back[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] - np.mean(ch_data[ev, -150:-1])
                             test_ev[bd,ev-toss_counts] = ch_data[ev,2]
+                            if ch == 0:
+                                headers[ev+bk*block_size,:] = ch_data[ev,0:8]
                         elif bd == 1:
                             all_data_front[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:(wsize-delay)] - np.mean(ch_data[ev, 8:8+150])
                             all_data_back[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:(wsize-delay)] - np.mean(ch_data[ev, -150:-1])
@@ -104,6 +113,7 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
                             all_data_back[ch_ind, ev-toss_counts, 2*delay:] = ch_data[ev, 8:(wsize-2*delay)] - np.mean(ch_data[ev, -150:-1])
                             test_ev[bd,ev-toss_counts] = ch_data[ev,2]
                         # need to scale by spe size!!!
+
                 
                 ch_ind += 1
 
@@ -173,7 +183,8 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         elif save_mode == "none":
             continue
 
-        
+    with open(save_dir+"headers.npy", "wb") as f:
+        np.savez_compressed(f, headers.flatten() )
 
     end_t = time.time()
     print("Finished zero baseline reduction", end_t-start_t, "sec")
