@@ -84,9 +84,30 @@ def make_rq(data_dir, handscan = False):
     
     n_events = (len(compressed_file_list)+5)*1500 # some extra room 
 
+    # Load headers and calculate event time
+    h_file = np.load(data_dir+"compressed_data/headers.npy")
+    h_array = h_file["arr_0"]
+    h_n_events = int(np.floor(h_array.size/8))
+    h_array = np.reshape(h_array,(h_n_events,8))
+
     
-    
-    
+
+    second_16 = h_array[:,5]
+    second_16[second_16 < 0] = second_16[second_16 < 0] + 2**15
+
+    second_16_next = np.zeros(h_n_events,dtype=int)
+    for i in range(1,h_n_events):
+        if second_16[i] - second_16[i-1] < 0:
+            second_16_next[i:] += 1
+
+    # Precision up to 0.5 ms. To-do: get precision to 16 ns
+    ev_time_s = 16*(second_16 + second_16_next*2**15)*(10**-9 * 2**15)
+
+    if h_n_events < n_events:
+        ev_time_s = np.concatenate( (ev_time_s,np.zeros(n_events-h_n_events,dtype=int) ) )
+    elif h_n_events > n_events:
+        ev_time_s = np.concatenate( (ev_time_s,np.zeros(h_n_events-n_events,dtype=int) ) )
+
     
     # RQ's to save
     
@@ -157,6 +178,7 @@ def make_rq(data_dir, handscan = False):
     s1_before_s2 = np.zeros(n_events, dtype=bool)
 
     waveform_area = np.zeros(n_events)  #integrate the whole waveform
+    rq_ev_time_s = np.zeros(n_events,dtype="int")
     n_wfms_summed = 0
     avg_wfm = np.zeros(wsize)
 
@@ -175,8 +197,9 @@ def make_rq(data_dir, handscan = False):
 
     empty_evt_ind = np.zeros(n_events)
 
-
+ 
     j = 0
+    counter = 0
     for compressed_file in compressed_file_list:
     
         # load compressed data
@@ -255,7 +278,9 @@ def make_rq(data_dir, handscan = False):
             pc_legend_handles.append(mpl.patches.Patch(color=pulse_class_colors[class_ind], label=str(class_ind)+": "+pulse_class_labels[class_ind]))
 
         for i in range(j*block_size, j*block_size+n_events):
-            if (i)%2000==0: print("Event #",i)
+            #if (i)%2000==0: print("Event #",i)
+
+            rq_ev_time_s[i] = ev_time_s[counter]
             
             # Find pulse locations; other quantities for pf tuning/debugging
             start_times, end_times, peaks, data_conv, properties = pf.findPulses( v_bls_matrix_all_ch[-1,i-j*block_size,:], max_pulses , SPEMode=False)
@@ -630,6 +655,8 @@ def make_rq(data_dir, handscan = False):
                 """
                 inn = input("Press enter to continue, q to stop plotting, evt # to skip to # (forward only)")
                 #fig.clf()
+
+            counter += 1
                 
         # end of pulse finding and plotting event loop
 
@@ -688,6 +715,7 @@ def make_rq(data_dir, handscan = False):
     list_rq['sum_s1_area'] = sum_s1_area
     list_rq['sum_s2_area'] = sum_s2_area
     list_rq['waveform_area'] = waveform_area
+    list_rq['ev_time_s'] = rq_ev_time_s
     #list_rq[''] =    #add more rq
 
     #remove zeros in the end of each RQ array. 

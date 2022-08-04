@@ -103,7 +103,7 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
                             all_data_back[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] - np.mean(ch_data[ev, -150:-1])
                             test_ev[bd,ev-toss_counts] = ch_data[ev,2]
                             if ch == 0:
-                                headers[ev+bk*block_size,:] = ch_data[ev,0:8]
+                                headers[ev-toss_counts+bk*block_size,:] = ch_data[ev,0:8]
                         elif bd == 1:
                             all_data_front[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:(wsize-delay)] - np.mean(ch_data[ev, 8:8+150])
                             all_data_back[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:(wsize-delay)] - np.mean(ch_data[ev, -150:-1])
