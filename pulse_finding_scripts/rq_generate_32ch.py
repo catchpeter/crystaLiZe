@@ -204,10 +204,10 @@ def make_rq(data_dir, handscan = False):
     
         # load compressed data
         try:
-            with np.load(compressed_file) as data:
+            with np.load(data_dir+"compressed_data/compressed_"+str(j)+".npy") as data:
                 ch_data = data["arr_0"]
         except:
-            print("Error in loading "+compressed_file)
+            print("Error in loading "+data_dir+"compressed_data/compressed_"+str(j)+".npy")
             continue
         
         n_tot_samp_per_ch = int( (ch_data.size)/n_sipms )
