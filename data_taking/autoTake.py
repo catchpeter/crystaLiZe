@@ -1,3 +1,5 @@
+from subprocess import run
+import subprocess
 import numpy as np
 import os, sys
 import time
@@ -6,13 +8,14 @@ import datetime
 from read_pressure import read_pressure
 from read_temp import read_temp
 from read_hv import read_cathode, read_gate
+from grid_voltage import grid_voltage
 
 
 """Takes data automatically with wavedumbMB
 Input the settings you want below
 """
 t_delay = 0 #3500, will start data t_delay seconds later.
-process_flag = False # will compress and process data if this is true.
+process_flag = True # will compress and process data if this is true.
 
 while t_delay>0:
     print("Start taking data in {} mins.".format(t_delay/60))
@@ -28,12 +31,12 @@ dynamic_range = 0 # 0 = 2Vpp, 1 = 0.5Vpp
 event_window_us = 15 #15 # us
 pre_trigger = 0.5 # Percentage of event window
 trigger_threshold_mV = 6 # Per channel in mV
-run_time_s =  10*60 # sec
+run_time_s = 20*60 # sec
 
 # Run conditions you need to input
-anode_v = 1000 # V
+anode_v = 500 # V
 sipm_bias = 54 # V
-extra = "2fold_circ_getter_10min" # any other info you want to include in dir
+extra = "2fold_CoOCVtop_{:n}min".format(run_time_s/60) # any other info you want to include in dir
 
 # Run conditions that are automatically read
 cathode_v = read_cathode() # V
@@ -219,6 +222,10 @@ def process_data(data_dir):
 
 def main():
 
+    #Ramp up voltage
+    ramp_flag = grid_voltage(gate = 3000, cathode = 3200)
+    time.sleep(300)
+
     # Take baseline data
     takeBaseData()
 
@@ -232,8 +239,15 @@ def main():
     # Take data
     takeData(data_dir)
 
+    # Ramp down voltage
+    ramp_flag = grid_voltage(gate = 0, cathode = 0)
+
+
     # Process the data
     if process_flag: process_data(data_dir)
+
+    # upload data to google drive
+    os.system("rclone -v copy " + data_dir +" gdrive:crystallize/data/"+ data_dir[data_dir.find("data-"):])
     return
 
 
