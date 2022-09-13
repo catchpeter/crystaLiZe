@@ -18,7 +18,7 @@ def autoAna():
     for dir in all_dir:
 
         # Check if data has finished transfering
-        if not os.path.exists(dir + "/readyToAnalyze"):
+        if not os.path.exists(dir + "transferDone"):
             continue
 
         # Check to compress
