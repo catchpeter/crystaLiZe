@@ -19,21 +19,16 @@ data_dir_high = "/home/xaber/Data/"
 #data_dir_high = "/media/xaber/gpeter/data/"
 
 
-
-
-
 dynamic_range = 1 # 0 = 2Vpp, 1 = 0.5Vpp
 event_window_us = 2 #15 # us
 pre_trigger = 0.5 # Percentage of event window
 
 
-
-
 trigger_threshold_mV = "NA" # Per channel in mV
-run_time_s = 60 #120 # sec
+run_time_s = 60 #120 # sec, per channel
 
 # Run conditions you need to input
-anode_v = 1000 # V
+anode_v = 500 # V
 sipm_bias = 54 # V
 extra = "SPE" # any other info you want to include in dir
 
@@ -42,7 +37,6 @@ cathode_v = read_cathode() # V
 gate_v = read_gate() # V
 icv_pressure = read_pressure() # bar
 icv_bot_temperature = read_temp() # deg C
-
 
 
 # Other globals
@@ -172,6 +166,10 @@ def main():
             SPE_takeData(bdDir)
 
             N += 1
+        
+
+    # Create transfer flag file
+    os.system("touch "+data_dir+"readyToTransfer")
 
     
     return
