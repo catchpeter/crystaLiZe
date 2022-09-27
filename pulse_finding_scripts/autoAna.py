@@ -36,6 +36,10 @@ def autoAna():
             except:
                 print("uh oh rq didn't work")
 
+        # Send it to the cloud 
+        command = "rclone -v copy " + dir +" gdrive:crystallize/data/"+ dir[dir.find("data-"):]
+        os.system(command)
+
     return 
 
 
