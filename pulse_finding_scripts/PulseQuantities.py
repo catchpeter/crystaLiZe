@@ -177,16 +177,20 @@ def GetHeightFractionSamples( p_start, p_end, waveforms_bls ):
     
     hfs_10l = int(999999) # looking from left
     hfs_50l = int(999999) # looking from left
+    hfs_90l = int(999999) # looking from left
     hfs_10r = int(-999999) # looking from right
     hfs_50r = int(-999999) # looking from right
+    hfs_90r = int(-999999) # looking from right
     
     p_max_height = GetPulseMaxHeight( p_start, p_end, waveforms_bls )
     if p_max_height < 0.:
         hfs_10l = int(-99999) # looking from left
         hfs_50l = int(-99999) # looking from left
+        hfs_90l = int(-99999) # looking from left
         hfs_10r = int(-99999) # looking from right
         hfs_50r = int(-99999) # looking from right
-        return hfs_10l, hfs_50l, hfs_10r, hfs_50r
+        hfs_90r = int(-99999) # looking from right
+        return hfs_10l, hfs_50l, hfs_90l, hfs_10r, hfs_50r, hfs_90r
 
     # only consider the part of the waveform in this pulse, start of pulse is sample 0
     height_fractions = waveforms_bls[int(p_start):int(p_end)]/p_max_height
@@ -198,8 +202,12 @@ def GetHeightFractionSamples( p_start, p_end, waveforms_bls ):
     hfs_50 = np.argwhere(height_fractions >= 0.50)
     hfs_50l = hfs_50[0]
     hfs_50r = hfs_50[-1]
+
+    hfs_90 = np.argwhere(height_fractions >= 0.90)
+    hfs_90l = hfs_90[0]
+    hfs_90r = hfs_90[-1]
     
-    return hfs_10l, hfs_50l, hfs_10r, hfs_50r
+    return hfs_10l, hfs_50l, hfs_90l, hfs_10r, hfs_50r, hfs_90r
 
 
 def GetAreaFraction(p_start, p_end, waveform_bls):
@@ -214,12 +222,14 @@ def GetAreaFraction(p_start, p_end, waveform_bls):
 
     afs_1 = np.argmax(p_afc >= 0.01) + p_start
     afs_2l = np.argmax(p_afc >= 0.02) + p_start
+    afs_10 = np.argmax(p_afc >= 0.02) + p_start
     afs_25 = np.argmax(p_afc >= 0.25) + p_start
     afs_50 = np.argmax(p_afc >= 0.50) + p_start
     afs_75 = np.argmax(p_afc >= 0.75) + p_start
+    afs_90 = np.argmax(p_afc >= 0.75) + p_start
     afs_99 = np.argmax(p_afc >= 0.99) + p_start
     
-    return afs_2l,afs_1,afs_25,afs_50,afs_75,afs_99
+    return afs_2l,afs_1,afs_10, afs_25,afs_50,afs_75,afs_90,afs_99
 
 
 ############################################################

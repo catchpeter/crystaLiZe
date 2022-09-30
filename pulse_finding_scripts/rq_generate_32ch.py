@@ -135,15 +135,19 @@ def make_rq(data_dir, handscan = False):
     p_afs_2l = np.zeros((n_events, max_pulses) )
     p_afs_2r = np.zeros((n_events, max_pulses) )
     p_afs_1 = np.zeros((n_events, max_pulses) )
+    p_afs_10 = np.zeros((n_events, max_pulses) )
     p_afs_25 = np.zeros((n_events, max_pulses) )
     p_afs_50 = np.zeros((n_events, max_pulses) )
     p_afs_75 = np.zeros((n_events, max_pulses) )
+    p_afs_90 = np.zeros((n_events, max_pulses) )
     p_afs_99 = np.zeros((n_events, max_pulses) )
                 
     p_hfs_10l = np.zeros((n_events, max_pulses) )
     p_hfs_50l = np.zeros((n_events, max_pulses) )
+    p_hfs_90l = np.zeros((n_events, max_pulses) )
     p_hfs_10r = np.zeros((n_events, max_pulses) )
     p_hfs_50r = np.zeros((n_events, max_pulses) )
+    p_hfs_90r = np.zeros((n_events, max_pulses) )
 
     p_mean_time = np.zeros((n_events, max_pulses) )
     p_rms_time = np.zeros((n_events, max_pulses) )
@@ -334,8 +338,8 @@ def make_rq(data_dir, handscan = False):
                 #(p_mean_time[i,pp], p_rms_time[i,pp]) = pq.GetPulseMeanAndRMS(p_start[i,pp], p_end[i,pp], v_bls_matrix_all_ch[-1,i,:])
 
                 # Area and height fractions      
-                (p_afs_2l[i,pp], p_afs_1[i,pp], p_afs_25[i,pp], p_afs_50[i,pp], p_afs_75[i,pp], p_afs_99[i,pp]) = pq.GetAreaFraction(p_start[i,pp], p_end[i,pp], v_pulse_bls[-1] )
-                try: (p_hfs_10l[i,pp], p_hfs_50l[i,pp], p_hfs_10r[i,pp], p_hfs_50r[i,pp]) = pq.GetHeightFractionSamples(p_start[i,pp], p_end[i,pp], v_pulse_bls[-1] )
+                (p_afs_2l[i,pp], p_afs_1[i,pp], p_afs_10[i,pp],p_afs_25[i,pp], p_afs_50[i,pp], p_afs_75[i,pp], p_afs_90[i,pp], p_afs_99[i,pp]) = pq.GetAreaFraction(p_start[i,pp], p_end[i,pp], v_pulse_bls[-1] )
+                try: (p_hfs_10l[i,pp], p_hfs_50l[i,pp], p_hfs_90l[i,pp], p_hfs_10r[i,pp], p_hfs_50r[i,pp], p_hfs_90r[i,pp]) = pq.GetHeightFractionSamples(p_start[i,pp], p_end[i,pp], v_pulse_bls[-1] )
                 except: 1==1
             
                 # Areas for individual channels and top bottom
@@ -514,7 +518,7 @@ def make_rq(data_dir, handscan = False):
             p_rise = tscale*(p_afs_50[i, :]- p_afs_2l[i, :])
             #plotyn = np.any((p_area[i, :]>10**3.8)*(p_area[i, :]<10**4.13)*(p_tba[i, :]>-1)*(p_tba[i, :]<1)*(p_rise>0.07)*(p_rise<0.11))
             # R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
-            # plotyn = drift_Time_max[i] > 0 and drift_Time_max[i] < 4 and p_area[i, index_max_s1[i]] > 16000 and p_area[i, index_max_s1[i]] < 30000 and p_area[i, index_max_s2[i]] > 10**4.75 and p_area[i, index_max_s2[i]] < 10**5.15 and R_s2 < 0.45
+            # plotyn = drift_Time_max[i] > 2.5 and drift_Time_max[i] < 5.5 and p_area[i, index_max_s1[i]] > 6000 and p_area[i, index_max_s1[i]] < 30000 and p_area[i, index_max_s2[i]] > 10**5.15 and p_area[i, index_max_s2[i]] < 10**5.75 and R_s2 < 0.45
             plotyn = False #True
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
@@ -702,9 +706,17 @@ def make_rq(data_dir, handscan = False):
     list_rq['p_min_height'] = p_min_height
     list_rq['p_width'] = p_width
     list_rq['p_afs_1'] = p_afs_1
-    list_rq['p_afs_99'] = p_afs_99
     list_rq['p_afs_2l'] = p_afs_2l
+    list_rq['p_afs_10'] = p_afs_10
     list_rq['p_afs_50'] = p_afs_50
+    list_rq['p_afs_90'] = p_afs_90
+    list_rq['p_afs_99'] = p_afs_99   
+    list_rq['p_hfs_10l'] = p_hfs_10l
+    list_rq['p_hfs_50l'] = p_hfs_50l
+    list_rq['p_hfs_90l'] = p_hfs_90l
+    list_rq['p_hfs_10r'] = p_hfs_10r
+    list_rq['p_hfs_50r'] = p_hfs_50r
+    list_rq['p_hfs_90r'] = p_hfs_90r   
     list_rq['p_area_ch'] = p_area_ch
     list_rq['p_area_ch_frac'] = p_area_ch_frac
     list_rq['p_area_top'] = p_area_top
