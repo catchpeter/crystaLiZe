@@ -452,9 +452,9 @@ def make_rq(data_dir, handscan = False):
                 sum_s1_area[i] = np.sum(p_area[i, index_s1])
             if n_s2[i] > 0:
                 sum_s2_area[i] = np.sum(p_area[i, index_s2])
-            if n_s1[i] > 0 and (n_s1[i] + n_s2[i]) > 1:
+            if n_s1[i] > 0 and (n_s1[i] + n_s2[i]) > 1 and ((p_class[i,0] == 1) + (p_class[i,0] == 2)):
                 index_max_s1[i] = 0
-                index_max_s2[i] = np.argmax(p_area[i, 1:]) + 1
+                index_max_s2[i] = np.argmax(p_area[i, 1:]) + 1   #+1 because p_area[i, 1:] count from 1.
                 if p_area[i, index_max_s1[i]] > 100 and p_area[i, index_max_s2[i]] > 100:
                     drift_Time_max[i] = tscale*(p_afs_1[i, index_max_s2[i]]-p_afs_1[i, index_max_s1[i]])
                 # s1_area_temp = np.copy(p_area[i,:])
@@ -516,9 +516,10 @@ def make_rq(data_dir, handscan = False):
             #plotyn = False#drift_Time_max[i]>3.1#(drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
             #plotyn = np.any(((p_class[i, :] == 1) + (p_class[i, :] == 2))*(p_area[i, :]>9300)*(p_area[i, :]<12300)*(p_tba[i, :]>-0.42)*(p_tba[i, :]<-0.3))
             p_rise = tscale*(p_afs_50[i, :]- p_afs_2l[i, :])
-            #plotyn = np.any((p_area[i, :]>10**3.8)*(p_area[i, :]<10**4.13)*(p_tba[i, :]>-1)*(p_tba[i, :]<1)*(p_rise>0.07)*(p_rise<0.11))
+            # p_width_90_10 = (p_afs_90[i, :] - p_afs_10[i, :])*tscale
+            # plotyn = np.any((p_area[i, :]>10**3.7)*(p_area[i, :]<10**4.2)*(p_width_90_10>.12)*(p_width_90_10<.132))
             # R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
-            # plotyn = drift_Time_max[i] > 2.5 and drift_Time_max[i] < 5.5 and p_area[i, index_max_s1[i]] > 6000 and p_area[i, index_max_s1[i]] < 30000 and p_area[i, index_max_s2[i]] > 10**5.15 and p_area[i, index_max_s2[i]] < 10**5.75 and R_s2 < 0.45
+            # plotyn = drift_Time_max[i] > 2.5 and drift_Time_max[i] < 5.5 and p_area[i, index_max_s1[i]] > 12000 and p_area[i, index_max_s1[i]] < 24000 and p_area[i, index_max_s2[i]] > 10**3.5 and p_area[i, index_max_s2[i]] < 10**5 and R_s2 < 0.6
             plotyn = False #True
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
@@ -745,7 +746,7 @@ def make_rq(data_dir, handscan = False):
 
 
 def main():
-    with open("path.txt", 'r') as path:
+    with open(sys.path[0]+"/path.txt", 'r') as path:
         #data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
         data_dir = path.read()
         #data_dir = data_dir[:-1]
