@@ -15,7 +15,7 @@ from read_settings import get_event_window, get_vscale
 #data_dir = "/home/xaber/caen/wavedump-3.8.2/data/041921/Po_2.8g_3.0c_0.72bar_circ_20min_0928/"
 #data_dir = "G:/My Drive/crystalize/data/data-202104/041421/Po_2.8g_3.0c_1.1bar_circ_60min_1747/"
 
-def make_rq(data_dir, handscan = False):   
+def make_rq(data_dir, handscan = False, max_pulses = 4):   
     # set plotting style
     mpl.rcParams['font.size']=10
     mpl.rcParams['legend.fontsize']='small'
@@ -71,9 +71,19 @@ def make_rq(data_dir, handscan = False):
     #spe_sizes_2 = np.array([82.342,82.528,82.477,82.523,84.209,81.481,78.693,81.669])
 
     # SPE sizes in LIQUID, Sept, 28, 2022
-    spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
-    spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
-    spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
+    #spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
+    #spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
+    #spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
+
+    # Re-analysis of top board is consistent with previous
+    #spe_sizes_0 = np.array([90.011,89.467,88.873,88.303,90.313,90.996,93.690,92.251,      ,      ,86.964,      ,90.792,91.202,92.300,93.048])
+
+
+    # SPE sizes in SOLID, Oct 2022
+    spe_sizes_0 = np.array([90.836,93.329,90.721,90.831,93.071,91.682,93.485,95.265,88.747,91.275,88.771,89.520,93.875,94.136,94.966,94.632])
+    spe_sizes_1 = np.array([94.666,95.533,93.915,99.042,97.783,94.895,97.134,97.501])
+    spe_sizes_2 = np.array([94.553,95.514,96.554,96.465,96.711,96.920,95.460,95.705])
+
 
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
@@ -121,7 +131,6 @@ def make_rq(data_dir, handscan = False):
     # Event level: drift time; S1, S2 area
     # Pulse class (S1, S2, other)
     # max number of pulses per event
-    max_pulses = 4
     p_start = np.zeros(( n_events, max_pulses), dtype=int)
     p_end   = np.zeros(( n_events, max_pulses), dtype=int)
     p_found = np.zeros(( n_events, max_pulses), dtype=int)
@@ -520,12 +529,13 @@ def make_rq(data_dir, handscan = False):
             #R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
             #plotyn = False#drift_Time_max[i]>3.1#(drift_Time_max[i]>2.5)*(drift_Time_max[i]<5.8)*(p_area[i, index_max_s1[i]]>10000)*(p_area[i, index_max_s2[i]]>0)*(R_s2<0.45)  
             #plotyn = np.any(((p_class[i, :] == 1) + (p_class[i, :] == 2))*(p_area[i, :]>9300)*(p_area[i, :]<12300)*(p_tba[i, :]>-0.42)*(p_tba[i, :]<-0.3))
-            p_rise = tscale*(p_afs_50[i, :]- p_afs_2l[i, :])
+            # p_rise = tscale*(p_afs_50[i, :]- p_afs_2l[i, :])
             # p_width_90_10 = (p_afs_90[i, :] - p_afs_10[i, :])*tscale
-            # plotyn = np.any((p_area[i, :]>10**3.7)*(p_area[i, :]<10**4.2)*(p_width_90_10>.12)*(p_width_90_10<.132))
+            # temp_condition = (p_area[i, :]>1000)*(p_width_90_10>0)*(p_width_90_10>(p_area[i,:]**0.67/100.))
+            plotyn = False #False #np.any(temp_condition)
             # R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
-            # plotyn = drift_Time_max[i] > 2.5 and drift_Time_max[i] < 5.5 and p_area[i, index_max_s1[i]] > 12000 and p_area[i, index_max_s1[i]] < 24000 and p_area[i, index_max_s2[i]] > 10**3.5 and p_area[i, index_max_s2[i]] < 10**5 and R_s2 < 0.6
-            plotyn = False #True
+            # plotyn = drift_Time_max[i] > 2.5 and drift_Time_max[i] < 5.5 and p_area[i, index_max_s1[i]] > 12000 and p_area[i, index_max_s1[i]] < 24000 and p_area[i, index_max_s2[i]] > 10**3.5 and p_area[i, index_max_s2[i]] < 10**5 and R_s2 < 0.6    
+            # plotyn = True
             areaRange = np.sum((p_area[i,:] < 50)*(p_area[i,:] > 5))
             if areaRange > 0:
                 dt[i] = abs(p_start[i,1] - p_start[i,0]) # For weird double s1 data
@@ -576,7 +586,7 @@ def make_rq(data_dir, handscan = False):
                     ax.text((end_times[ps]) * tscale, (0.86-ps*0.2) * ax.get_ylim()[1], 'Rise={:.1f} us'.format(afs50_2[ps]),
                         fontsize=9, color=pulse_class_colors[p_class[i, ps]])
                     #ax.text((end_times[ps]) * tscale, (0.82-ps*0.2) * ax.get_ylim()[1], 'Check={}'.format(temp_condition[ps]),
-                        #fontsize=9, color=pulse_class_colors[p_class[i, ps]])
+                    #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])
                     
                 pl.legend()
                 
