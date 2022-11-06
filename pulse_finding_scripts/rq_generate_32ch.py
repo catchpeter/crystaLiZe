@@ -313,6 +313,7 @@ def make_rq(data_dir, handscan = False, max_pulses = 4):
             for m in startinds:
                 if m >= max_pulses:
                     continue
+                if start_times[m] < 0.25/tscale: continue
                 p_start[i,m] = start_times[m]
                 p_end[i,m] = end_times[m]
 
