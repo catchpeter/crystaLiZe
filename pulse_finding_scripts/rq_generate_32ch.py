@@ -532,7 +532,7 @@ def make_rq(data_dir, handscan = False, max_pulses = 4):
             # p_rise = tscale*(p_afs_50[i, :]- p_afs_2l[i, :])
             # p_width_90_10 = (p_afs_90[i, :] - p_afs_10[i, :])*tscale
             # temp_condition = (p_area[i, :]>1000)*(p_width_90_10>0)*(p_width_90_10>(p_area[i,:]**0.67/100.))
-            plotyn = False #False #np.any(temp_condition)
+            # plotyn = False #False #np.any(temp_condition)
             # R_s2 = np.sqrt(center_top_x[i, index_max_s2[i]]**2 + center_top_y[i, index_max_s2[i]]**2)
             # plotyn = drift_Time_max[i] > 2.5 and drift_Time_max[i] < 5.5 and p_area[i, index_max_s1[i]] > 12000 and p_area[i, index_max_s1[i]] < 24000 and p_area[i, index_max_s2[i]] > 10**3.5 and p_area[i, index_max_s2[i]] < 10**5 and R_s2 < 0.6    
             # plotyn = True

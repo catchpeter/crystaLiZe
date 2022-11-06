@@ -1,10 +1,10 @@
 import numpy as np
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "pulse_finding_scripts"))
-from rq_generate import make_rq
+from rq_generate_32ch import make_rq
 
 
-with open("handscan_path.txt", 'r') as path:
+with open(sys.path[0]+"/handscan_path.txt", 'r') as path:
     data_dir = path.readline().strip() #only read first line of path.txt
 
 #read RQ
@@ -48,7 +48,7 @@ center_top_y_d = center_top_y * d_between_SiPM_center_y/2
 listrq.close()
 #end of RQ read
 
-handscan = np.any(p_area_ch<-10, axis = (1,2))*np.any((p_class == 1) + (p_class == 2), axis = 1)
+handscan = True#np.any(p_area_ch<-10, axis = (1,2))*np.any((p_class == 1) + (p_class == 2), axis = 1)
 
 #print(p_area_ch[handscan])
 make_rq(data_dir, handscan = handscan)
