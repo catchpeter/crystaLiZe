@@ -184,7 +184,7 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
             with h5py.File(save_dir+"compressed_"+str(bk)+".h5", "w") as f:
                 f.create_dataset("dataset", data=stuffToSave, compression="gzip" )
         elif save_mode == "none":
-            continue
+            return stuffToSave
 
     with open(save_dir+"headers.npy", "wb") as f:
         np.savez_compressed(f, headers.flatten() )
@@ -192,7 +192,7 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
     end_t = time.time()
     print("Finished zero baseline reduction", end_t-start_t, "sec")
 
-    return
+
 
 
 
