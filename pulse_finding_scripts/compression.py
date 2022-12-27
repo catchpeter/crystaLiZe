@@ -11,11 +11,11 @@ from read_settings import get_event_window
 Updating...
 """
 
-def compression(data_dir, threshold=300, save_mode="npy", save_everything=False, debug=False):
+def compression(data_dir, threshold=300, save_mode="npy", save_everything=False, ret_block='all'):
 
     """Checks board alignment, does zero-baseline suppression, compresses data
     """
-
+    
     start_t = time.time()
 
     if data_dir[-1] == "\n": data_dir = data_dir[:-1]
@@ -52,13 +52,17 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
     print("Total events: "+str(tot_ev) )
     print("Number of compressed files = "+str(tot_fi))
     time.sleep(2)
-
+    
     headers = np.zeros((tot_ev+10,8),dtype=int)
-
+    
+    if ret_block in ("all", "All", "ALL"):
+        tot_fi_to_loop = range(tot_fi)
+    else:
+        tot_fi_to_loop = (ret_block)
+        print(f"Giving block {ret_block} of {tot_fi}")
     # Loop over blocks of events
     #tot_fi = 2 # custom number of files
-    for bk in range(tot_fi):
-
+    for bk in tot_fi_to_loop:
         # First, check board alignment 
         # Get list of event numbers in header
         evNum = np.array([])
@@ -152,47 +156,24 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         stuffToSave = np.zeros_like(all_data_front_pods)
         for ch in range(n_all_ch):
             stuffToSave[ch, toSaveOrNotToSave, :] = all_data_front_pods[ch, toSaveOrNotToSave, :]
-
+        
         stuffToSave = np.reshape(stuffToSave, (n_all_ch, max_n_events*(wsize-8)))
         
-
-        # Some plotting code for debugging
-        if debug:
-            for i in range(max_n_events):
-                #print(test_ev[:,i])
-                pl.figure()
-                #for ch in range(24,32):
-                #    pl.plot(all_data_front[ch, i, :],"g")
-                pl.plot(np.sum(all_data_front[:, i, :],axis=0),"b")
-                pl.plot(np.sum(stuffToSave[:, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"r")
-                #pl.legend(["Raw","Compressed"])
-                #pl.plot(np.sum(stuffToSave[16:22, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"b")
-                #pl.plot(np.sum(stuffToSave[23:31, i*(wsize-8):(i+1)*(wsize-8)], axis=0),"m")
-                
-                pl.show()
         
         
-        
-        print("File "+str(bk)+"/"+str(tot_fi-1)+", percentage of data saved: "+str(np.count_nonzero(stuffToSave)/stuffToSave.size) )
-
-
         # Save that mf
         if save_mode == "npy":
-            with open(save_dir+"compressed_"+str(bk)+".npy", "wb") as f:
-                np.savez_compressed(f, stuffToSave.flatten() )
+            np.savez_compressed(f'{save_dir}compressed_{bk}.npy', stuffToSave.flatten())
+            np.savez_compressed(f'{saveIdir}headers.npy', headers.flatten())
         elif save_mode == "h5py":
             with h5py.File(save_dir+"compressed_"+str(bk)+".h5", "w") as f:
                 f.create_dataset("dataset", data=stuffToSave, compression="gzip" )
-        elif save_mode == "none":
+            np.savez_compressed(f'{saveIdir}headers.npy', headers.flatten())
+        elif save_mode in ("none", None):
             return stuffToSave
-
-    with open(save_dir+"headers.npy", "wb") as f:
-        np.savez_compressed(f, headers.flatten() )
-
+    
     end_t = time.time()
     print("Finished zero baseline reduction", end_t-start_t, "sec")
-
-
 
 
 
@@ -204,7 +185,6 @@ def main():
     
     compression(data_dir)
 
-    return
 
 
 if __name__ == "__main__":
