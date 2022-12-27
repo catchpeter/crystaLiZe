@@ -57,7 +57,7 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
     if ret_block in ("all", "All", "ALL"):
         tot_fi_to_loop = range(tot_fi)
     else:
-        tot_fi_to_loop = (ret_block)
+        tot_fi_to_loop = [ret_block]
         print(f"Giving block {ret_block} of {tot_fi}")
     # Loop over blocks of events
     #tot_fi = 2 # custom number of files
