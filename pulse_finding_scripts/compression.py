@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as pl
 import gzip
-import h5py
 import time
 import os
 
@@ -164,10 +163,6 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         # Save that mf
         if save_mode == "npy":
             np.savez_compressed(f'{save_dir}compressed_{bk}.npy', stuffToSave.flatten())
-            np.savez_compressed(f'{saveIdir}headers.npy', headers.flatten())
-        elif save_mode == "h5py":
-            with h5py.File(save_dir+"compressed_"+str(bk)+".h5", "w") as f:
-                f.create_dataset("dataset", data=stuffToSave, compression="gzip" )
             np.savez_compressed(f'{saveIdir}headers.npy', headers.flatten())
         elif save_mode in ("none", None):
             return stuffToSave
