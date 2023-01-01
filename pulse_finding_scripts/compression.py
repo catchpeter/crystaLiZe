@@ -1,56 +1,56 @@
 import numpy as np
-import matplotlib.pyplot as pl
-import gzip
 import time
 import os
 
 from read_settings import get_event_window
 
-"""
-Updating...
-"""
-
-def compression(data_dir, threshold=300, save_mode="npy", save_everything=False, ret_block='all'):
-
+def compression(
+    data_dir,
+    threshold=300, 
+    save_mode="npy", 
+    save_everything=False, 
+    ret_block='all', 
+    tellblocks=False):
     """Checks board alignment, does zero-baseline suppression, compresses data
     """
     
-    start_t = time.time()
-
     if data_dir[-1] == "\n": data_dir = data_dir[:-1]
     if data_dir[-1] != "/": data_dir += "/" # in case you forgot...
     if save_everything: threshold = -9999999 # if you want to save everything
-
-    # Make save directory
-    save_dir = data_dir+"compressed_data/"
-    try:
-        os.mkdir(save_dir)
-    except:
-        print("Directory already exists")
-
+    
+    if save_mode not in ('none','None',None):
+        # Make save directory
+        save_dir = data_dir+"compressed_data/"
+        try:
+            os.mkdir(save_dir)
+        except:
+            print("Directory already exists")
+    
     # Channel variables
     n_boards = 3
     n_sipms = [16,8,8]
     n_all_ch = int(np.sum(n_sipms))
-
+    
     # Get event window 
     event_window = get_event_window(data_dir)
     if event_window < 0: 
-        print("Invalid event window")
-        return
-
+        raise ValueError("Invalide event window")
+    
     wsize = int(500 * event_window) + 8 # Calculate size of waveform + header
     block_size = int(1500*15/event_window) # Number of events loaded, then saved per compressed file
     delay = 24 # Hardcoded delay between boards. DO NOT CHANGE
     load_dtype = "int16" # int16 saves on memory, fewer compressed files
-
+    
     # Get how many total events there are
     ch0_data = np.fromfile(data_dir+"waveforms_"+str(0)+"_0.dat",dtype=load_dtype)
     tot_ev = int(ch0_data.size/wsize)
     tot_fi = int(np.ceil(tot_ev/block_size))
-    print("Total events: "+str(tot_ev) )
-    print("Number of compressed files = "+str(tot_fi))
-    time.sleep(2)
+    if tellblocks:
+        return tot_fi
+    else:
+        print("Total events: "+str(tot_ev) )
+        print("Number of compressed files = "+str(tot_fi))
+        time.sleep(1)
     
     headers = np.zeros((tot_ev+10,8),dtype=int)
     
@@ -68,30 +68,38 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         n_events = []
         for bd in range(n_boards):
             # Offset is in bytes!!!!!!!! Each sample is 2 bytes (int16)
-            ch0_data = np.fromfile(data_dir+"waveforms_"+str(bd)+"_0.dat", dtype=load_dtype, offset=block_size*wsize*bk*2, count=wsize*block_size)
+            ch0_data = np.fromfile(
+                data_dir+"waveforms_"+str(bd)+"_0.dat", 
+                dtype=load_dtype, 
+                offset=block_size*wsize*bk*2, 
+                count=wsize*block_size)
             n_events.append(int(ch0_data.size/wsize))
             evNum = np.concatenate((evNum, ch0_data[2::wsize]))
-
+        
         max_n_events = int(np.max(n_events))
-
-
+        
+        
         # Check for misaligned events
         tosser = []
         lastToCheck = int(np.max(evNum) )
         firstToCheck = int(np.min(evNum) ) 
         for i in range(firstToCheck,lastToCheck+1):
             if np.count_nonzero(evNum == i) != 3 and np.count_nonzero(evNum == i) > 0: tosser.append(i)
-
+        
         print("Number of misaligned events: "+str(len(tosser)))
-
+        
         # Load data, loop over all boards and channels
-        all_data_front = np.zeros((n_all_ch, max_n_events, wsize-8))
-        all_data_back = np.zeros((n_all_ch, max_n_events, wsize-8))
-        test_ev = np.zeros((n_boards, max_n_events))
+        all_data_front = np.empty((n_all_ch, max_n_events, wsize-8))
+        all_data_back = np.empty((n_all_ch, max_n_events, wsize-8))
+        test_ev = np.empty((n_boards, max_n_events))
         ch_ind = 0
         for bd in range(n_boards):
             for ch in range(n_sipms[bd]):
-                ch_data = np.fromfile(data_dir + "waveforms_"+str(bd)+"_"+str(ch)+".dat", dtype=load_dtype, offset=block_size*wsize*bk*2, count=wsize*block_size)
+                ch_data = np.fromfile(
+                    data_dir + "waveforms_"+str(bd)+"_"+str(ch)+".dat", 
+                    dtype=load_dtype, 
+                    offset=block_size*wsize*bk*2, 
+                    count=wsize*block_size)
                 try:
                     ch_data = np.reshape(ch_data, (n_events[bd], wsize))
                 except:
@@ -142,15 +150,13 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         area_threshold_front = threshold 
         area_threshold_back = threshold 
         toSaveOrNotToSave = (np.abs(sum_data_front_pods_area) > area_threshold_front)*(np.abs(sum_data_back_pods_area) > area_threshold_back)
-    
+        
         nBefore = 25
         for i in range(nBefore):
             diffSave = np.diff(toSaveOrNotToSave, axis=1)
             #print(np.sum(diffSave[diffSave==1]))
             if i < 8: toSaveOrNotToSave[:,:-1][diffSave != 0] = 1
             toSaveOrNotToSave[:,1:][diffSave != 0] = 1
-    
-
         # Create array to save
         stuffToSave = np.zeros_like(all_data_front_pods)
         for ch in range(n_all_ch):
@@ -164,23 +170,13 @@ def compression(data_dir, threshold=300, save_mode="npy", save_everything=False,
         if save_mode == "npy":
             np.savez_compressed(f'{save_dir}compressed_{bk}.npy', stuffToSave.flatten())
             np.savez_compressed(f'{save_dir}headers.npy', headers.flatten())
-        elif save_mode in ("none", None):
+        elif save_mode in ("none","None", None):
             return stuffToSave
-    
-    end_t = time.time()
-    print("Finished zero baseline reduction", end_t-start_t, "sec")
-
-
 
 def main():
     with open("path.txt", 'r') as path:
-        #data_dir = "/home/xaber/Data/data-202203/20220323/202203232045_1.4bar_2600C2400G0A_54B_topCo_15us/"
-        data_dir = path.read()
-        #data_dir = data_dir[:-1]
-    
+        data_dir = path.read()    
     compression(data_dir)
-
-
 
 if __name__ == "__main__":
     main()
