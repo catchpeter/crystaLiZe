@@ -9,9 +9,11 @@ def compression(
     threshold=300, 
     save_mode="npy", 
     save_everything=False, 
-    ret_block='all', 
+    ret_block='all',
+    channel='all', 
     tellblocks=False):
-    """Checks board alignment, does zero-baseline suppression, compresses data
+    """
+    Checks board alignment, does zero-baseline suppression, compresses data
     """
     
     if data_dir[-1] == "\n": data_dir = data_dir[:-1]
@@ -164,7 +166,12 @@ def compression(
         
         stuffToSave = np.reshape(stuffToSave, (n_all_ch, max_n_events*(wsize-8)))
         
-        
+        if channel in ('all','All','ALL'):
+            pass
+        elif isinstance(channel, int) and (channel>=0) and (channel<n_all_ch):
+            stuffToSave = stuffToSave[channel,:]
+        else:
+            raise ValueError("Input 'channel' must be either 'all' or an int between 0 and n_channels-1")
         
         # Save that mf
         if save_mode == "npy":
