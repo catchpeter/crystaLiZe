@@ -11,7 +11,7 @@ def compression(
     save_everything=False, 
     ret_block='all',
     channel='all', 
-    tellblocks=False
+    tellblocks=False,
     verbose=True):
     """
     Checks board alignment, does zero-baseline suppression, compresses data
