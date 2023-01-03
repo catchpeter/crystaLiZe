@@ -11,7 +11,8 @@ def compression(
     save_everything=False, 
     ret_block='all',
     channel='all', 
-    tellblocks=False):
+    tellblocks=False
+    verbose=True):
     """
     Checks board alignment, does zero-baseline suppression, compresses data
     """
@@ -26,7 +27,8 @@ def compression(
         try:
             os.mkdir(save_dir)
         except:
-            print("Directory already exists")
+            if verbose:
+                print("Directory already exists")
     
     # Channel variables
     n_boards = 3
@@ -50,8 +52,9 @@ def compression(
     if tellblocks:
         return tot_fi
     else:
-        print("Total events: "+str(tot_ev) )
-        print("Number of compressed files = "+str(tot_fi))
+        if verbose:
+            print("Total events: "+str(tot_ev) )
+            print("Number of compressed files = "+str(tot_fi))
         time.sleep(1)
     
     headers = np.zeros((tot_ev+10,8),dtype=int)
@@ -60,7 +63,8 @@ def compression(
         tot_fi_to_loop = range(tot_fi)
     else:
         tot_fi_to_loop = [ret_block]
-        print(f"Giving block {ret_block} of {tot_fi}")
+        if verbose:
+            print(f"Giving block {ret_block} of {tot_fi}")
     # Loop over blocks of events
     #tot_fi = 2 # custom number of files
     for bk in tot_fi_to_loop:
@@ -87,8 +91,8 @@ def compression(
         firstToCheck = int(np.min(evNum) ) 
         for i in range(firstToCheck,lastToCheck+1):
             if np.count_nonzero(evNum == i) != 3 and np.count_nonzero(evNum == i) > 0: tosser.append(i)
-        
-        print("Number of misaligned events: "+str(len(tosser)))
+        if verbose:
+            print("Number of misaligned events: "+str(len(tosser)))
         
         # Load data, loop over all boards and channels
         all_data_front = np.empty((n_all_ch, max_n_events, wsize-8))
