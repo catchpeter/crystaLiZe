@@ -1,6 +1,10 @@
 import numpy as np
 import time
 import os
+try:
+    import h5py
+except ImportError:
+    pass
 
 from read_settings import get_event_window
 
