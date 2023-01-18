@@ -91,7 +91,7 @@ def make_rq(data_dir, handscan = False, max_pulses = 4):
     # ==================================================================
 
 
-    compressed_file_list = sorted(glob.glob(data_dir+"compressed_data/compressed_*.npy") )
+    compressed_file_list = sorted(glob.glob(data_dir+"compressed_data/compressed_*.npz") )
     if len(compressed_file_list) < 1:
         print("No compressed files found in "+data_dir+"compressed_data/")
         return
@@ -100,7 +100,7 @@ def make_rq(data_dir, handscan = False, max_pulses = 4):
     n_events = (len(compressed_file_list)+5)*1500 # some extra room 
 
     # Load headers and calculate event time
-    h_file = np.load(data_dir+"compressed_data/headers.npy")
+    h_file = np.load(data_dir+"compressed_data/headers.npz")
     h_array = h_file["arr_0"]
     h_n_events = int(np.floor(h_array.size/8))
     h_array = np.reshape(h_array,(h_n_events,8))
@@ -222,10 +222,10 @@ def make_rq(data_dir, handscan = False, max_pulses = 4):
     
         # load compressed data
         try:
-            with np.load(data_dir+"compressed_data/compressed_"+str(j)+".npy") as data:
+            with np.load(data_dir+"compressed_data/compressed_"+str(j)+".npz") as data:
                 ch_data = data["arr_0"]
         except:
-            print("Error in loading "+data_dir+"compressed_data/compressed_"+str(j)+".npy")
+            print("Error in loading "+data_dir+"compressed_data/compressed_"+str(j)+".npz")
             continue
         
         n_tot_samp_per_ch = int( (ch_data.size)/n_sipms )

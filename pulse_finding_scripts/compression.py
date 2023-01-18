@@ -183,8 +183,8 @@ def compression(
         
         # Save that mf
         if save_mode == "npy":
-            np.savez_compressed(f'{save_dir}compressed_{bk}.npy', stuffToSave.flatten())
-            np.savez_compressed(f'{save_dir}headers.npy', headers.flatten())
+            np.savez_compressed(f'{save_dir}compressed_{bk}', stuffToSave.flatten())
+            np.savez_compressed(f'{save_dir}headers', headers.flatten())
         elif save_mode in ("none","None", None):
             return stuffToSave
 
