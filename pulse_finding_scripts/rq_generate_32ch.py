@@ -752,7 +752,7 @@ def make_rq(data_dir, handscan = False, max_pulses = 4):
         if rq != 'n_events':
             list_rq[rq] = list_rq[rq][:n_events]
 
-    rq = open(data_dir + "rq.npz",'wb')
+    rq = open(data_dir + "rq.npy",'wb')
     #rq = open("/home/xaber/Data/20220303/202203031433 /rq.npz")
     
     np.savez(rq, **list_rq)
