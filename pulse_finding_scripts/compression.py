@@ -5,18 +5,24 @@ try:
     import h5py
 except ImportError:
     pass
+import matplotlib.pyplot as pl
 
 from read_settings import get_event_window
+from ch_evt_filter_compress import baseline_suppress, filter_channel_event
+
+
+
 
 def compression(
     data_dir,
-    threshold=300, 
+    threshold=5, 
     save_mode="npy", 
     save_everything=False, 
     ret_block='all',
     channel='all', 
     tellblocks=False,
-    verbose=True):
+    verbose=True,
+    debug=False):
     """
     Checks board alignment, does zero-baseline suppression, compresses data
     """
@@ -90,7 +96,7 @@ def compression(
         
         
         # Check for misaligned events
-        tosser = []
+        tosser = [] # tosser? I barely knew her!
         lastToCheck = int(np.max(evNum) )
         firstToCheck = int(np.min(evNum) ) 
         for i in range(firstToCheck,lastToCheck+1):
@@ -98,10 +104,20 @@ def compression(
         if verbose:
             print("Number of misaligned events: "+str(len(tosser)))
         
-        # Load data, loop over all boards and channels
-        all_data_front = np.empty((n_all_ch, max_n_events, wsize-8))
-        all_data_back = np.empty((n_all_ch, max_n_events, wsize-8))
-        test_ev = np.empty((n_boards, max_n_events))
+        
+        # Initializing arrays to store data
+        # Note: np.zeros is preferred over np.empty because we want default to be zero
+        all_bool_front = np.zeros((n_all_ch, max_n_events, wsize-8))
+        all_bool_back = np.zeros((n_all_ch, max_n_events, wsize-8))
+        #all_data_front = np.zeros((n_all_ch, max_n_events, wsize-8))
+        #all_data_back = np.zeros((n_all_ch, max_n_events, wsize-8))
+        raw_data_front = np.zeros((n_all_ch,max_n_events,wsize-8))
+        filtered_data_front = np.zeros((n_all_ch,max_n_events,wsize-8))
+        data_to_save = np.zeros((n_all_ch,max_n_events,wsize-8))
+
+        use_aarons_baseline_suppress = True
+
+        # Load data one channel at a time
         ch_ind = 0
         for bd in range(n_boards):
             for ch in range(n_sipms[bd]):
@@ -116,77 +132,102 @@ def compression(
                     print("Error in reshaping array. If final block, ignore this.")
                     continue
                 
-                # Loop over events to check alignment, then to place in all data array
+                # Loop over events to check alignment, correct for delay between boards, then do baseline quashing    
                 toss_counts = 0
                 for ev in range(n_events[bd]):
                     if ch_data[ev, 2] in tosser:
                         toss_counts += 1
                     else:
-                        if bd == 0:
-                            all_data_front[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] - np.mean(ch_data[ev, 8:8+150])
-                            all_data_back[ch_ind, ev-toss_counts, :] = ch_data[ev, 8:wsize] - np.mean(ch_data[ev, -150:-1])
-                            test_ev[bd,ev-toss_counts] = ch_data[ev,2]
-                            if ch == 0:
-                                headers[ev-toss_counts+bk*block_size,:] = ch_data[ev,0:8]
-                        elif bd == 1:
-                            all_data_front[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:(wsize-delay)] - np.mean(ch_data[ev, 8:8+150])
-                            all_data_back[ch_ind, ev-toss_counts, delay:] = ch_data[ev, 8:(wsize-delay)] - np.mean(ch_data[ev, -150:-1])
-                            test_ev[bd,ev-toss_counts] = ch_data[ev,2]
-                        elif bd == 2:
-                            all_data_front[ch_ind, ev-toss_counts, 2*delay:] = ch_data[ev, 8:(wsize-2*delay)] - np.mean(ch_data[ev, 8:8+150])
-                            all_data_back[ch_ind, ev-toss_counts, 2*delay:] = ch_data[ev, 8:(wsize-2*delay)] - np.mean(ch_data[ev, -150:-1])
-                            test_ev[bd,ev-toss_counts] = ch_data[ev,2]
-                        # need to scale by spe size!!!
+                        # Get which board to determine time delay
+                        if bd == 0: tot_delay = 0
+                        elif bd == 1: tot_delay = delay
+                        elif bd == 2: tot_delay = 2*delay
+                            
+                        # Subtract baseline in two ways
+                        ch_data_BSF = ch_data[ev, 8:(wsize-tot_delay)] - np.mean(ch_data[ev, 8:8+150])
+                        ch_data_BSB = ch_data[ev, 8:(wsize-tot_delay)] - np.mean(ch_data[ev, -150:-1])
+                        raw_data_front[ch_ind,ev-toss_counts,tot_delay:] = ch_data_BSF
 
-                
+                        # Filter data
+                        ch_data_BSF_filtered = filter_channel_event(ch_data_BSF)
+                        ch_data_BSB_filtered = filter_channel_event(ch_data_BSB)
+                        filtered_data_front[ch_ind,ev-toss_counts,tot_delay:] = ch_data_BSF_filtered
+
+                        # Get bool for baseline suppression
+                        if use_aarons_baseline_suppress:
+                            all_bool_front[ch_ind,ev-toss_counts,tot_delay:] = baseline_suppress(ch_data_BSF_filtered, pls_thresh=threshold)
+                            all_bool_back[ch_ind,ev-toss_counts,tot_delay:] = baseline_suppress(ch_data_BSB_filtered, pls_thresh=threshold)
+                        else:
+                            all_bool_front[ch_ind,ev-toss_counts,tot_delay:] = np.absolute(ch_data_BSF_filtered) > threshold
+                            all_bool_back[ch_ind,ev-toss_counts,tot_delay:] = np.absolute(ch_data_BSB_filtered) > threshold
+
+                        # Save header info for the first channel
+                        if ch_ind == 0: headers[ev-toss_counts+bk*block_size,:] = ch_data[ev,0:8]
+                        
+                    # end of event loop
+
                 ch_ind += 1
-
-
-        # Reshape into pods
-        pod_size = 10 #5 # samples. 5 samples = 10 ns
-        n_pods = int( (wsize-8)/pod_size )
-        all_data_front_pods = np.reshape(all_data_front, (n_all_ch, max_n_events, n_pods, pod_size) )
-        all_data_back_pods = np.reshape(all_data_back, (n_all_ch, max_n_events, n_pods, pod_size) )
-
-        # Sum channels
-        sum_data_front_pods = np.sum(all_data_front_pods, axis=0)
-        sum_data_back_pods = np.sum(all_data_back_pods, axis=0)
-
-        # Sum within pods
-        sum_data_front_pods_area = np.sum(sum_data_front_pods, axis=2) 
-        sum_data_back_pods_area = np.sum(sum_data_back_pods, axis=2) 
-
-        # Do cuts on areas
-        area_threshold_front = threshold 
-        area_threshold_back = threshold 
-        toSaveOrNotToSave = (np.abs(sum_data_front_pods_area) > area_threshold_front)*(np.abs(sum_data_back_pods_area) > area_threshold_back)
+                # end of channel loop
         
-        nBefore = 25
-        for i in range(nBefore):
-            diffSave = np.diff(toSaveOrNotToSave, axis=1)
-            #print(np.sum(diffSave[diffSave==1]))
-            if i < 8: toSaveOrNotToSave[:,:-1][diffSave != 0] = 1
-            toSaveOrNotToSave[:,1:][diffSave != 0] = 1
-        # Create array to save
-        stuffToSave = np.zeros_like(all_data_front_pods)
-        for ch in range(n_all_ch):
-            stuffToSave[ch, toSaveOrNotToSave, :] = all_data_front_pods[ch, toSaveOrNotToSave, :]
+
+        # Decide on what to save 
+        bool_front = np.sum(all_bool_front,axis=0)
+        bool_front[bool_front > 0] = np.ones_like(bool_front[bool_front > 0]) 
+        bool_back = np.sum(all_bool_back,axis=0)
+        bool_back[bool_back > 0] = np.ones_like(bool_back[bool_back > 0])
         
-        stuffToSave = np.reshape(stuffToSave, (n_all_ch, max_n_events*(wsize-8)))
+        to_save_or_not_to_save = np.logical_and(bool_front,bool_back)
+
+
+        # Do some extra work if not using Aaron's function
+        if not use_aarons_baseline_suppress:
+
+            # Buffers before and after stuff passing threshold
+            # Not particuarly efficient, but this only runs once per block
+            # Assumption: buffL <= buffR (which is fine, before a pulse is baseline, after a pulse could be something else)
+            buffL=100
+            buffR=250
+            for i in range(buffR):
+                diff_bool = np.diff(to_save_or_not_to_save, axis=1)
+                if i < buffL: to_save_or_not_to_save[:,:-1][diff_bool != 0] = 1 # left buffers
+                to_save_or_not_to_save[:,1:][diff_bool != 0] = 1 # right buffers
+
+            # Condense. Even more inefficient
+            condense_thresh = 100
+            for ev in range(n_events[0]):
+                save_ind = np.nonzero(to_save_or_not_to_save[ev,:] == 1)[0]
+                diff_save_ind = np.diff(save_ind)
+                for i in range(diff_save_ind.size):
+                    if diff_save_ind[i] < condense_thresh and diff_save_ind[i] > 1:
+                        to_save_or_not_to_save[ev,save_ind[i]:int(min(save_ind[i]+condense_thresh,wsize-8))] = 1
+
+
+
+
+
+        data_to_save[:,to_save_or_not_to_save] = raw_data_front[:,to_save_or_not_to_save]
+
+
+        # Some plotting for debugging
+        if debug:
+            t = 2*np.arange(wsize-8)
+            for ev in range(n_events[0]):
+                pl.figure()
+                pl.plot(t, raw_data_front[0,ev,:], "black")
+                pl.plot(t, filtered_data_front[0,ev,:] - 200, "red")
+                pl.plot(t, data_to_save[0,ev,:], "blue", alpha=0.5)
+                pl.show()
         
-        if channel in ('all','All','ALL'):
-            pass
-        elif isinstance(channel, int) and (channel>=0) and (channel<n_all_ch):
-            stuffToSave = stuffToSave[channel,:]
-        else:
-            raise ValueError("Input 'channel' must be either 'all' or an int between 0 and n_channels-1")
+
         
         # Save that mf
         if save_mode == "npy":
-            np.savez_compressed(f'{save_dir}compressed_{bk}', stuffToSave.flatten())
-            np.savez_compressed(f'{save_dir}headers', headers.flatten())
+            1 == 2
+            #np.savez_compressed(f'{save_dir}compressed_{bk}', all_data_front.flatten())
+            #np.savez_compressed(f'{save_dir}headers', headers.flatten())
         elif save_mode in ("none","None", None):
-            return stuffToSave
+            print("Disabled saving, moving to next block")
+            #return all_data_front #stuffToSave
 
 def main():
     with open("path.txt", 'r') as path:
