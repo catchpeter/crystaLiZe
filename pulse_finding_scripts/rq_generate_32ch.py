@@ -47,7 +47,7 @@ def make_rq(data_dir, handscan = False, max_pulses = 4):
     n_sipms = 32    
     n_channels = n_sipms + 1 # include sum
     
-    block_size = 1500
+    block_size = int(1500*15/event_window)
 
 
     # define top, bottom channels
@@ -97,7 +97,7 @@ def make_rq(data_dir, handscan = False, max_pulses = 4):
         return
 
     
-    n_events = (len(compressed_file_list)+5)*1500 # some extra room 
+    n_events = (len(compressed_file_list)+5)*block_size # some extra room 
 
     # Load headers and calculate event time
     h_file = np.load(data_dir+"compressed_data/headers.npz")
