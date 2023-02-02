@@ -12,10 +12,10 @@ from ch_evt_filter_compress import baseline_suppress, filter_channel_event
 
 
 
-
 def compression(
     data_dir,
-    threshold=5, 
+    threshold=5,
+    filtered=True, 
     save_mode="npy", 
     save_everything=False, 
     ret_block='all',
@@ -33,7 +33,10 @@ def compression(
     
     if save_mode not in ('none','None',None):
         # Make save directory
-        save_dir = data_dir+"compressed_data/"
+        if filtered:
+            save_dir = data_dir+"compressed_filtered_data_dev/"
+        else:
+            save_dir = data_dir+"compressed_data_dev/"
         try:
             os.mkdir(save_dir)
         except:
@@ -96,7 +99,7 @@ def compression(
         
         
         # Check for misaligned events
-        tosser = [] # tosser? I barely knew her!
+        tosser = [] 
         lastToCheck = int(np.max(evNum) )
         firstToCheck = int(np.min(evNum) ) 
         for i in range(firstToCheck,lastToCheck+1):
@@ -107,15 +110,12 @@ def compression(
         
         # Initializing arrays to store data
         # Note: np.zeros is preferred over np.empty because we want default to be zero
-        all_bool_front = np.zeros((n_all_ch, max_n_events, wsize-8))
-        all_bool_back = np.zeros((n_all_ch, max_n_events, wsize-8))
-        #all_data_front = np.zeros((n_all_ch, max_n_events, wsize-8))
-        #all_data_back = np.zeros((n_all_ch, max_n_events, wsize-8))
+        all_bool_front = np.zeros((n_all_ch, max_n_events, wsize-8), dtype=bool)
+        all_bool_back = np.zeros((n_all_ch, max_n_events, wsize-8), dtype=bool)
         raw_data_front = np.zeros((n_all_ch,max_n_events,wsize-8))
         filtered_data_front = np.zeros((n_all_ch,max_n_events,wsize-8))
         data_to_save = np.zeros((n_all_ch,max_n_events,wsize-8))
 
-        use_aarons_baseline_suppress = True
 
         # Load data one channel at a time
         ch_ind = 0
@@ -154,12 +154,25 @@ def compression(
                         filtered_data_front[ch_ind,ev-toss_counts,tot_delay:] = ch_data_BSF_filtered
 
                         # Get bool for baseline suppression
-                        if use_aarons_baseline_suppress:
-                            all_bool_front[ch_ind,ev-toss_counts,tot_delay:] = baseline_suppress(ch_data_BSF_filtered, pls_thresh=threshold)
-                            all_bool_back[ch_ind,ev-toss_counts,tot_delay:] = baseline_suppress(ch_data_BSB_filtered, pls_thresh=threshold)
-                        else:
-                            all_bool_front[ch_ind,ev-toss_counts,tot_delay:] = np.absolute(ch_data_BSF_filtered) > threshold
-                            all_bool_back[ch_ind,ev-toss_counts,tot_delay:] = np.absolute(ch_data_BSB_filtered) > threshold
+                        bool_front = baseline_suppress(ch_data_BSF_filtered, pls_thresh=threshold, buffL=200, buffR=300) #, buffL=0, buffR=100, condense_thresh=0 )
+                        bool_back = baseline_suppress(ch_data_BSB_filtered, pls_thresh=threshold, buffL=200, buffR=300)
+                        all_bool_front[ch_ind,ev-toss_counts,tot_delay:] = bool_front
+                        all_bool_back[ch_ind,ev-toss_counts,tot_delay:] = bool_back
+                        
+
+                        if debug: 
+                            t = 2*np.arange(wsize-8-tot_delay)
+                            pl.figure()
+                            pl.plot(t, ch_data_BSF, "black")
+                            pl.plot(t, ch_data_BSF_filtered-100, "red")
+                            pl.plot(t, threshold*np.ones_like(t) - 100, "cyan" )
+                            pl.plot(t, 100*bool_front, "green")
+                            pl.xlabel("Time [ns]")
+                            pl.ylabel("ADCC")
+                            pl.title("Channel 0, Event "+str(ev))
+                            pl.grid("major","major")
+                            pl.show()
+
 
                         # Save header info for the first channel
                         if ch_ind == 0: headers[ev-toss_counts+bk*block_size,:] = ch_data[ev,0:8]
@@ -171,41 +184,11 @@ def compression(
         
 
         # Decide on what to save 
-        bool_front = np.sum(all_bool_front,axis=0)
-        bool_front[bool_front > 0] = np.ones_like(bool_front[bool_front > 0]) 
-        bool_back = np.sum(all_bool_back,axis=0)
-        bool_back[bool_back > 0] = np.ones_like(bool_back[bool_back > 0])
-        
-        to_save_or_not_to_save = np.logical_and(bool_front,bool_back)
-
-
-        # Do some extra work if not using Aaron's function
-        if not use_aarons_baseline_suppress:
-
-            # Buffers before and after stuff passing threshold
-            # Not particuarly efficient, but this only runs once per block
-            # Assumption: buffL <= buffR (which is fine, before a pulse is baseline, after a pulse could be something else)
-            buffL=100
-            buffR=250
-            for i in range(buffR):
-                diff_bool = np.diff(to_save_or_not_to_save, axis=1)
-                if i < buffL: to_save_or_not_to_save[:,:-1][diff_bool != 0] = 1 # left buffers
-                to_save_or_not_to_save[:,1:][diff_bool != 0] = 1 # right buffers
-
-            # Condense. Even more inefficient
-            condense_thresh = 100
-            for ev in range(n_events[0]):
-                save_ind = np.nonzero(to_save_or_not_to_save[ev,:] == 1)[0]
-                diff_save_ind = np.diff(save_ind)
-                for i in range(diff_save_ind.size):
-                    if diff_save_ind[i] < condense_thresh and diff_save_ind[i] > 1:
-                        to_save_or_not_to_save[ev,save_ind[i]:int(min(save_ind[i]+condense_thresh,wsize-8))] = 1
-
-
-
-
-
-        data_to_save[:,to_save_or_not_to_save] = raw_data_front[:,to_save_or_not_to_save]
+        to_save_or_not_to_save = np.logical_and(all_bool_front, all_bool_back)
+        if filtered:
+            data_to_save[to_save_or_not_to_save] = filtered_data_front[to_save_or_not_to_save]
+        else:
+            data_to_save[to_save_or_not_to_save] = raw_data_front[to_save_or_not_to_save]
 
 
         # Some plotting for debugging
@@ -214,20 +197,35 @@ def compression(
             for ev in range(n_events[0]):
                 pl.figure()
                 pl.plot(t, raw_data_front[0,ev,:], "black")
-                pl.plot(t, filtered_data_front[0,ev,:] - 200, "red")
+                pl.plot(t, filtered_data_front[0,ev,:] - 100, "red")
+                pl.plot(t, threshold*np.ones_like(t) - 100, "cyan" )
                 pl.plot(t, data_to_save[0,ev,:], "blue", alpha=0.5)
+                pl.plot(t, 100*to_save_or_not_to_save[0,ev,:], "green")
+                #pl.plot(t, 200*all_bool_front[0,ev,:], "green")
+                #pl.legend(("Raw","Filtered (shifted down)","Saved raw"))
+                pl.xlabel("Time [ns]")
+                pl.ylabel("ADCC")
+                pl.title("Channel 0, Event "+str(ev))
+                pl.grid("major","major")
                 pl.show()
         
 
         
         # Save that mf
         if save_mode == "npy":
-            1 == 2
-            #np.savez_compressed(f'{save_dir}compressed_{bk}', all_data_front.flatten())
-            #np.savez_compressed(f'{save_dir}headers', headers.flatten())
+            if filtered:
+                np.savez_compressed(f'{save_dir}compressed_filtered_dev{bk}', data_to_save.flatten())
+            else:
+                np.savez_compressed(f'{save_dir}compressed_{bk}', data_to_save.flatten())
+            
         elif save_mode in ("none","None", None):
             print("Disabled saving, moving to next block")
             #return all_data_front #stuffToSave
+
+    # Headers are saved at the very end!
+    if save_mode not in ("none","None", None): 
+        np.savez_compressed(f'{save_dir}headers', headers.flatten())
+
 
 def main():
     with open("path.txt", 'r') as path:

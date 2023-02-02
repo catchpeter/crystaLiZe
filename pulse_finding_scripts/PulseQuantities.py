@@ -15,10 +15,11 @@ def GetPulseArea( p_start, p_end, waveforms_bls ):
 ############################################################
 
 def GetPulseAreaChannel(p_start, p_end, waveform_bls):
-    areas = np.zeros_like(waveform_bls[:,0])
+    areas = np.zeros_like(waveform_bls)
     try:
         areas = np.sum(waveform_bls[:,p_start:p_end],axis=1)
-    except ValueError:
+        return areas
+    except:
         return areas
 
 ############################################################

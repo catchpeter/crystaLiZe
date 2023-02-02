@@ -65,14 +65,13 @@ def baseline_suppress(d, pls_thresh=5., buffL=100, buffR=100, condense_thresh=10
     if not isinstance(condense_thresh, int):
         raise TypeError("'condense_thresh' must be an int")
     
+    cut_thresh = (d > pls_thresh) | (d < -pls_thresh)
+    cut_thresh[0] = False
+    cut_thresh[-1] = False
     pods_10n1 = np.concatenate((np.r_[0].astype(np.int8),
-        np.diff(((d>pls_thresh)|(d<-pls_thresh)).astype(np.int8))))
+        np.diff(cut_thresh.astype(np.int8))))
     pod_starts, = np.nonzero(pods_10n1 == 1)
     pod_stops,  = np.nonzero(pods_10n1 == -1)
-    if len(pod_starts) > len(pod_stops):
-        pod_starts = pod_starts[:len(pod_stops)]
-    if len(pod_stops) > len(pod_starts):
-        pod_stops = pod_stops[:len(pod_starts)]
     pod_starts -= buffL
     pod_stops  += buffR
     pulse_intvls = cpr.condense_intervals(

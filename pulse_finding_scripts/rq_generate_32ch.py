@@ -4,15 +4,17 @@ import matplotlib as mpl
 import time
 import sys
 import glob
+from natsort import natsorted
 
 import PulseFinderScipy as pf
 import PulseQuantities as pq
 import PulseClassification as pc
+import PulseFinderVerySimple as vs
 from read_settings import get_event_window, get_vscale
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm=False):
+def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -52,8 +54,8 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
     n_sipms = 32    
     n_channels = n_sipms + 1 # include sum
     n_top = int((n_channels-1)/2)
-    top_channels=np.array(range(n_top),int)
-    bottom_channels=np.array(range(n_top,2*n_top),int)
+    top_channels=np.arange(0,16)  #np.array(range(n_top),int)
+    bottom_channels=np.arange(16,32) #np.array(range(n_top,2*n_top),int)
     
     block_size = int(1500*15/event_window) # number of events per compressed file
 
@@ -92,9 +94,9 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
 
     # Get list of compressed files and calculate number of events
     if filtered:
-        compressed_file_list = sorted(glob.glob(data_dir+"compressed_filtered_data/compressed_filtered*.npz") )
+        compressed_file_list = natsorted(glob.glob(data_dir+"/compressed_filtered_data_dev/compressed_filtered_dev*.npz") )
     else:
-        compressed_file_list = sorted(glob.glob(data_dir+"compressed_data/compressed_*.npz") )
+        compressed_file_list = natsorted(glob.glob(data_dir+"/compressed_data/compressed_*.npz") )
     if len(compressed_file_list) < 1:
         print("No compressed files found in "+data_dir)
         return
@@ -102,7 +104,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
     n_events = (len(compressed_file_list)+5)*block_size # with some extra room 
 
     # Load headers and calculate event time
-    h_file = np.load(data_dir+"compressed_data/headers.npz")
+    h_file = np.load(data_dir+"/compressed_filtered_data_dev/headers.npz")
     h_array = h_file["arr_0"]
     h_n_events = int(np.floor(h_array.size/8))
     h_array = np.reshape(h_array,(h_n_events,8))
@@ -175,7 +177,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
     p_area_ch = np.zeros((n_events, max_pulses, n_channels-1) )
     p_area_ch_frac = np.zeros((n_events, max_pulses, n_channels-1) )
     p_max_height_ch = np.zeros((n_events, max_pulses, n_channels-1) )
-    p_coincidence = np.zeros((n_events, max_pulses) ) # technically pulse level
+    #p_coincidence = np.zeros((n_events, max_pulses) ) # technically pulse level
     
     # Event-level variables
     n_pulses = np.zeros(n_events, dtype=int)
@@ -192,6 +194,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
     index_max_s2 = np.zeros(n_events, dtype = "int")-1    # set default to -1
     drift_Time_AS = np.zeros(n_events) # for multi-scatter drift time, defined by the first S2. 
     s1_before_s2 = np.zeros(n_events, dtype=bool)
+    right_area = np.zeros(n_events)
 
     # Avg waveform quantities
     waveform_area = np.zeros(n_events)  #integrate the whole waveform
@@ -241,24 +244,41 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
 
         for i in range(j*block_size, j*block_size+n_events):
 
+            # Event time
             rq_ev_time_s[i] = ev_time_s[counter]
             
-            # Find pulse locations; other quantities for pf tuning/debugging
-            start_times, end_times, peaks, data_conv, properties = pf.findPulses( ch_data_phdPerSample[-1,i-j*block_size,:], max_pulses , SPEMode=False, filtered=filtered)
+            # New pulse finder
+            start_times = []
+            end_times = []
+            lh_cut = wsize
+            for g in range(max_pulses):
+                temp_start, temp_end = vs.PulseFinderVerySimple(ch_data_phdPerSample[-1,i-j*block_size,:lh_cut], verbose=False)
+                if temp_start != temp_end:
+                    if g==0: right_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,temp_end:])
+                    start_times.append(temp_start)
+                    end_times.append(temp_end)
+                    lh_cut = temp_start
+                else:
+                    continue
 
-            if len(data_conv) < wsize: data_conv = np.zeros(wsize) # do we need this? maybe...
+            # Data is already filtered
+            data_conv = ch_data_phdPerSample[-1,i-j*block_size,:]
+
 
             # Sort pulses by start times, not areas as given by pf.findPulses
             startinds = np.argsort(start_times)
             n_pulses[i] = min(max_pulses,len(start_times))
             if (n_pulses[i] < 1):
                 empty_evt_ind[i] = i
+            mp = 0
             for m in startinds:
                 if m >= max_pulses:
                     continue
                 if start_times[m] < 0.25/tscale: continue
-                p_start[i,m] = start_times[m]
-                p_end[i,m] = end_times[m]
+                p_start[i,mp] = start_times[m]
+                p_end[i,mp] = end_times[m]
+                mp += 1
+                
 
             # More precisely estimate baselines immediately before each pulse
             baselines_precise = pq.GetBaselines(p_start[i,:n_pulses[i]], p_end[i,:n_pulses[i]], ch_data_phdPerSample[:,i-j*block_size,:])
@@ -283,14 +303,14 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
                 (p_hfs_10l[i,pp], p_hfs_50l[i,pp], p_hfs_90l[i,pp], p_hfs_10r[i,pp], p_hfs_50r[i,pp], p_hfs_90r[i,pp]) = pq.GetHeightFractionSamples(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
                 
                 # Areas for individual channels and top bottom
-                p_area_ch[i,pp,:] = pq.GetPulseAreaChannel(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls )
+                p_area_ch[i,pp,:] = pq.GetPulseAreaChannel(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[:-1] )
                 p_area_ch_frac[i,pp,:] = p_area_ch[i,pp,:]/p_area[i,pp]
-                p_area_top[i,pp] = sum(p_area_ch[i,pp,top_channels])
-                p_area_bottom[i,pp] = sum(p_area_ch[i,pp,bottom_channels])
+                p_area_top[i,pp] = np.sum(p_area_ch[i,pp,top_channels])
+                p_area_bottom[i,pp] = np.sum(p_area_ch[i,pp,bottom_channels])
                 p_tba[i, pp] = (p_area_top[i, pp] - p_area_bottom[i, pp]) / (p_area_top[i, pp] + p_area_bottom[i, pp])
 
                 p_max_height_ch[i,pp,:] = pq.GetPulseMaxHeightChannel(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls)
-                #p_coincidence[i,pp] todo: add this 
+                #p_coincidence[i,pp] = 
                 
                 # Centroids
                 center_bot_x[i,pp], center_bot_y[i,pp], center_top_x[i,pp], center_top_y[i,pp] = pq.GetCentroids(p_area_ch[i,pp])
@@ -299,7 +319,10 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
             # ====================================================================================================================================
             # Event level analysis. This needs some serious work
 
-            waveform_area[i] = np.sum(ch_data_sum_pulse_bls[-1])
+            if n_pulses[i] != 0:
+                waveform_area[i] = np.sum(ch_data_sum_pulse_bls[-1])
+            else:
+                waveform_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,:])
             p_class[i,:] = pc.ClassifyPulses(p_tba[i, :], (p_afs_50[i, :]-p_afs_2l[i, :])*tscale, n_pulses[i], p_area[i,:]) # classifier
 
             # Look at events with both S1 and S2.
@@ -365,35 +388,23 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
             s1s2 = (n_s1[i] == 1)*(n_s2[i] == 1)
 
             if inn == 's': sys.exit()
-            
             if not inn == 'q' and plotyn and plot_event_ind == i:
 
                 fig = pl.figure()
                 ax = pl.gca()
-
-                #pl.plot(x*tscale, ch_data_phdPerSample[23,i-j*block_size,:]/(tscale*(1000)/spe_sizes[23]) , "black")
-                #pl.plot(x*tscale, np.sum(ch_data_phdPerSample[0:15,i-j*block_size,:],axis=0), color="red",lw=0.7, label = "Summed Top")
-                #pl.plot(x*tscale, np.sum(ch_data_phdPerSample[16:31,i-j*block_size,:],axis=0), color="green",lw=0.7, label = "Summed Bottom")
                 pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=0.7, label = "Summed All" )
-                pl.plot(x*tscale, data_conv,color='red',lw=0.7, label = "Filtered data" )
-                #for ch in range(32):
-                #    pl.plot(x*tscale, ch_data_phdPerSample[ch,i-j*block_size,:])
-                #pl.ylabel("mV")
-                #pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:]/np.max(ch_data_phdPerSample[-1,i-j*block_size,:]),'black' )
-                #pl.plot(x*tscale, np.sum(ch_data_phdPerSample[0:15,i-j*block_size,:],axis=0)/np.max(np.sum(ch_data_phdPerSample[0:15,i-j*block_size,:],axis=0)), "red")
-                #pl.plot(x*tscale, np.sum(ch_data_phdPerSample[16:31,i-j*block_size,:],axis=0)/np.max(np.sum(ch_data_phdPerSample[16:31,i-j*block_size,:],axis=0)), "green")
+                pl.plot(x[:-1]*tscale, np.diff(ch_data_phdPerSample[-1,i-j*block_size,:]),"blue", label="Derivative")
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
                 pl.title("Event {}".format(i))
                 for ps in range(n_pulses[i]):
-                    print(p_class[i,ps])
-                    pl.axvspan(tscale*start_times[ps],tscale*end_times[ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
+                    pl.axvspan(tscale*p_start[i,ps],tscale*p_end[i,ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
                     pl.axvline(tscale*p_afs_1[i,ps],color=pulse_class_colors[p_class[i,ps]],zorder=0,linestyle='--')
-                    ax.text((end_times[ps]) * tscale, (0.94-ps*0.2) * ax.get_ylim()[1], '{:.1f} phd'.format(p_area[i, ps]),
+                    ax.text((p_end[i,ps]) * tscale, (0.94-ps*0.2) * ax.get_ylim()[1], '{:.2f} phd'.format(p_area[i, ps]),
                             fontsize=9, color=pulse_class_colors[p_class[i, ps]])
-                    ax.text((end_times[ps]) * tscale, (0.9-ps*0.2) * ax.get_ylim()[1], 'TBA={:.1f}'.format(p_tba[i, ps]),
+                    ax.text((p_end[i,ps]) * tscale, (0.9-ps*0.2) * ax.get_ylim()[1], 'TBA={:.2f}'.format(p_tba[i, ps]),
                         fontsize=9, color=pulse_class_colors[p_class[i, ps]])
-                    ax.text((end_times[ps]) * tscale, (0.86-ps*0.2) * ax.get_ylim()[1], 'Rise={:.1f} us'.format(afs50_2[ps]),
+                    ax.text((p_end[i,ps]) * tscale, (0.86-ps*0.2) * ax.get_ylim()[1], 'Rise={:.2f} us'.format(afs50_2[ps]),
                         fontsize=9, color=pulse_class_colors[p_class[i, ps]])
                     #ax.text((end_times[ps]) * tscale, (0.82-ps*0.2) * ax.get_ylim()[1], 'Check={}'.format(temp_condition[ps]),
                     #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])    
@@ -474,6 +485,8 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
     list_rq['sum_s2_area'] = sum_s2_area
     list_rq['waveform_area'] = waveform_area
     list_rq['ev_time_s'] = rq_ev_time_s
+    list_rq['p_max_height_ch'] = p_max_height_ch
+    list_rq['right_area'] = right_area
     #list_rq[''] =    #add more rq
 
     #remove zeros in the end of each RQ array. 
@@ -482,9 +495,9 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=False, save_avg_wfm
             list_rq[rq] = list_rq[rq][:n_events]
 
     if filtered:
-        save_name = "rq_filtered.npy"
+        save_name = "rq_filtered_test.npy"
     else:
-        save_name = "rq.npy"
+        save_name = "rq_test.npy"
     rq = open(data_dir + save_name,'wb')
     np.savez(rq, **list_rq)
     rq.close()
