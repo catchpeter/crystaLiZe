@@ -495,9 +495,9 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
             list_rq[rq] = list_rq[rq][:n_events]
 
     if filtered:
-        save_name = "rq_filtered_test.npy"
+        save_name = "rq_filtered.npy"
     else:
-        save_name = "rq_test.npy"
+        save_name = "rq.npy"
     rq = open(data_dir + save_name,'wb')
     np.savez(rq, **list_rq)
     rq.close()
