@@ -37,7 +37,7 @@ def PulseFinderVerySimple(waveform, lht=0.005, rht=0, verbose=False):
     # Make sure derivative didn't find the wrong local minima
     # Use threshold based on fraction of max height of pulse
     if max_val < 20:
-        if max_val < 0.1: 
+        if max_val < 0.2: 
             lht_wf = 0.1*max_val # small S1's
         else: 
             lht_wf = 0.01*max_val # Medium S1's and small S2's
@@ -46,7 +46,7 @@ def PulseFinderVerySimple(waveform, lht=0.005, rht=0, verbose=False):
     i = 1
     while waveform[lb] > lht_wf:
         try:
-            below_lht_i = (diff_wf[:(max_loc-i*40)] < lht).nonzero()[0]
+            below_lht_i = (diff_wf[:(max_loc-i*10)] < lht).nonzero()[0]
             lb = max_loc - min(max_loc - below_lht_i)
             i+=1
         except:
