@@ -34,9 +34,9 @@ def compression(
     if save_mode not in ('none','None',None):
         # Make save directory
         if filtered:
-            save_dir = data_dir+"compressed_filtered_data_dev/"
+            save_dir = data_dir+"compressed_filtered_data/"
         else:
-            save_dir = data_dir+"compressed_data_dev/"
+            save_dir = data_dir+"compressed_data/"
         try:
             os.mkdir(save_dir)
         except:
@@ -51,7 +51,7 @@ def compression(
     # Get event window 
     event_window = get_event_window(data_dir)
     if event_window < 0: 
-        raise ValueError("Invalide event window")
+        raise ValueError("Invalid event window")
     
     wsize = int(500 * event_window) + 8 # Calculate size of waveform + header
     block_size = int(1500*15/event_window) # Number of events loaded, then saved per compressed file
@@ -214,7 +214,7 @@ def compression(
         # Save that mf
         if save_mode == "npy":
             if filtered:
-                np.savez_compressed(f'{save_dir}compressed_filtered_dev{bk}', data_to_save.flatten())
+                np.savez_compressed(f'{save_dir}compressed_filtered_{bk}', data_to_save.flatten())
             else:
                 np.savez_compressed(f'{save_dir}compressed_{bk}', data_to_save.flatten())
             

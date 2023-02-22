@@ -11,10 +11,13 @@ import PulseQuantities as pq
 import PulseClassification as pc
 import PulseFinderVerySimple as vs
 from read_settings import get_event_window, get_vscale
+
+from scipy.signal import spectrogram
+#from c_process import S2filter
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False):
+def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -103,31 +106,6 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
 
     n_events = (len(compressed_file_list)+5)*block_size # with some extra room 
 
-    # Load headers and calculate event time
-    h_file = np.load(data_dir+"/compressed_filtered_data/headers.npz")
-    h_array = h_file["arr_0"]
-    h_n_events = int(np.floor(h_array.size/8))
-    h_array = np.reshape(h_array,(h_n_events,8))
-
-    # Calculate event time
-    # Precision up to 0.5 ms. To-do: get precision to 16 ns
-    second_16 = h_array[:,5]
-    second_16[second_16 < 0] = second_16[second_16 < 0] + 2**15
-    second_16_next = np.zeros(h_n_events,dtype=int)
-    for i in range(1,h_n_events):
-        if second_16[i] - second_16[i-1] < 0:
-            second_16_next[i:] += 1
-    ev_time_s = 16*(second_16 + second_16_next*2**15)*(10**-9 * 2**15)
-
-    if h_n_events < n_events:
-        # Match header size to n_events which has some extra zeros
-        ev_time_s = np.concatenate( (ev_time_s,np.zeros(n_events-h_n_events,dtype=int) ) )
-    elif h_n_events > n_events:
-        # This shouldn't happen
-        print("Warning: Header file contains more events than compressed events!")
-        ev_time_s = np.concatenate( (ev_time_s,np.zeros(h_n_events-n_events,dtype=int) ) )
-    
-
     # ====================================================================================================================================
     # Initialize rq's to save
     # np.zeros is preferred over np.empty bc/ we want zero to be default value
@@ -136,6 +114,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
     p_end   = np.zeros(( n_events, max_pulses), dtype=int)
     p_found = np.zeros(( n_events, max_pulses), dtype=int)
     p_area = np.zeros(( n_events, max_pulses))
+    p_rms = np.zeros(( n_events, max_pulses))
     p_max_height = np.zeros(( n_events, max_pulses))
     p_min_height = np.zeros(( n_events, max_pulses))
     p_width = np.zeros(( n_events, max_pulses))
@@ -244,9 +223,10 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
 
         for i in range(j*block_size, j*block_size+n_events):
 
-            # Event time
-            rq_ev_time_s[i] = ev_time_s[counter]
-            
+            plot_debug = True
+            se_start  = 0
+            se_end = 0
+
             # New pulse finder
             start_times = []
             end_times = []
@@ -264,6 +244,53 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
             # Data is already filtered
             data_conv = ch_data_phdPerSample[-1,i-j*block_size,:]
 
+            if len(start_times) > 1:
+                start_window = end_times[1] + 200 #200
+                end_window = start_times[0] - 200   #200
+                if end_window - start_window < 600:
+                    continue
+                else:
+                    data_window = ch_data_phdPerSample[-1,i-j*block_size,start_window:end_window]
+
+                    max_loc = np.argmax(data_window)
+                    max_val = max(data_window)
+
+                    try:
+                        left_zeros = (data_window[:max_loc] == 0).nonzero()[0]
+                        se_start = max_loc - min(max_loc - left_zeros)
+                        right_zeros = (data_window[max_loc:] == 0).nonzero()[0]
+                        se_end = 2*max_loc + min(right_zeros - max_loc)
+                    except:
+                        continue
+                    
+                    if se_start != se_end:
+                        p_area[i,0] = np.sum(data_window[se_start:se_end])
+                        p_rms[i,0] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
+                        p_max_height[i,0] = max_val
+            
+                continue
+            else:
+                continue
+
+
+
+            """
+                start_window = end_times[1] + 400 #200
+                end_window = start_times[0] - 1200   #200
+                if end_window - start_window < 500:
+                    continue
+                else:
+                    data_window = ch_data_phdPerSample[-1,i-j*block_size,start_window:end_window]
+                    p_area[i,0] = np.sum(data_window)
+                    p_rms[i,0] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
+                    p_max_height[i,0] = max(data_window) 
+                    plot_debug = p_area[i,0] > 15 and p_area[i,0] < 40 
+                    #continue
+            else:
+                continue
+            """
+
+          
 
             # Sort pulses by start times, not areas as given by pf.findPulses
             startinds = np.argsort(start_times)
@@ -388,24 +415,26 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
             s1s2 = (n_s1[i] == 1)*(n_s2[i] == 1)
 
             if inn == 's': sys.exit()
+            plotyn = plot_debug
             if not inn == 'q' and plotyn and plot_event_ind == i:
 
                 fig = pl.figure()
                 ax = pl.gca()
                 pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=0.7, label = "Summed All" )
-                pl.plot(x[:-1]*tscale, np.diff(ch_data_phdPerSample[-1,i-j*block_size,:]),"blue", label="Derivative")
+                #pl.plot(x*tscale, data_conv,"blue", label="S2 Filtered")
+                pl.axvspan(tscale*(start_window+se_start),tscale*(start_window+se_end),alpha=0.3,color="blue",zorder=0)
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
                 pl.title("Event {}".format(i))
-                for ps in range(n_pulses[i]):
-                    pl.axvspan(tscale*p_start[i,ps],tscale*p_end[i,ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
-                    pl.axvline(tscale*p_afs_1[i,ps],color=pulse_class_colors[p_class[i,ps]],zorder=0,linestyle='--')
-                    ax.text((p_end[i,ps]) * tscale, (0.94-ps*0.2) * ax.get_ylim()[1], '{:.2f} phd'.format(p_area[i, ps]),
-                            fontsize=9, color=pulse_class_colors[p_class[i, ps]])
-                    ax.text((p_end[i,ps]) * tscale, (0.9-ps*0.2) * ax.get_ylim()[1], 'TBA={:.2f}'.format(p_tba[i, ps]),
-                        fontsize=9, color=pulse_class_colors[p_class[i, ps]])
-                    ax.text((p_end[i,ps]) * tscale, (0.86-ps*0.2) * ax.get_ylim()[1], 'Rise={:.2f} us'.format(afs50_2[ps]),
-                        fontsize=9, color=pulse_class_colors[p_class[i, ps]])
+                #for ps in range(n_pulses[i]):
+                    #pl.axvspan(tscale*p_start[i,ps],tscale*p_end[i,ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
+                    #pl.axvline(tscale*p_afs_1[i,ps],color=pulse_class_colors[p_class[i,ps]],zorder=0,linestyle='--')
+                    #ax.text((p_end[i,ps]) * tscale, (0.94-ps*0.2) * ax.get_ylim()[1], '{:.2f} phd'.format(p_area[i, ps]),
+                    #        fontsize=9, color=pulse_class_colors[p_class[i, ps]])
+                    #ax.text((p_end[i,ps]) * tscale, (0.9-ps*0.2) * ax.get_ylim()[1], 'TBA={:.2f}'.format(p_tba[i, ps]),
+                    #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])
+                    #ax.text((p_end[i,ps]) * tscale, (0.86-ps*0.2) * ax.get_ylim()[1], 'Rise={:.2f} us'.format(afs50_2[ps]),
+                    #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])
                     #ax.text((end_times[ps]) * tscale, (0.82-ps*0.2) * ax.get_ylim()[1], 'Check={}'.format(temp_condition[ps]),
                     #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])    
                 pl.legend()
@@ -450,6 +479,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
     list_rq['n_pulses'] = n_pulses
     list_rq['n_events'] = n_events
     list_rq['p_area'] = p_area
+    list_rq['p_rms'] = p_rms
     list_rq['p_class'] = p_class
     list_rq['drift_Time'] = drift_Time
     list_rq['drift_Time_AF'] = drift_Time_AF
@@ -495,9 +525,9 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
             list_rq[rq] = list_rq[rq][:n_events]
 
     if filtered:
-        save_name = "/rq_filtered.npy"
+        save_name = "/rq_SE_filtered.npy"
     else:
-        save_name = "/rq.npy"
+        save_name = "/rq_SE.npy"
     rq = open(data_dir + save_name,'wb')
     np.savez(rq, **list_rq)
     rq.close()
@@ -505,9 +535,10 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
   
 
 def main():
-    with open(sys.path[0]+"/path.txt", 'r') as path:
-        data_dir = path.read()
-    make_rq(data_dir)
+    #with open(sys.path[0]+"/path.txt", 'r') as path:
+    #    data_dir = path.read()
+    data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202211/20221120/20221120-1302_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.44bar_-94.64ICVbot_2fold_beta_120min/"
+    find_single_electrons(data_dir, handscan=False)
 
 if __name__ == "__main__":
     main()

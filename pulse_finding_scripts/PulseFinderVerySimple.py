@@ -2,7 +2,7 @@ import numpy as np
 
 tscale = (8.0/4096.0) 
 
-def PulseFinderVerySimple(waveform, lht=0.005, rht=0, verbose=False):
+def PulseFinderVerySimple(waveform, lht=0.005, rht=0.0001, verbose=False):
 
     wsize = waveform.size
 
@@ -37,7 +37,7 @@ def PulseFinderVerySimple(waveform, lht=0.005, rht=0, verbose=False):
     # Make sure derivative didn't find the wrong local minima
     # Use threshold based on fraction of max height of pulse
     if max_val < 20:
-        if max_val < 0.2: 
+        if max_val < 0.25: 
             lht_wf = 0.1*max_val # small S1's
         else: 
             lht_wf = 0.01*max_val # Medium S1's and small S2's
