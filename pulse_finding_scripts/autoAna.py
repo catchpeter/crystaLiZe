@@ -9,45 +9,54 @@ from cut_plot import make_plots
 
 
 
-def autoAna():
+def autoAna(data_dir_list, upload=True):
 
-    data_base_dir = "/media/xaber/extradrive1/crystalize_data/"
-    all_dir = glob.glob(data_base_dir + "*/*/*/")
+    """
+    Automatic data analysis.
+    This should run in the background during normal TPC operation.
+    For analyzing specific data sets, use re_ana.py
+    """
 
-    # Not particularly efficient at finding data. Balanced by our beefy desktop
-    for dir in all_dir:
+    for data_dir in data_dir_list:
+
+        print(data_dir)
 
         # Check if data has finished transfering
-        if not os.path.exists(dir + "transferDone"):
+        if not os.path.exists(data_dir + "transferDone"):
             continue
 
         # Check to compress
-        if not os.path.exists(dir + "compressed_data/compressed_0.npy"):
+        if not os.path.exists(data_dir + "compressed_filtered_data"):
             try:
-                compression(dir)
+                compression(data_dir)
             except:
                 print("uh oh compression didn't work")
 
         # Check to generate rq's and plots
-        if not os.path.exists(dir + "rq.npz"):
+        if not os.path.exists(data_dir + "rq_filtered.npy"):
             try:
-                make_rq(dir)
-                make_plots(dir)
+                make_rq(data_dir)
+                #make_plots(dir)
             except:
                 print("uh oh rq didn't work")
 
         # Send it to the cloud 
-        command = "rclone -v copy " + dir +" gdrive:crystallize/data/"+ dir[dir.find("data-"):]
-        os.system(command)
+        if upload:
+            command = "rclone -v copy " + data_dir +" gdrive:crystallize/data/"+ data_dir[data_dir.find("data-"):]
+            os.system(command)
 
     return 
 
 
 def main():
 
+    # f5d91b31-9a7d-3278-ac5b-4f9ae16edd60
+    location = "/media/xaber/extradrive1/crystalize_data/data-202303/*/*/" 
+    data_dir_list = glob.glob(location)
+
     while True: # lmao
 
-        autoAna()
+        autoAna(data_dir_list, upload=False)
 
         # Checks every minute (roughly)
         time.sleep(60)
