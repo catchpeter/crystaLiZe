@@ -14,7 +14,7 @@ from read_settings import get_event_window, get_vscale
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False):
+def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False, phase="liquid"):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -76,15 +76,18 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
     #spe_sizes_1 = np.array([84.134,83.419,83.957,84.037,79.348,81.228,82.678,81.617])
     #spe_sizes_2 = np.array([82.342,82.528,82.477,82.523,84.209,81.481,78.693,81.669])
 
-    # SPE sizes in LIQUID, Sept, 28, 2022
-    spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
-    spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
-    spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
+    
+    if phase == "liquid":
+        # SPE sizes in LIQUID, Sept, 28, 2022
+        spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
+        spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
+        spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
 
-    # SPE sizes in SOLID, Oct 2022
-    #spe_sizes_0 = np.array([90.836,93.329,90.721,90.831,93.071,91.682,93.485,95.265,88.747,91.275,88.771,89.520,93.875,94.136,94.966,94.632])
-    #spe_sizes_1 = np.array([94.666,95.533,93.915,99.042,97.783,94.895,97.134,97.501])
-    #spe_sizes_2 = np.array([94.553,95.514,96.554,96.465,96.711,96.920,95.460,95.705])
+    elif phase == "solid":
+        # SPE sizes in SOLID, Oct 2022
+        spe_sizes_0 = np.array([90.836,93.329,90.721,90.831,93.071,91.682,93.485,95.265,88.747,91.275,88.771,89.520,93.875,94.136,94.966,94.632])
+        spe_sizes_1 = np.array([94.666,95.533,93.915,99.042,97.783,94.895,97.134,97.501])
+        spe_sizes_2 = np.array([94.553,95.514,96.554,96.465,96.711,96.920,95.460,95.705])
 
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
@@ -252,6 +255,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
             end_times = []
             lh_cut = wsize
             for g in range(max_pulses):
+                if lh_cut < 1: continue
                 temp_start, temp_end = vs.PulseFinderVerySimple(ch_data_phdPerSample[-1,i-j*block_size,:lh_cut], verbose=False)
                 if temp_start != temp_end:
                     if g==0: right_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,temp_end:])

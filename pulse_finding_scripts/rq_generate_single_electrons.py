@@ -5,6 +5,9 @@ import time
 import sys
 import glob
 from natsort import natsorted
+#from collections import deque
+
+#from scipy.signal import spectogram
 
 import PulseFinderScipy as pf
 import PulseQuantities as pq
@@ -12,12 +15,16 @@ import PulseClassification as pc
 import PulseFinderVerySimple as vs
 from read_settings import get_event_window, get_vscale
 
-from scipy.signal import spectrogram
+from ch_evt_filter_compress import baseline_suppress, filter_channel_event
+
+from scipy import signal
+#import scipy.signal.spectrogram as spectrogram
+#from scipy.signal import spectrogram
 #from c_process import S2filter
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False):
+def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False, phase="liquid"):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -79,15 +86,17 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     #spe_sizes_1 = np.array([84.134,83.419,83.957,84.037,79.348,81.228,82.678,81.617])
     #spe_sizes_2 = np.array([82.342,82.528,82.477,82.523,84.209,81.481,78.693,81.669])
 
-    # SPE sizes in LIQUID, Sept, 28, 2022
-    spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
-    spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
-    spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
+    if phase == "liquid":
+        # SPE sizes in LIQUID, Sept, 28, 2022
+        spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
+        spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
+        spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
 
-    # SPE sizes in SOLID, Oct 2022
-    #spe_sizes_0 = np.array([90.836,93.329,90.721,90.831,93.071,91.682,93.485,95.265,88.747,91.275,88.771,89.520,93.875,94.136,94.966,94.632])
-    #spe_sizes_1 = np.array([94.666,95.533,93.915,99.042,97.783,94.895,97.134,97.501])
-    #spe_sizes_2 = np.array([94.553,95.514,96.554,96.465,96.711,96.920,95.460,95.705])
+    elif phase == "solid":
+        # SPE sizes in SOLID, Oct 2022
+        spe_sizes_0 = np.array([90.836,93.329,90.721,90.831,93.071,91.682,93.485,95.265,88.747,91.275,88.771,89.520,93.875,94.136,94.966,94.632])
+        spe_sizes_1 = np.array([94.666,95.533,93.915,99.042,97.783,94.895,97.134,97.501])
+        spe_sizes_2 = np.array([94.553,95.514,96.554,96.465,96.711,96.920,95.460,95.705])
 
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
@@ -110,78 +119,26 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     # Initialize rq's to save
     # np.zeros is preferred over np.empty bc/ we want zero to be default value
 
-    p_start = np.zeros(( n_events, max_pulses), dtype=int)
-    p_end   = np.zeros(( n_events, max_pulses), dtype=int)
-    p_found = np.zeros(( n_events, max_pulses), dtype=int)
-    p_area = np.zeros(( n_events, max_pulses))
-    p_rms = np.zeros(( n_events, max_pulses))
-    p_max_height = np.zeros(( n_events, max_pulses))
-    p_min_height = np.zeros(( n_events, max_pulses))
-    p_width = np.zeros(( n_events, max_pulses))
-    p_mean_time = np.zeros((n_events, max_pulses) )
-    p_rms_time = np.zeros((n_events, max_pulses) )
-    p_area_top = np.zeros((n_events, max_pulses))
-    p_area_bottom = np.zeros((n_events, max_pulses))
-    p_tba = np.zeros((n_events, max_pulses))
-    p_class = np.zeros((n_events, max_pulses), dtype=int)
-
-    # centroid 
-    center_top_x = np.zeros(( n_events, max_pulses))
-    center_top_y = np.zeros(( n_events, max_pulses))
-    center_bot_x = np.zeros(( n_events, max_pulses))
-    center_bot_y = np.zeros(( n_events, max_pulses))
-
-    # AFT's 
-    p_afs_2l = np.zeros((n_events, max_pulses) )
-    p_afs_2r = np.zeros((n_events, max_pulses) )
-    p_afs_1 = np.zeros((n_events, max_pulses) )
-    p_afs_10 = np.zeros((n_events, max_pulses) )
-    p_afs_25 = np.zeros((n_events, max_pulses) )
-    p_afs_50 = np.zeros((n_events, max_pulses) )
-    p_afs_75 = np.zeros((n_events, max_pulses) )
-    p_afs_90 = np.zeros((n_events, max_pulses) )
-    p_afs_99 = np.zeros((n_events, max_pulses) )
-
-    # HFT's     
-    p_hfs_10l = np.zeros((n_events, max_pulses) )
-    p_hfs_50l = np.zeros((n_events, max_pulses) )
-    p_hfs_90l = np.zeros((n_events, max_pulses) )
-    p_hfs_10r = np.zeros((n_events, max_pulses) )
-    p_hfs_50r = np.zeros((n_events, max_pulses) )
-    p_hfs_90r = np.zeros((n_events, max_pulses) )
-
-    # Channel level (per event, per pulse, per channel)
-    p_start_ch = np.zeros((n_events, max_pulses, n_channels-1), dtype=int)
-    p_end_ch = np.zeros((n_events, max_pulses, n_channels-1), dtype=int )
-    p_area_ch = np.zeros((n_events, max_pulses, n_channels-1) )
-    p_area_ch_frac = np.zeros((n_events, max_pulses, n_channels-1) )
-    p_max_height_ch = np.zeros((n_events, max_pulses, n_channels-1) )
-    #p_coincidence = np.zeros((n_events, max_pulses) ) # technically pulse level
     
-    # Event-level variables
-    n_pulses = np.zeros(n_events, dtype=int)
-    n_s1 = np.zeros(n_events, dtype=int)
-    n_s2 = np.zeros(n_events, dtype=int)
-    sum_s1_area = np.zeros(n_events)
-    sum_s2_area = np.zeros(n_events)
-    drift_Time = np.zeros(n_events)
-    drift_Time_AF = np.zeros(n_events)
-    drift_Time_AF50 = np.zeros(n_events)
-    drift_Time_AF150 = np.zeros(n_events)
-    drift_Time_max = np.zeros(n_events)  # drift time defined by the interval between the biggest S1 and biggest S2 within an event window
-    index_max_s1 = np.zeros(n_events, dtype = "int")-1
-    index_max_s2 = np.zeros(n_events, dtype = "int")-1    # set default to -1
-    drift_Time_AS = np.zeros(n_events) # for multi-scatter drift time, defined by the first S2. 
-    s1_before_s2 = np.zeros(n_events, dtype=bool)
+
+    se_area = np.zeros((n_events,20))
+    se_width = np.zeros((n_events,20))
+    se_coincidence = np.zeros((n_events,20))
+    se_max_height = np.zeros(n_events)
+    se_rms = np.zeros(n_events)
+    se_area_ch = np.zeros((n_events, n_channels-1))
+    se_tba = np.zeros(n_events)
+    se_top_x = np.zeros(n_events)
+    se_top_y = np.zeros(n_events)
+
+    s1_area = np.zeros(n_events)
+    s2_area = np.zeros(n_events)
+
+    se_a2_height = np.zeros((n_events,20))
+
+    drift_time = np.zeros(n_events)
+
     right_area = np.zeros(n_events)
-
-    # Avg waveform quantities
-    waveform_area = np.zeros(n_events)  #integrate the whole waveform
-    rq_ev_time_s = np.zeros(n_events,dtype="int")
-    n_wfms_summed = 0
-    avg_wfm = np.zeros(wsize)
-
-    empty_evt_ind = np.zeros(n_events) # empty event quantity
 
 
     # ====================================================================================================================================
@@ -191,6 +148,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     counter = 0 # index for total events
 
     for compressed_file in compressed_file_list:
+        #if j > 10: break
         # load data
         try:
             with np.load(compressed_file) as data:
@@ -224,12 +182,124 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
         for i in range(j*block_size, j*block_size+n_events):
 
             plot_debug = True
+
+            """
+            start_flag = False
+            ps_found = 0
+            se_start = 0
+            se_end = 0
+            for s in range(wsize):
+
+                if ps_found > 19: continue
+
+                if not start_flag and ch_data_phdPerSample[-1,i-j*block_size,s] != 0:
+                    start_flag = True
+                    se_start = s
+
+
+                elif start_flag and ch_data_phdPerSample[-1,i-j*block_size,s] == 0:    
+                    start_flag = False
+                    se_end = s
+                    se_area[i,ps_found] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,se_start:se_end])
+                    se_width[i,ps_found] = se_end-se_start
+                    se_coincidence[i,ps_found] = np.count_nonzero( np.sum(ch_data_phdPerSample[:-1,i-j*block_size,se_start:se_end], axis=1) != 0  )
+                    print(se_coincidence[i,ps_found])
+
+                    ps_found += 1
+
+            """
+
+
+
+
+            """
+
             se_start  = 0
             se_end = 0
 
+            #for bl in range(4):
+            #    bl_s = int(wsize/4)
+            #    ch_data_phdPerSample[-1,i-j*block_size,i*bl_s:(i+1)*bl_s] -= np.median(ch_data_phdPerSample[-1,i-j*block_size,i*bl_s:(i+1)*bl_s])
+
+            all_peaks = np.array([],dtype=int)
+            all_ind = np.array([],dtype=int)
+            for ch in range(32):
+                peaks, properties = signal.find_peaks(ch_data_phdPerSample[ch,i-j*block_size,:],height=0.015,distance=200,width=10)
+                ind = ch*np.ones_like(peaks)
+
+                all_peaks = np.concatenate((all_peaks,peaks),dtype=int)
+                all_ind = np.concatenate((all_ind,ind),dtype=int)
+
+            sorted_i = np.argsort(all_peaks)
+            sorted_peaks = all_peaks[sorted_i]
+            sorted_ind = all_ind[sorted_i]
+
+            current_se = []
+            se_start = 0
+            se_end = 0
+            nFound = 0
+            for p in range(0,sorted_peaks.size-3):
+                if p in current_se: continue
+                peaks_in_range = (sorted_peaks < sorted_peaks[p] + 900)&(sorted_peaks >= sorted_peaks[p])
+                peaks_before = (sorted_peaks > sorted_peaks[p] - 900)&(sorted_peaks < sorted_peaks[p])
+                peaks_after = (sorted_peaks < sorted_peaks[p] + 900 + 900)&(sorted_peaks > sorted_peaks[p] + 900)
+                if np.count_nonzero(peaks_in_range) > 2 and np.count_nonzero(peaks_before) == 0 and np.count_nonzero(peaks_after) == 0 and np.ptp( sorted_peaks[peaks_in_range] ) > 30:
+                    se_start = sorted_peaks[p] - 50
+                    se_end = sorted_peaks[peaks_in_range][-1] + 200
+                    se_width[i,nFound] = se_end - se_start
+                    current_se = sorted_peaks[peaks_in_range]
+
+                    contributing_ch = sorted_ind[peaks_in_range]
+                    for cch in contributing_ch:
+                        se_area[i,nFound] += np.sum(ch_data_phdPerSample[cch,i-j*block_size,se_start:se_end])
+                    nFound += 1
+                    if nFound > 3: break
+
+                    #break
+
+
+            
+            """
+
+
+
+            #max_loc = np.argmax(ch_data_phdPerSample[-1,i-j*block_size,:])
+            #if max_loc < 1000 or wsize - max_loc < 1000: continue
+
+
+            #ps_baseline = np.mean(ch_data_phdPerSample[-1,i-j*block_size,max_loc-600:max_loc-100])
+
+            a1 = s1_filter(ch_data_phdPerSample[-1,i-j*block_size,:],120)
+
+            a2 = s2_filter(ch_data_phdPerSample[-1,i-j*block_size,:],a1,800)
+            
+            se_start = 0
+            se_end = 0
+            max_val_a2 = max(a2)
+            max_loc = np.argmax(a2)
+            thresh = 1e-8
+            peaks, properties = signal.find_peaks(a2,height=1.5,distance=800,width=10)
+            se_start = np.zeros(20,dtype=int)
+            se_end = np.zeros(20,dtype=int)
+            for p in range(min(20,len(peaks))):
+                try:
+                    se_start[p] = peaks[p] - min(peaks[p] - (ch_data_phdPerSample[-1,i-j*block_size,:peaks[p]] == 0).nonzero()[0] )
+                    se_end[p] = 2*peaks[p] +  min(  (ch_data_phdPerSample[-1,i-j*block_size,peaks[p]:] == 0).nonzero()[0] - peaks[p] )
+                except:
+                    continue
+                
+                se_area[i,p] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,se_start[p]:se_end[p]])
+                se_width[i,p] = se_end[p] - se_start[p]
+                se_a2_height[i,p] = a2[peaks[p]]
+
+ 
+
+
+            """
             # New pulse finder
             start_times = []
             end_times = []
+            areas = []
             lh_cut = wsize
             for g in range(max_pulses):
                 temp_start, temp_end = vs.PulseFinderVerySimple(ch_data_phdPerSample[-1,i-j*block_size,:lh_cut], verbose=False)
@@ -237,150 +307,183 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
                     if g==0: right_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,temp_end:])
                     start_times.append(temp_start)
                     end_times.append(temp_end)
+                    areas.append(np.sum(ch_data_phdPerSample[-1,i-j*block_size,temp_start:temp_end]))
                     lh_cut = temp_start
                 else:
                     continue
 
-            # Data is already filtered
-            data_conv = ch_data_phdPerSample[-1,i-j*block_size,:]
+            """
 
-            if len(start_times) > 1:
-                start_window = end_times[1] + 200 #200
-                end_window = start_times[0] - 200   #200
-                if end_window - start_window < 600:
-                    continue
-                else:
-                    data_window = ch_data_phdPerSample[-1,i-j*block_size,start_window:end_window]
+            
+
+            
+
+
+            """
+            if len(start_times) > 1 and areas[1] > 5:
+                temp_start = end_times[1] + 300
+                temp_end = start_times[0] - 100
+                start_window = temp_start
+                if temp_end - temp_start < 1000: continue
+            else:
+                continue
+            
+            elif len(start_times) == 1 and areas[0] < 5000:
+                temp_start = end_times[0] + 300
+                temp_end = wsize - 200
+                start_window = temp_start
+                if temp_end - temp_start < 1000: continue
+            
+            
+
+            data_window = ch_data_phdPerSample[-1,i-j*block_size,temp_start:temp_end]
+            data_window_ch = ch_data_phdPerSample[:-1,i-j*block_size,temp_start:temp_end]
+
+            # Find points above threshold
+            # If there exists a cluster, tag it 
+            se_thresh = 2*0.015
+            above_thresh_i = (data_window > se_thresh).nonzero()[0]
+            se_start = 0
+            se_end = 0
+            values, edges = np.histogram(above_thresh_i,bins=int(wsize*2/200),range=(0,wsize)  )
+            for b in range(1,values.size-4):
+                if values[b] > 0 and values[b+1] > 0 and values[b+2] > 0 and values[b+3] > 0:
+                    se_start = int(edges[b]) - 200
+                    for c in range(values.size-4-b):
+                        if values[b+3+c] == 0:
+                            se_end = int(edges[b+3+c]) + 200
+                            break
+            
+            if se_end - se_start <= 0: continue # or se_end - se_start > 2000: continue
+
+            se_area[i] = np.sum(data_window[se_start:se_end])
+            #print(se_area[i])
+            se_width[i] = se_end - se_start
+            se_max_height[i] = max(data_window[se_start:se_end])
+            se_rms[i] = np.sqrt(np.sum(np.power(data_window[se_start:se_end],2))/(data_window[se_start:se_end].size))
+
+            se_area_ch[i,:] = pq.GetPulseAreaChannel(se_start, se_end, data_window_ch[:,se_start:se_end])
+            se_area_top = np.sum(se_area_ch[i,:16])
+            se_area_bottom = np.sum(se_area_ch[i,16:])
+            se_tba[i] = (se_area_top-se_area_bottom)/(se_area_top+se_area_bottom)
+            se_bot_x, se_bot_y, se_top_x[i], se_top_y[i] = pq.GetCentroids(se_area_ch[i,:])
+
+            """
+
+
+
+
+
+            """
+            data_window = ch_data_phdPerSample[-1,i-j*block_size,se_start:se_end]
+            data_window_ch = ch_data_phdPerSample[:-1,i-j*block_size,se_start:se_end]
+            se_area[i] = np.sum(data_window)
+            #print(se_area[i])
+            se_width[i] = se_end - se_start
+            se_max_height[i] = max(data_window)
+            se_rms[i] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
+
+            se_area_ch[i,:] = pq.GetPulseAreaChannel(se_start, se_end, data_window_ch)
+            se_area_top = np.sum(se_area_ch[i,:16])
+            se_area_bottom = np.sum(se_area_ch[i,16:])
+            se_tba[i] = (se_area_top-se_area_bottom)/(se_area_top+se_area_bottom)
+            se_bot_x, se_bot_y, se_top_x[i], se_top_y[i] = pq.GetCentroids(se_area_ch[i,:])
+            """
+            
+
+
+            """
+            if len(start_times) > 0:
+                area2 = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[0]:end_times[0] ])
+
+                if area2 < 5000:
+                    start_window = end_times[0] + 1500
+                    if wsize - start_window < 1000: continue # 3000
+
+                    data_window = ch_data_phdPerSample[-1,i-j*block_size,start_window:]
+                    data_window_ch = ch_data_phdPerSample[:-1,i-j*block_size,start_window:]
 
                     max_loc = np.argmax(data_window)
                     max_val = max(data_window)
 
                     try:
                         left_zeros = (data_window[:max_loc] == 0).nonzero()[0]
-                        se_start = max_loc - min(max_loc - left_zeros)
+                        se_start = max_loc - min(max_loc - left_zeros) # + 100
                         right_zeros = (data_window[max_loc:] == 0).nonzero()[0]
-                        se_end = 2*max_loc + min(right_zeros - max_loc)
+                        se_end = 2*max_loc + min(right_zeros - max_loc) #- 200
+                    except:
+                        continue
+
+                    if se_start != se_end:
+
+                        se_area[i] = np.sum(data_window[se_start:se_end])
+                        #print(se_area[i])
+                        se_width[i] = se_end - se_start
+                        se_max_height[i] = max_val
+                        se_rms[i] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
+
+                        se_area_ch[i,:] = pq.GetPulseAreaChannel(se_start, se_end, data_window_ch)
+                        se_area_top = np.sum(se_area_ch[i,:16])
+                        se_area_bottom = np.sum(se_area_ch[i,16:])
+                        se_tba[i] = (se_area_top-se_area_bottom)/(se_area_top+se_area_bottom)
+                        se_bot_x, se_bot_y, se_top_x[i], se_top_y[i] = pq.GetCentroids(se_area_ch[i,:])
+
+                        #s1_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[1]:end_times[1] ])
+                        #s2_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[0]:end_times[0] ])
+                        #drift_time[i] = tscale*(start_times[0]-start_times[1])
+                
+                    else: continue
+                else: continue
+            else: continue
+            """
+
+
+            """
+            if len(start_times) > 1 and False:
+                start_window = end_times[1] + 200 #200
+                end_window = start_times[0] - 200   #200
+                if end_window - start_window < 600:
+                    continue
+                else:
+                    data_window = ch_data_phdPerSample[-1,i-j*block_size,start_window:end_window]
+                    data_window_ch = ch_data_phdPerSample[:-1,i-j*block_size,start_window:end_window]
+
+                    max_loc = np.argmax(data_window)
+                    max_val = max(data_window)
+
+                    try:
+                        left_zeros = (data_window[:max_loc] == 0).nonzero()[0]
+                        se_start = max_loc - min(max_loc - left_zeros) # + 100
+                        right_zeros = (data_window[max_loc:] == 0).nonzero()[0]
+                        se_end = 2*max_loc + min(right_zeros - max_loc) #- 200
                     except:
                         continue
                     
                     if se_start != se_end:
-                        p_area[i,0] = np.sum(data_window[se_start:se_end])
-                        p_rms[i,0] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
-                        p_max_height[i,0] = max_val
-            
-                continue
-            else:
-                continue
 
+                        se_area[i] = np.sum(data_window[se_start:se_end])
+                        se_width[i] = se_end - se_start
+                        se_max_height[i] = max_val
+                        se_rms[i] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
 
+                        se_area_ch[i,:] = pq.GetPulseAreaChannel(se_start, se_end, data_window_ch)
+                        se_area_top = np.sum(se_area_ch[i,:16])
+                        se_area_bottom = np.sum(se_area_ch[i,16:])
+                        se_tba[i] = (se_area_top-se_area_bottom)/(se_area_top+se_area_bottom)
+                        se_bot_x, se_bot_y, se_top_x[i], se_top_y[i] = pq.GetCentroids(se_area_ch[i,:])
 
-            """
-                start_window = end_times[1] + 400 #200
-                end_window = start_times[0] - 1200   #200
-                if end_window - start_window < 500:
-                    continue
-                else:
-                    data_window = ch_data_phdPerSample[-1,i-j*block_size,start_window:end_window]
-                    p_area[i,0] = np.sum(data_window)
-                    p_rms[i,0] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
-                    p_max_height[i,0] = max(data_window) 
-                    plot_debug = p_area[i,0] > 15 and p_area[i,0] < 40 
-                    #continue
+                        s1_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[1]:end_times[1] ])
+                        s2_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[0]:end_times[0] ])
+                        drift_time[i] = tscale*(start_times[0]-start_times[1])
+
+                #continue
             else:
                 continue
             """
+
+
 
           
-
-            # Sort pulses by start times, not areas as given by pf.findPulses
-            startinds = np.argsort(start_times)
-            n_pulses[i] = min(max_pulses,len(start_times))
-            if (n_pulses[i] < 1):
-                empty_evt_ind[i] = i
-            mp = 0
-            for m in startinds:
-                if m >= max_pulses:
-                    continue
-                if start_times[m] < 0.25/tscale: continue
-                p_start[i,mp] = start_times[m]
-                p_end[i,mp] = end_times[m]
-                mp += 1
-                
-
-            # More precisely estimate baselines immediately before each pulse
-            baselines_precise = pq.GetBaselines(p_start[i,:n_pulses[i]], p_end[i,:n_pulses[i]], ch_data_phdPerSample[:,i-j*block_size,:])
-
-
-            # ====================================================================================================================================
-            # Loop over pulses, calculate some pulse level rq's
-
-            for pp in range(n_pulses[i]):
-                # subtract out more precise estimate of baseline for better RQ estimates
-                baselines_pulse = baselines_precise[pp] # array of baselines per channel, for this pulse
-                ch_data_sum_pulse_bls = np.array([ch_j - baseline_j for (ch_j, baseline_j) in zip(ch_data_phdPerSample[:,i-j*block_size,:], baselines_pulse)])
-
-                # Area, max & min heights, width, pulse mean & rms
-                p_area[i,pp] = pq.GetPulseArea(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
-                p_max_height[i,pp] = pq.GetPulseMaxHeight(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
-                p_min_height[i,pp] = pq.GetPulseMinHeight(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
-                p_width[i,pp] = p_end[i,pp] - p_start[i,pp]
-
-                # Area and height fractions      
-                (p_afs_2l[i,pp], p_afs_1[i,pp], p_afs_10[i,pp],p_afs_25[i,pp], p_afs_50[i,pp], p_afs_75[i,pp], p_afs_90[i,pp], p_afs_99[i,pp]) = pq.GetAreaFraction(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
-                (p_hfs_10l[i,pp], p_hfs_50l[i,pp], p_hfs_90l[i,pp], p_hfs_10r[i,pp], p_hfs_50r[i,pp], p_hfs_90r[i,pp]) = pq.GetHeightFractionSamples(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
-                
-                # Areas for individual channels and top bottom
-                p_area_ch[i,pp,:] = pq.GetPulseAreaChannel(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[:-1] )
-                p_area_ch_frac[i,pp,:] = p_area_ch[i,pp,:]/p_area[i,pp]
-                p_area_top[i,pp] = np.sum(p_area_ch[i,pp,top_channels])
-                p_area_bottom[i,pp] = np.sum(p_area_ch[i,pp,bottom_channels])
-                p_tba[i, pp] = (p_area_top[i, pp] - p_area_bottom[i, pp]) / (p_area_top[i, pp] + p_area_bottom[i, pp])
-
-                p_max_height_ch[i,pp,:] = pq.GetPulseMaxHeightChannel(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls)
-                #p_coincidence[i,pp] = 
-                
-                # Centroids
-                center_bot_x[i,pp], center_bot_y[i,pp], center_top_x[i,pp], center_top_y[i,pp] = pq.GetCentroids(p_area_ch[i,pp])
-                
-            
-            # ====================================================================================================================================
-            # Event level analysis. This needs some serious work
-
-            if n_pulses[i] != 0:
-                waveform_area[i] = np.sum(ch_data_sum_pulse_bls[-1])
-            else:
-                waveform_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,:])
-            p_class[i,:] = pc.ClassifyPulses(p_tba[i, :], (p_afs_50[i, :]-p_afs_2l[i, :])*tscale, n_pulses[i], p_area[i,:]) # classifier
-
-            # Look at events with both S1 and S2.
-            index_s1 = (p_class[i,:] == 1) + (p_class[i,:] == 2) # S1's
-            index_s2 = (p_class[i,:] == 3) + (p_class[i,:] == 4) # S2's
-            n_s1[i] = np.sum(index_s1)
-            n_s2[i] = np.sum(index_s2)
-            if n_s1[i] > 0:
-                sum_s1_area[i] = np.sum(p_area[i, index_s1])
-            if n_s2[i] > 0:
-                sum_s2_area[i] = np.sum(p_area[i, index_s2])
-            if n_s1[i] > 0 and (n_s1[i] + n_s2[i]) > 1 and ((p_class[i,0] == 1) + (p_class[i,0] == 2)):
-                if p_area[i,index_s1].size != 0 and p_area[i,index_s2].size != 0:
-                    for ps in range(max_pulses):
-                        if p_area[i,ps] == np.max(p_area[i,index_s1]):
-                            index_max_s1[i] = ps
-                        if p_area[i,ps] == np.max(p_area[i,index_s2]):
-                            index_max_s2[i] = ps
-                if p_area[i, index_max_s1[i]] > 100 and p_area[i, index_max_s2[i]] > 100:
-                    drift_Time_max[i] = tscale*(p_afs_1[i, index_max_s2[i]]-p_afs_1[i, index_max_s1[i]])
-            if n_s1[i] == 1:
-                if n_s2[i] == 1:
-                    drift_Time[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)])
-                    drift_Time_AF[i] = tscale*(p_afs_1[i, np.argmax(index_s2)] - p_afs_1[i, np.argmax(index_s1)])
-                    drift_Time_AF50[i] = tscale*(p_afs_50[i, np.argmax(index_s2)] - p_afs_50[i, np.argmax(index_s1)])
-                    drift_Time_AF150[i] = tscale*(p_afs_50[i, np.argmax(index_s2)] - p_afs_1[i, np.argmax(index_s1)])
-                    drift_Time_AS[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)])
-                if n_s2[i] > 1:
-                    s1_before_s2[i] = np.argmax(index_s1) < np.argmax(index_s2) 
-                    drift_Time_AS[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)]) #For multi-scatter events. 
-            
 
             # ==========================================================================================================================
             # Plotting code, resist the urge to use this for handscanning blobs
@@ -396,50 +499,46 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
             except ValueError:
                 plot_event_ind = i
 
-            afs50_2 = (p_afs_50[i,:]-p_afs_2l[i,:])*tscale # wtf 
-            
             # Condition to skip the individual plotting, hand scan condition
             if np.size(handscan) == 1: 
                 plotyn = handscan
             else:
                 plotyn = handscan[i]
            
-            # Condition to include a wfm in the average
-            add_wfm = np.any((p_area[i,:]>5000)*(p_tba[i,:]<-0.75))*(n_s1[i]==1)*(n_s2[i]==0)
-            if add_wfm and save_avg_wfm:
-                plotyn = add_wfm # in avg wfm mode, plot the events which will go into the average
-                avg_wfm += ch_data_phdPerSample[-1,i-j*block_size,:]
-                n_wfms_summed += 1
-
-            # Both S1 and S2 condition
-            s1s2 = (n_s1[i] == 1)*(n_s2[i] == 1)
-
             if inn == 's': sys.exit()
-            plotyn = plot_debug
+            #plotyn = se_area[i] > 15 and se_area[i] < 25
+            #print(se_area[i,:])
+            plotyn = True #True #np.any( a2 > 7  )
+            #plotyn = np.any( (se_area[i,:] > 0)&(se_area[i,:] < 2)&(se_width[i,:] > 1.3/tscale)&(se_coincidence[i,:] == 3)  )
             if not inn == 'q' and plotyn and plot_event_ind == i:
+                #print((se_area[i,:] > 0)&(se_area[i,:] < 2)&(se_width[i,:] > 1.3/tscale)&(se_coincidence[i,:] == 3))
+
+                fspect, tspect, Sxx = signal.spectrogram(ch_data_phdPerSample[-1,i-j*block_size,:], fs=500e6)
 
                 fig = pl.figure()
                 ax = pl.gca()
-                pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=0.7, label = "Summed All" )
+                #pl.pcolormesh(tspect, fspect, np.log10(Sxx), shading="gouraud",)
+                pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=1.2, label = "Summed All" )
+                pl.plot(x*tscale, a2,color='red')
+                #pl.plot(x*tscale, a1,color='green')
+                #pl.plot(all_peaks*tscale, ch_data_phdPerSample[-1,i-j*block_size,all_peaks] ,"ro")
+                pl.ylim(-1,5)
+                #for ch in range(32):
+                #    pl.plot(x*tscale, ch_data_phdPerSample[ch,i-j*block_size,:])
+                #pl.plot(all_peaks*tscale, np.zeros_like(all_peaks) ,"ro")
+                #pl.plot(x*tscale,  wf_filtered, color="red", lw=0.7)
                 #pl.plot(x*tscale, data_conv,"blue", label="S2 Filtered")
-                pl.axvspan(tscale*(start_window+se_start),tscale*(start_window+se_end),alpha=0.3,color="blue",zorder=0)
+                #pl.axvspan(tscale*(start_window+se_start),tscale*(start_window+se_end),alpha=0.3,color="blue",zorder=0)
+                for p in range(20):
+                    pl.axvspan(tscale*(se_start[p]),tscale*(se_end[p]),alpha=0.2,color="blue",zorder=0)
+                #ax.text(tscale*(start_window+se_end), 0.03 + se_max_height[i]/ax.get_ylim()[1], '{:.2f} phd'.format(se_area[i]), fontsize=9, color="blue")
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
-                pl.title("Event {}".format(i))
-                #for ps in range(n_pulses[i]):
-                    #pl.axvspan(tscale*p_start[i,ps],tscale*p_end[i,ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
-                    #pl.axvline(tscale*p_afs_1[i,ps],color=pulse_class_colors[p_class[i,ps]],zorder=0,linestyle='--')
-                    #ax.text((p_end[i,ps]) * tscale, (0.94-ps*0.2) * ax.get_ylim()[1], '{:.2f} phd'.format(p_area[i, ps]),
-                    #        fontsize=9, color=pulse_class_colors[p_class[i, ps]])
-                    #ax.text((p_end[i,ps]) * tscale, (0.9-ps*0.2) * ax.get_ylim()[1], 'TBA={:.2f}'.format(p_tba[i, ps]),
-                    #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])
-                    #ax.text((p_end[i,ps]) * tscale, (0.86-ps*0.2) * ax.get_ylim()[1], 'Rise={:.2f} us'.format(afs50_2[ps]),
-                    #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])
-                    #ax.text((end_times[ps]) * tscale, (0.82-ps*0.2) * ax.get_ylim()[1], 'Check={}'.format(temp_condition[ps]),
-                    #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])    
-                pl.legend()
+                #pl.title("Event {}".format(i))  
+                #pl.legend()
                 pl.grid(which="both",axis="both",linestyle="--")
-                pl.xlim(0,event_window)
+                #pl.xlim(0,event_window)
+                #pl.ylim(-2*max(ch_data_phdPerSample[-1,i-j*block_size,:]), 5*max(ch_data_phdPerSample[-1,i-j*block_size,:]))
                 pl.show()
                 inn = input("Press enter to continue, q to stop plotting, evt # to skip to # (forward only)")
                 #fig.clf()
@@ -448,17 +547,12 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
                 
         # end of loop over events
 
-        if save_avg_wfm:
-            avg_wfm /= n_wfms_summed
-            np.savetxt(data_dir+'average_waveform.txt',avg_wfm)
-            print("Average waveform saved")
 
         n_events = i
         t_end = time.time()
         print("total number of events processed:", n_events)
         #print("Time used: {}".format(t_end-t_start))
-        print("empty events: {0}".format(np.sum(empty_evt_ind>0)))
-
+        print(np.count_nonzero(se_coincidence))
         j += 1
 
     # end of loop over compressed files
@@ -469,76 +563,115 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
 
     #create a dictionary with all RQs
     list_rq = {}
-    list_rq['center_top_x'] = center_top_x
-    list_rq['center_top_y'] = center_top_y
-    list_rq['center_bot_x'] = center_bot_x
-    list_rq['center_bot_y'] = center_bot_y
-    list_rq['n_s1'] = n_s1
-    list_rq['n_s2'] = n_s2
-    list_rq['s1_before_s2'] = s1_before_s2
-    list_rq['n_pulses'] = n_pulses
-    list_rq['n_events'] = n_events
-    list_rq['p_area'] = p_area
-    list_rq['p_rms'] = p_rms
-    list_rq['p_class'] = p_class
-    list_rq['drift_Time'] = drift_Time
-    list_rq['drift_Time_AF'] = drift_Time_AF
-    list_rq['drift_Time_AF50'] = drift_Time_AF50
-    list_rq['drift_Time_AF150'] = drift_Time_AF150
-    list_rq['drift_Time_AS'] = drift_Time_AS
-    list_rq['drift_Time_max'] = drift_Time_max
-    list_rq['index_max_s1'] = index_max_s1
-    list_rq['index_max_s2'] = index_max_s2
-    list_rq['p_max_height'] = p_max_height
-    list_rq['p_min_height'] = p_min_height
-    list_rq['p_width'] = p_width
-    list_rq['p_afs_1'] = p_afs_1
-    list_rq['p_afs_2l'] = p_afs_2l
-    list_rq['p_afs_10'] = p_afs_10
-    list_rq['p_afs_50'] = p_afs_50
-    list_rq['p_afs_90'] = p_afs_90
-    list_rq['p_afs_99'] = p_afs_99   
-    list_rq['p_hfs_10l'] = p_hfs_10l
-    list_rq['p_hfs_50l'] = p_hfs_50l
-    list_rq['p_hfs_90l'] = p_hfs_90l
-    list_rq['p_hfs_10r'] = p_hfs_10r
-    list_rq['p_hfs_50r'] = p_hfs_50r
-    list_rq['p_hfs_90r'] = p_hfs_90r   
-    list_rq['p_area_ch'] = p_area_ch
-    list_rq['p_area_ch_frac'] = p_area_ch_frac
-    list_rq['p_area_top'] = p_area_top
-    list_rq['p_area_bottom'] = p_area_bottom
-    list_rq['p_tba'] = p_tba
-    list_rq['p_start'] = p_start
-    list_rq['p_end'] = p_end
-    list_rq['sum_s1_area'] = sum_s1_area
-    list_rq['sum_s2_area'] = sum_s2_area
-    list_rq['waveform_area'] = waveform_area
-    list_rq['ev_time_s'] = rq_ev_time_s
-    list_rq['p_max_height_ch'] = p_max_height_ch
-    list_rq['right_area'] = right_area
+    print(np.count_nonzero(se_area))
+    list_rq['se_area'] = se_area
+    list_rq['se_width'] = se_width
+    list_rq['se_max_height'] = se_max_height
+    list_rq['se_rms'] = se_rms
+    list_rq['se_area_ch'] = se_area_ch
+    list_rq['se_tba'] = se_tba
+    list_rq['se_top_x'] = se_top_x
+    list_rq['se_top_y'] = se_top_y
+    list_rq['se_coincidence'] = se_coincidence
+    list_rq['se_a2_height'] = se_a2_height
+    
+    list_rq['s1_area'] = s1_area
+    list_rq['s2_area'] = s2_area
+    list_rq['drift_time'] = drift_time
+
+
     #list_rq[''] =    #add more rq
 
     #remove zeros in the end of each RQ array. 
-    for rq in list_rq.keys():
-        if rq != 'n_events':
-            list_rq[rq] = list_rq[rq][:n_events]
+    #for rq in list_rq.keys():
+    #    if rq != 'n_events':
+    #        list_rq[rq] = list_rq[rq][:n_events]
 
     if filtered:
-        save_name = "/rq_SE_filtered.npy"
+        save_name = "/rq_SE_filtered_test2.npy"
     else:
-        save_name = "/rq_SE.npy"
+        save_name = "/rq_SE_test.npy"
     rq = open(data_dir + save_name,'wb')
     np.savez(rq, **list_rq)
     rq.close()
 
   
 
+def high_pass_filter(wf,alpha):
+    wf_filtered = np.zeros_like(wf)
+    wf_filtered[0] = wf[0]
+    for i in range(1,wf.size):
+        wf_filtered[i] = alpha*(wf[i] - wf[i-1] + wf_filtered[i-1])
+    
+    return wf_filtered
+
+
+
+def s1_filter(wf,n1):
+
+    n1_12 = int(n1/2)
+    a1 = np.zeros_like(wf)
+
+    a1[n1_12] = np.sum(wf[0:2*n1_12])
+    for i in range(n1_12+1,wf.size-n1_12):
+        a1[i] = a1[i-1] + wf[i+n1_12-1] - wf[i-n1_12-1]
+ 
+    return a1
+
+
+def s2_filter(wf,a1,n2):
+
+    n2_12 = int(n2/2)
+    a1 = np.round(a1,8)
+    a2 = np.zeros_like(wf)
+
+    window_a1 = np.asarray( sorted(a1[0:2*n2_12]) )
+    max_a1 = window_a1[-1]
+    a2[n2_12] = np.sum(wf[0:2*n2_12]) - max_a1
+    old_max_a1 = max_a1
+
+    # Main loop over samples
+    for i in range(n2_12+1,wf.size-n2_12):
+        
+        # Remove sample not in current window
+        to_remove = a1[i-n2_12-1]
+        ind_to_remove = (window_a1 == to_remove).nonzero()[0]
+        if ind_to_remove.size > 0: window_a1[ind_to_remove[0]] = -999999999
+
+        # Determining max A1 in window
+        window_a1 = window_a1[window_a1 >= a1[i+n2_12-1]]
+        window_a1 = np.concatenate(([a1[i+n2_12-1]],window_a1))
+        max_a1 = window_a1[-1]
+
+        # Calculating A2
+        a2[i] = a2[i-1] + old_max_a1 + wf[i+n2_12-1] - wf[i-n2_12-1] - max_a1
+
+        # Reset old max for next iteration
+        old_max_a1 = max_a1
+     
+
+    return a2
+
+
+def test_filter(wf,n12):
+
+    aTest = np.zeros_like(wf)
+
+    for i in range(n12,wf.size-n12):
+        aTest[i] = np.count_nonzero( wf[i-n12:i+n12] > 0.01)
+
+    return aTest
+
+
+
+
 def main():
     #with open(sys.path[0]+"/path.txt", 'r') as path:
     #    data_dir = path.read()
-    data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202211/20221120/20221120-1302_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.44bar_-94.64ICVbot_2fold_beta_120min/"
-    find_single_electrons(data_dir, handscan=False)
+    #data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202211/20221120/20221120-1302_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.44bar_-94.64ICVbot_2fold_beta_120min/"
+    #data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202303/20230307/20230307-1744_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.67bar_-99.78ICVbot_2fold_blank_afterFlow_60min/"
+    data_dir = "/media/xaber/extradrive2/crystalize_data/data-202303/20230320/20230320-0254_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.58bar_77.51ICVbot_2fold_degradedNew_60min/"
+    find_single_electrons(data_dir)
 
 if __name__ == "__main__":
     main()

@@ -64,6 +64,8 @@ def baseline_suppress(d, pls_thresh=5., buffL=100, buffR=100, condense_thresh=10
         buffR = 0
     if not isinstance(condense_thresh, int):
         raise TypeError("'condense_thresh' must be an int")
+
+    if np.count_nonzero( np.absolute(d) < pls_thresh ) == d.size: return np.zeros_like(d,dtype=bool)
     
     cut_thresh = (d > pls_thresh) | (d < -pls_thresh)
     cut_thresh[0] = False
