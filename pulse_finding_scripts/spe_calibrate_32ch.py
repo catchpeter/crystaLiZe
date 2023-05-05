@@ -146,29 +146,29 @@ def spe_calibrate(data_dir, bd, ch, rms_cut=rms_cut_default, plot_wf=False, save
              
 def main():
 
-    data_dir = "/media/xaber/extradrive1/crystalize_data/data-202209/20220928/20220928-1726_0.5DR_NAmVtrig_2us_3201.0C_3001.0G_500A_54SiPM_1.2bar_-97.06ICVbot_SPE/"
-
+    #data_dir = "/media/xaber/extradrive1/crystalize_data/data-202209/20220928/20220928-1726_0.5DR_NAmVtrig_2us_3201.0C_3001.0G_500A_54SiPM_1.2bar_-97.06ICVbot_SPE/"
+    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202304/20230417/20230417-0838_0.5DR_NAmVtrig_2us_0.0C_0.0G_500A_54SiPM_0.69bar_-119.71ICVbot_SPE/"
     
     b0_ch = np.arange(0,16)
     b0_rms_cut = rms_cut_default*np.ones(16)
     #b0_rms_cut = [0.5,0.4,0.4,0.45,0.45,0.45,0.45,0.44,0.4,0.4,0.4,0.48,0.47,0.45,0.46,0.44]
     for ch in b0_ch:
         print("Board 0, channel "+str(ch) )
-        spe_calibrate(data_dir, bd=0, ch=ch, rms_cut=b0_rms_cut[ch], plot_wf=True)
+        spe_calibrate(data_dir, bd=0, ch=ch, rms_cut=b0_rms_cut[ch], plot_wf=False)
 
     b1_ch = np.arange(0,8)
     b1_rms_cut = rms_cut_default*np.ones(8)
     #b1_rms_cut = [0.47,0.5,0.5,0.4,0.4,0.5,0.47,0.4] 
     for ch in b1_ch:
         print("Board 1, channel "+str(ch) )
-        spe_calibrate(data_dir, bd=1, ch=ch, rms_cut=b1_rms_cut[ch], plot_wf=True)
+        spe_calibrate(data_dir, bd=1, ch=ch, rms_cut=b1_rms_cut[ch], plot_wf=False)
 
     b2_ch = np.arange(0,8)
     b2_rms_cut = rms_cut_default*np.ones(8)
     #b2_rms_cut = [0.4,0.46,0.4]
     for ch in b2_ch:
         print("Board 2, channel "+str(ch) )
-        spe_calibrate(data_dir, bd=2, ch=ch, rms_cut=b2_rms_cut[ch], plot_wf=True)
+        spe_calibrate(data_dir, bd=2, ch=ch, rms_cut=b2_rms_cut[ch], plot_wf=False)
 
 
     return 

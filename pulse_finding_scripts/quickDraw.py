@@ -27,15 +27,16 @@ def quickDraw(data_dir, howMany = 10, showFig = False):
     spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
     # Load txt file of events to plot
-    try: 
-        eventsToDraw = np.loadtxt(data_dir+"handscan.txt", dtype=int)
-    except:
-        print("Error in loading handscan.txt")
-        return
+    #try: 
+    eventsToDraw = np.loadtxt(data_dir+"handscan.txt", dtype=int)
+    #except:
+    #    print("Error in loading handscan.txt")
+    #    return
+ 
 
     # Load rq file
     try:
-        listrq = np.load(data_dir+"rq.npz")
+        listrq = np.load(data_dir+"rq_filtered.npy")
     except:
         print("Error in loading rq file")
         return
@@ -68,12 +69,12 @@ def quickDraw(data_dir, howMany = 10, showFig = False):
         print("Event "+str(eventsToDraw[i]))
 
         # Load compressed data
-        try:
-            with np.load(data_dir+"compressed_data/compressed_"+str(compressedFilesToLoad[i])+".npy") as data:
-                ch_data = data["arr_0"]
-        except:
-            print("Error in loading compressed_"+str(compressedFilesToLoad[i])+".npy")
-            continue
+        #try:
+        with np.load(data_dir+"compressed_filtered_data/compressed_filtered_"+str(compressedFilesToLoad[i])+".npz") as data:
+            ch_data = data["arr_0"]
+        #except:
+        #    print("Error in loading compressed_"+str(compressedFilesToLoad[i])+".npy")
+        #    continue
 
         # Create array of events
         n_tot_samp_per_ch = int( (ch_data.size)/n_sipms )
@@ -131,9 +132,12 @@ def quickDraw(data_dir, howMany = 10, showFig = False):
 
 def main():
 
-    data_dir = sys.argv[1]
+    #data_dir = sys.argv[1]
     #"/media/xaber/extradrive4/crystalize_data/data-202211/20221108/20221108-1327_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.41bar_-101.59ICVbot_2fold_degraded_CsSide_120min/"
-    quickDraw(data_dir, howMany=10, showFig=False)
+    #data_dir = "/media/xaber/extradrive2/crystalize_data/data-202303/20230318/20230318-0642_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.51bar_78.42ICVbot_2fold_degradedNew_60min/"
+    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202304/20230417/20230417-0933_2DR_10mVtrig_15us_2701.0C_2501.0G_500A_54SiPM_0.67bar_-119.71ICVbot_2fold_plainMesh_solid_CoOCVTop_10min/"
+    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202304/20230417/20230417-1015_2DR_10mVtrig_15us_3202.0C_3001.0G_500A_54SiPM_0.69bar_-119.71ICVbot_2fold_plainMesh_solid_CoOCVTop_20min/"
+    quickDraw(data_dir, howMany=100, showFig=True)
 
     return
 

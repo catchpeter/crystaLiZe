@@ -20,7 +20,7 @@ def ClassifyPulses(tba, t_rise, n_pulses, p_area):
     #s2_lower_limit = -0.225*(log_area-4)**2-0.3
     #s1_upper_limit = s2_lower_limit
     #s1_upper_limit[(log_area>2.5)*(log_area<4.1)] = -0.8
-    riseTimes1s2 = 0.15 #0.269
+    riseTimes1s2 = 0.2 #0.15 #0.269
     case1 = (tba < 0)*(t_rise < riseTimes1s2) # normal S1s
     case2 = (tba >= 0)*(t_rise < riseTimes1s2) # top-focused S1s; e.g. in gas or LXe above top array
     case3 = (tba > -0.25)*(t_rise >= riseTimes1s2) # normal-ish S2s

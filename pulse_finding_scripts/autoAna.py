@@ -35,7 +35,7 @@ def autoAna(data_dir_list, upload=True):
         # Check to generate rq's and plots
         if not os.path.exists(data_dir + "rq_filtered.npy"):
             try:
-                make_rq(data_dir)
+                make_rq(data_dir,phase="solid")
                 #make_plots(dir)
             except:
                 print("uh oh rq didn't work")
@@ -51,15 +51,17 @@ def autoAna(data_dir_list, upload=True):
 def main():
 
     # f5d91b31-9a7d-3278-ac5b-4f9ae16edd60
-    location = "/media/xaber/extradrive1/crystalize_data/data-202303/*/*/" 
-    data_dir_list = glob.glob(location)
+    
 
     while True: # lmao
+
+        location = "/media/xaber/G-Drive2/crystalize_data/data-202305/*/*/" 
+        data_dir_list = glob.glob(location)
 
         autoAna(data_dir_list, upload=False)
 
         # Checks every minute (roughly)
-        time.sleep(60)
+        time.sleep(5*60)
 
     return 
 

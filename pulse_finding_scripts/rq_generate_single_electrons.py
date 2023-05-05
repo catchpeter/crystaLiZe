@@ -135,6 +135,8 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     s2_area = np.zeros(n_events)
 
     se_a2_height = np.zeros((n_events,20))
+    se_aft10 = np.zeros((n_events,20))
+    se_aft90 = np.zeros((n_events,20))
 
     drift_time = np.zeros(n_events)
 
@@ -160,6 +162,26 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
         n_tot_samp_per_ch = int( (ch_data_adcc.size)/n_sipms )
         n_events_b = int((ch_data_adcc.size)/(n_sipms*wsize)) # n events per compressed file (same as block_size)
     
+
+        # Better baseline subtraction
+        ch_data_adcc = np.reshape(ch_data_adcc, (n_sipms,n_events_b,wsize))
+        for s in range(n_sipms):
+            for t in range(n_events_b):
+                suppressed = np.nonzero( (ch_data_adcc[s,t,:] == 0) )[0]
+                for u in range(suppressed.size - 1):
+                    if suppressed[u+1] - suppressed[u] > 1:
+                        baseline = np.mean(ch_data_adcc[s,t,suppressed[u]+1:suppressed[u]+1+75])
+                        ch_data_adcc[s,t,suppressed[u]+1:suppressed[u+1]-1] -= baseline
+
+
+                    #if ch_data_adcc[u] == 0 and ch_data_adcc[u+1] != 0:
+
+                        
+        ch_data_adcc = np.reshape(ch_data_adcc, int(n_sipms*n_events_b*wsize))
+
+
+
+
         # Convert from ADCC to phd/sample and get summed waveform
         ch_data_adcc = np.concatenate((ch_data_adcc, np.zeros(n_tot_samp_per_ch) ))
         ch_data_mV = vscale*np.reshape(ch_data_adcc, (n_channels,n_events_b,wsize))
@@ -262,6 +284,15 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
             """
 
 
+            
+
+
+
+
+
+            
+
+
 
             #max_loc = np.argmax(ch_data_phdPerSample[-1,i-j*block_size,:])
             #if max_loc < 1000 or wsize - max_loc < 1000: continue
@@ -278,7 +309,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
             max_val_a2 = max(a2)
             max_loc = np.argmax(a2)
             thresh = 1e-8
-            peaks, properties = signal.find_peaks(a2,height=1.5,distance=800,width=10)
+            peaks, properties = signal.find_peaks(a2,height=0.5,distance=800,width=10)
             se_start = np.zeros(20,dtype=int)
             se_end = np.zeros(20,dtype=int)
             for p in range(min(20,len(peaks))):
@@ -289,6 +320,9 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
                     continue
                 
                 se_area[i,p] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,se_start[p]:se_end[p]])
+                afs_2l,afs_1,afs_10,afs_25,afs_50,afs_75,afs_90,afs_99 = pq.GetAreaFraction(se_start[p],se_end[p],ch_data_phdPerSample[-1,i-j*block_size,:])
+                se_aft10[i,p] = afs_10
+                se_aft90[i,p] = afs_90 
                 se_width[i,p] = se_end[p] - se_start[p]
                 se_a2_height[i,p] = a2[peaks[p]]
 
@@ -529,8 +563,8 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
                 #pl.plot(x*tscale,  wf_filtered, color="red", lw=0.7)
                 #pl.plot(x*tscale, data_conv,"blue", label="S2 Filtered")
                 #pl.axvspan(tscale*(start_window+se_start),tscale*(start_window+se_end),alpha=0.3,color="blue",zorder=0)
-                for p in range(20):
-                    pl.axvspan(tscale*(se_start[p]),tscale*(se_end[p]),alpha=0.2,color="blue",zorder=0)
+                #for p in range(20):
+                #    pl.axvspan(tscale*(se_start[p]),tscale*(se_end[p]),alpha=0.2,color="blue",zorder=0)
                 #ax.text(tscale*(start_window+se_end), 0.03 + se_max_height[i]/ax.get_ylim()[1], '{:.2f} phd'.format(se_area[i]), fontsize=9, color="blue")
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
@@ -578,6 +612,9 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     list_rq['s1_area'] = s1_area
     list_rq['s2_area'] = s2_area
     list_rq['drift_time'] = drift_time
+    list_rq['se_aft10'] = se_aft10
+    list_rq['se_aft90'] = se_aft90
+
 
 
     #list_rq[''] =    #add more rq
@@ -608,6 +645,14 @@ def high_pass_filter(wf,alpha):
 
 
 def s1_filter(wf,n1):
+    """
+    Boxcar filter for S1s
+    (Probably some np wizardry that could replace this function)
+
+    Inputs:
+      wf: Waveform to filter
+      n1: Filter width
+    """
 
     n1_12 = int(n1/2)
     a1 = np.zeros_like(wf)
@@ -620,26 +665,37 @@ def s1_filter(wf,n1):
 
 
 def s2_filter(wf,a1,n2):
+    """
+    Boxcar filter with S1 filter subtracted.
+    This uses a sliding window maximum finder algorithm on a1
+
+    Inputs:
+      wf: Waveform to filter
+      a1: S1 filtered waveform
+      n2: Filter width
+    """
 
     n2_12 = int(n2/2)
-    a1 = np.round(a1,8)
+    a1 = np.round(a1,8) # saw some floating point errors
     a2 = np.zeros_like(wf)
 
+    # Initial sample before loop
     window_a1 = np.asarray( sorted(a1[0:2*n2_12]) )
     max_a1 = window_a1[-1]
     a2[n2_12] = np.sum(wf[0:2*n2_12]) - max_a1
     old_max_a1 = max_a1
 
-    # Main loop over samples
+    # Loop over samples
     for i in range(n2_12+1,wf.size-n2_12):
         
-        # Remove sample not in current window
+        # Remove a1 sample not in current window
         to_remove = a1[i-n2_12-1]
         ind_to_remove = (window_a1 == to_remove).nonzero()[0]
         if ind_to_remove.size > 0: window_a1[ind_to_remove[0]] = -999999999
 
         # Determining max A1 in window
-        window_a1 = window_a1[window_a1 >= a1[i+n2_12-1]]
+        # This part is the slowest, need to improve by not creating new arrays every time
+        window_a1 = window_a1[window_a1 >= a1[i+n2_12-1]] 
         window_a1 = np.concatenate(([a1[i+n2_12-1]],window_a1))
         max_a1 = window_a1[-1]
 
