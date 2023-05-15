@@ -7,7 +7,7 @@ from read_settings import get_event_window, get_vscale
 
 
 
-def quickDraw(data_dir, howMany = 10, showFig = False):
+def quickDraw(data_dir, howMany = 10, showFig = False, hs_fName="handscan.txt"):
 
     # Some important quantites
     vscale = get_vscale(data_dir)
@@ -28,7 +28,7 @@ def quickDraw(data_dir, howMany = 10, showFig = False):
 
     # Load txt file of events to plot
     #try: 
-    eventsToDraw = np.loadtxt(data_dir+"handscan.txt", dtype=int)
+    eventsToDraw = np.loadtxt(data_dir+hs_fName, dtype=int)
     #except:
     #    print("Error in loading handscan.txt")
     #    return
@@ -134,10 +134,9 @@ def main():
 
     #data_dir = sys.argv[1]
     #"/media/xaber/extradrive4/crystalize_data/data-202211/20221108/20221108-1327_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.41bar_-101.59ICVbot_2fold_degraded_CsSide_120min/"
-    #data_dir = "/media/xaber/extradrive2/crystalize_data/data-202303/20230318/20230318-0642_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.51bar_78.42ICVbot_2fold_degradedNew_60min/"
-    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202304/20230417/20230417-0933_2DR_10mVtrig_15us_2701.0C_2501.0G_500A_54SiPM_0.67bar_-119.71ICVbot_2fold_plainMesh_solid_CoOCVTop_10min/"
-    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202304/20230417/20230417-1015_2DR_10mVtrig_15us_3202.0C_3001.0G_500A_54SiPM_0.69bar_-119.71ICVbot_2fold_plainMesh_solid_CoOCVTop_20min/"
-    quickDraw(data_dir, howMany=100, showFig=True)
+    
+    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230511/20230511-1016_2DR_10mVtrig_20us_3202.0C_3001.0G_500A_54SiPM_1.44bar_-106.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_60min/"
+    quickDraw(data_dir, howMany=100, showFig=True, hs_fName = "handscan_test.txt")
 
     return
 
