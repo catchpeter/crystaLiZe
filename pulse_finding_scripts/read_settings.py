@@ -13,3 +13,7 @@ def get_vscale(data_dir):
         vscale = (2000.0/16384.0) # default to 2V
     
     return vscale
+
+def get_sipm_bias(data_dir):
+    sipm_bias = int(re.findall(r'_(\d+)SiPM',data_dir)[0])
+    return sipm_bias

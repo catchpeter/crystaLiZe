@@ -10,11 +10,11 @@ import PulseFinderScipy as pf
 import PulseQuantities as pq
 import PulseClassification as pc
 import PulseFinderVerySimple as vs
-from read_settings import get_event_window, get_vscale
+from read_settings import get_event_window, get_vscale, get_sipm_bias
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False, phase="liquid"):
+def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False, phase="liquid", correct_swap=False):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -78,10 +78,49 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
 
     
     if phase == "liquid":
+
+        spe_dir = "/home/xaber/crystalize/Analysis/spe_calibration/202306/"
+
+        sipm_bias = get_sipm_bias(data_dir)
+
+        spe_sizes = np.loadtxt(spe_dir+f"spes_{sipm_bias}.txt", dtype='float')
+        print(spe_sizes)
+
+
         # SPE sizes in LIQUID, Sept, 28, 2022
-        spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
-        spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
-        spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
+        #spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
+        #spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
+        #spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
+
+        # SPE's at 49V, 0.5Vpp DR, no amp
+        #spe_sizes_0 = np.array([16.616,16.721,16.631,16.288,16.874,16.374,16.590,17.972,15.285,14.969,15.015,15.190,17.332,17.111,17.557,17.340])
+        #spe_sizes_1 = np.array([17.357,17.189,17.782,17.666,17.773,17.951,18.054,18.051])
+        #spe_sizes_2 = np.array([18.311,17.698,18.136,18.000,18.191,18.623,18.262,17.361])
+
+        # SPE's at 50V 0.5Vpp DR, no amp
+        #spe_sizes_0 = np.array([22.171,22.725,22.461,22.531,22.665,22.693,22.257,24.676,21.312,21.170,20.834,21.100,23.238,23.457,23.695,23.451])
+        #spe_sizes_1 = np.array([23.530,23.134,23.779,23.487,23.571,23.956,24.017,24.021])
+        #spe_sizes_2 = np.array([24.197,23.715,24.267,24.000,24.326,24.864,24.139,23.320])
+
+        # SPE's at 51V, 0.5Vpp DR, np amp
+        #spe_sizes_0 = np.array([27.729,28.376,27.616,28.040,28.005,27.971,28.065,30.042,26.564,26.509,26.044,26.516,28.747,28.992,29.399,29.368])
+        #spe_sizes_1 = np.array([28.755,28.528,29.212,29.176,28.867,29.589,29.593,29.595])
+        #spe_sizes_2 = np.array([29.607,29.188,29.652,30.000,30.039,30.622,29.603,28.917])
+
+        # SPE's at 52V, 0.5Vpp DR, np amp
+        #spe_sizes_0 = np.array([32.647,33.593,32.857,33.060,33.271,32.903,33.352,35.074,31.918,32.022,31.472,31.772,33.845,34.251,34.931,34.054])
+        #spe_sizes_1 = np.array([34.187,33.717,34.519,34.414,34.350,34.901,34.730,34.807])
+        #spe_sizes_2 = np.array([34.964,34.430,35.054,35.000,35.233,36.011,34.978,34.298])
+
+
+        # SPE's at 50 V, 0.5Vpp DR
+        #spe_sizes_0 = np.array([20.888,21.032,20.862,21.276,21.094,21.052,20.840,22.658,20.018,19.997,19.753,20.074,22.142,21.945,22.575,22.632])
+        #spe_sizes_1 = np.array([21.864,21.862,22.114,21.921,21.631,22.778,22.678,22.872])
+        #spe_sizes_2 = np.array([23.055,22.254,23.344,20.833,22.459,23.692,23.251,22.200])
+
+        
+
+
 
     elif phase == "solid":
         # SPE sizes in SOLID, Oct 2022
@@ -89,7 +128,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
         spe_sizes_1 = np.array([94.666,95.533,93.915,99.042,97.783,94.895,97.134,97.501])
         spe_sizes_2 = np.array([94.553,95.514,96.554,96.465,96.711,96.920,95.460,95.705])
 
-    spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
+    #spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
 
     # ====================================================================================================================================
@@ -106,29 +145,32 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
 
     n_events = (len(compressed_file_list)+5)*block_size # with some extra room 
 
-    # Load headers and calculate event time
-    h_file = np.load(data_dir+"/compressed_filtered_data/headers.npz")
-    h_array = h_file["arr_0"]
-    h_n_events = int(np.floor(h_array.size/8))
-    h_array = np.reshape(h_array,(h_n_events,8))
+    try:
+        # Load headers and calculate event time
+        h_file = np.load(data_dir+"/compressed_filtered_data/headers.npz")
+        h_array = h_file["arr_0"]
+        h_n_events = int(np.floor(h_array.size/8))
+        h_array = np.reshape(h_array,(h_n_events,8))
 
-    # Calculate event time
-    # Precision up to 0.5 ms. To-do: get precision to 16 ns
-    second_16 = h_array[:,5]
-    second_16[second_16 < 0] = second_16[second_16 < 0] + 2**15
-    second_16_next = np.zeros(h_n_events,dtype=int)
-    for i in range(1,h_n_events):
-        if second_16[i] - second_16[i-1] < 0:
-            second_16_next[i:] += 1
-    ev_time_s = 16*(second_16 + second_16_next*2**15)*(10**-9 * 2**15)
+        # Calculate event time
+        # Precision up to 0.5 ms. To-do: get precision to 16 ns
+        second_16 = h_array[:,5]
+        second_16[second_16 < 0] = second_16[second_16 < 0] + 2**15
+        second_16_next = np.zeros(h_n_events,dtype=int)
+        for i in range(1,h_n_events):
+            if second_16[i] - second_16[i-1] < 0:
+                second_16_next[i:] += 1
+        ev_time_s = 16*(second_16 + second_16_next*2**15)*(10**-9 * 2**15)
 
-    if h_n_events < n_events:
-        # Match header size to n_events which has some extra zeros
-        ev_time_s = np.concatenate( (ev_time_s,np.zeros(n_events-h_n_events,dtype=int) ) )
-    elif h_n_events > n_events:
-        # This shouldn't happen
-        print("Warning: Header file contains more events than compressed events!")
-        ev_time_s = np.concatenate( (ev_time_s,np.zeros(h_n_events-n_events,dtype=int) ) )
+        if h_n_events < n_events:
+            # Match header size to n_events which has some extra zeros
+            ev_time_s = np.concatenate( (ev_time_s,np.zeros(n_events-h_n_events,dtype=int) ) )
+        elif h_n_events > n_events:
+            # This shouldn't happen
+            print("Warning: Header file contains more events than compressed events!")
+            ev_time_s = np.concatenate( (ev_time_s,np.zeros(h_n_events-n_events,dtype=int) ) )
+    except:
+        ev_time_s = np.zeros(n_events+3000)
     
 
     # ====================================================================================================================================
@@ -148,6 +190,9 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
     p_area_bottom = np.zeros((n_events, max_pulses))
     p_tba = np.zeros((n_events, max_pulses))
     p_class = np.zeros((n_events, max_pulses), dtype=int)
+
+    p_area_window = np.zeros((n_events, max_pulses))
+    p_area_window_top = np.zeros((n_events, max_pulses))
 
     # centroid 
     center_top_x = np.zeros(( n_events, max_pulses))
@@ -231,10 +276,27 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
         ch_data_mV = vscale*np.reshape(ch_data_adcc, (n_channels,n_events_b,wsize))
         ch_data_phdPerSample = np.zeros_like(ch_data_mV) 
         for ch in range(n_sipms): # using np.divide to get rid of this for loop is more trouble than it's worth
-            ch_data_phdPerSample[ch,:,:] = ch_data_mV[ch,:,:]*tscale*(1000)/spe_sizes[ch]
+            if ch == 27: continue
+
+            if correct_swap:
+                print("Correcting SiPMs")
+                if ch==7:
+                    ch_data_phdPerSample[ch,:,:] = ch_data_mV[31,:,:]*tscale*(1000)/spe_sizes[ch]
+                elif ch==31:
+                    ch_data_phdPerSample[ch,:,:] = ch_data_mV[7,:,:]*tscale*(1000)/spe_sizes[ch]
+                else:
+                    ch_data_phdPerSample[ch,:,:] = ch_data_mV[ch,:,:]*tscale*(1000)/spe_sizes[ch]
+                
+            else:
+                ch_data_phdPerSample[ch,:,:] = ch_data_mV[ch,:,:]*tscale*(1000)/spe_sizes[ch]
+
         ch_data_phdPerSample[-1,:,:] = np.sum(ch_data_phdPerSample, axis=0)   
         #ch_data_phdPerSample = np.concatenate((ch_data_phdPerSample, np.sum(ch_data_phdPerSample, axis=0)))
             
+
+
+
+
         # create a time axis in units of µs:
         x = np.arange(0, wsize, 1)
         t = tscale*x
@@ -298,6 +360,22 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
 
                 # Area, max & min heights, width, pulse mean & rms
                 p_area[i,pp] = pq.GetPulseArea(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
+
+
+                
+                try:
+                    max_i = np.argmax(ch_data_sum_pulse_bls[-1][p_start[i,pp]:p_end[i,pp]]) + p_start[i,pp]
+                except:
+                    max_i = -99999
+                if max_i + 280 >= wsize + 5 or max_i - 120 <= 1:
+                    print(i,pp,max_i)
+                else:
+                    p_area_window[i,pp] = np.sum(ch_data_sum_pulse_bls[-1][max_i-120:max_i+280])
+                    p_area_window_top[i,pp] = np.sum(ch_data_sum_pulse_bls[0:16][max_i-120:max_i+280])
+                    
+
+                #print(i,pp,max_i,p_area_window[i,pp], p_area[i,pp], p_end[i,pp] - p_start[i,pp])
+
                 p_max_height[i,pp] = pq.GetPulseMaxHeight(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
                 p_min_height[i,pp] = pq.GetPulseMinHeight(p_start[i,pp], p_end[i,pp], ch_data_sum_pulse_bls[-1] )
                 p_width[i,pp] = p_end[i,pp] - p_start[i,pp]
@@ -397,7 +475,23 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
                 fig = pl.figure()
                 ax = pl.gca()
                 pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=0.7, label = "Summed All" )
-                pl.plot(x[:-1]*tscale, np.diff(ch_data_phdPerSample[-1,i-j*block_size,:]),"blue", label="Derivative")
+                #pl.plot(x[:-1]*tscale, np.diff(ch_data_phdPerSample[-1,i-j*block_size,:]),"blue", label="Derivative")
+
+                """
+                for ch in range(32): 
+                    if ch < 16:
+                        col = 'blue'
+                    if ch > 15:
+                        col = 'orange'
+                    #if ch in [8,13,23,24]:
+                    #    col = "red"
+                
+                    pl.plot(x*tscale, ch_data_phdPerSample[ch,i-j*block_size,:], color=col)
+                """
+
+                pl.plot(x*tscale, np.sum(ch_data_phdPerSample[0:16,i-j*block_size,:],axis=0 ), color="red")
+                pl.plot(x*tscale, np.sum(ch_data_phdPerSample[16:32,i-j*block_size,:],axis=0 ), color="blue")
+
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
                 pl.title("Event {}".format(i))
@@ -491,6 +585,8 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
     list_rq['ev_time_s'] = rq_ev_time_s
     list_rq['p_max_height_ch'] = p_max_height_ch
     list_rq['right_area'] = right_area
+    list_rq['p_area_window'] = p_area_window
+    list_rq['p_area_window_top'] = p_area_window_top
     #list_rq[''] =    #add more rq
 
     #remove zeros in the end of each RQ array. 
@@ -509,9 +605,19 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True
   
 
 def main():
-    with open(sys.path[0]+"/path.txt", 'r') as path:
-        data_dir = path.read()
-    make_rq(data_dir)
+    #with open(sys.path[0]+"/path.txt", 'r') as path:
+    #    data_dir = path.read()
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1509_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_50SiPM_1.68bar_-151.12ICVbot_2fold_BaTop_noAmp9and14Top_8and9Bot_plainMesh_liquid_10min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-0918_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.68bar_-151.12ICVbot_2fold_CoTop_noPb_plainMesh_liquid_30min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1813_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_50SiPM_1.67bar_-151.12ICVbot_2fold_BaTop_noAmp9and14Top_8and9Bot_plainMesh_liquid_1min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1814_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_50SiPM_1.68bar_-151.12ICVbot_2fold_BaTop_22base_noAmp9and14Top_8and9Bot_plainMesh_liquid_1min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1455_0.5DR_10mVtrig_20us_5203.0C_5002.0G_500A_54SiPM_1.68bar_-151.12ICVbot_2fold_BaTop_noAmp9and14Top_8and9Bot_plainMesh_liquid_10min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1814_2DR_10mVtrig_20us_5203.0C_5002.0G_500A_50SiPM_1.67bar_-151.12ICVbot_2fold_BaTop_22base_noAmp9and14Top_8and9Bot_plainMesh_liquid_1min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1814_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_50SiPM_1.68bar_-151.12ICVbot_2fold_BaTop_22base_noAmp9and14Top_8and9Bot_plainMesh_liquid_1min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230606/20230606-1211_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_50SiPM_1.65bar_-151.12ICVbot_2fold_CoTop_noAmp_plainMesh_liquid_30min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202306/20230607/20230607-1022_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_52SiPM_1.75bar_-151.12ICVbot_2fold_CoTop_noAmp_plainMesh_liquid_120min/"
+    data_dir = "/media/xaber/extradrive2/crystalize_data/data-202303/20230320/20230320-0050_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.56bar_78.12ICVbot_2fold_degradedNew_60min/"
+    make_rq(data_dir, handscan=True)
 
 if __name__ == "__main__":
     main()
