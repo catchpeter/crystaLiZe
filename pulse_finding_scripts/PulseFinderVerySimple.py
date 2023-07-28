@@ -1,4 +1,5 @@
 import numpy as np
+import PulseQuantities as pq
 
 tscale = (8.0/4096.0) 
 
@@ -113,3 +114,43 @@ def PulseFinderVerySimple(waveform, lht=0.005, rht=0.0001, verbose=False):
     end_time = rb
 
     return start_time, end_time
+
+
+
+def find_pulses_in_event(wf,max_pulses,verbose=False):
+
+    start_times = []
+    end_times = []
+    lh_cut = wf.size
+    for g in range(max_pulses):
+        if lh_cut < 1: continue
+        temp_start, temp_end = PulseFinderVerySimple(wf[:lh_cut], verbose=verbose)
+        
+        # First pulse, check if it's an S1
+        if g == 0 and temp_start != temp_end:
+            start_times.append(temp_start)
+            end_times.append(temp_end)
+            (temp_2, temp_1, temp_10, temp_25, temp_50, temp_75, temp_90, temp_99) = pq.GetAreaFraction(temp_start, temp_end, wf)
+    
+            # If it's an S1, look to the right
+            if (temp_50-temp_2)*tscale < 0.125:
+                rh_cut = temp_end
+                temp_start, temp_end = PulseFinderVerySimple(wf[rh_cut:], verbose=verbose)
+                if temp_start != temp_end:
+                    start_times.append(temp_start+rh_cut)
+                    end_times.append(temp_end+rh_cut)
+                    break
+                break
+            # Otherwise, procede as usual
+            else:
+                lh_cut = temp_start
+
+        elif g > 0 and temp_start != temp_end:
+            start_times.append(temp_start)
+            end_times.append(temp_end)
+            lh_cut = temp_start
+        else:
+            break
+
+
+    return start_times, end_times

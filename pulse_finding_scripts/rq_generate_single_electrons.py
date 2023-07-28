@@ -124,7 +124,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     se_area = np.zeros((n_events,20))
     se_width = np.zeros((n_events,20))
     se_coincidence = np.zeros((n_events,20))
-    se_max_height = np.zeros(n_events)
+    se_max_height = np.zeros((n_events,20))
     se_rms = np.zeros(n_events)
     se_area_ch = np.zeros((n_events, n_channels-1))
     se_tba = np.zeros(n_events)
@@ -150,7 +150,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     counter = 0 # index for total events
 
     for compressed_file in compressed_file_list:
-        #if j > 10: break
+        #if j > 2: break
         # load data
         try:
             with np.load(compressed_file) as data:
@@ -163,7 +163,9 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
         n_events_b = int((ch_data_adcc.size)/(n_sipms*wsize)) # n events per compressed file (same as block_size)
     
 
+        
         # Better baseline subtraction
+        # Super slow
         ch_data_adcc = np.reshape(ch_data_adcc, (n_sipms,n_events_b,wsize))
         for s in range(n_sipms):
             for t in range(n_events_b):
@@ -178,6 +180,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
 
                         
         ch_data_adcc = np.reshape(ch_data_adcc, int(n_sipms*n_events_b*wsize))
+        
 
 
 
@@ -205,150 +208,123 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
 
             plot_debug = True
 
-            """
-            start_flag = False
-            ps_found = 0
-            se_start = 0
-            se_end = 0
-            for s in range(wsize):
 
-                if ps_found > 19: continue
-
-                if not start_flag and ch_data_phdPerSample[-1,i-j*block_size,s] != 0:
-                    start_flag = True
-                    se_start = s
-
-
-                elif start_flag and ch_data_phdPerSample[-1,i-j*block_size,s] == 0:    
-                    start_flag = False
-                    se_end = s
-                    se_area[i,ps_found] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,se_start:se_end])
-                    se_width[i,ps_found] = se_end-se_start
-                    se_coincidence[i,ps_found] = np.count_nonzero( np.sum(ch_data_phdPerSample[:-1,i-j*block_size,se_start:se_end], axis=1) != 0  )
-                    print(se_coincidence[i,ps_found])
-
-                    ps_found += 1
-
-            """
-
-
-
-
-            """
-
-            se_start  = 0
-            se_end = 0
-
-            #for bl in range(4):
-            #    bl_s = int(wsize/4)
-            #    ch_data_phdPerSample[-1,i-j*block_size,i*bl_s:(i+1)*bl_s] -= np.median(ch_data_phdPerSample[-1,i-j*block_size,i*bl_s:(i+1)*bl_s])
-
-            all_peaks = np.array([],dtype=int)
-            all_ind = np.array([],dtype=int)
-            for ch in range(32):
-                peaks, properties = signal.find_peaks(ch_data_phdPerSample[ch,i-j*block_size,:],height=0.015,distance=200,width=10)
-                ind = ch*np.ones_like(peaks)
-
-                all_peaks = np.concatenate((all_peaks,peaks),dtype=int)
-                all_ind = np.concatenate((all_ind,ind),dtype=int)
-
-            sorted_i = np.argsort(all_peaks)
-            sorted_peaks = all_peaks[sorted_i]
-            sorted_ind = all_ind[sorted_i]
-
-            current_se = []
-            se_start = 0
-            se_end = 0
-            nFound = 0
-            for p in range(0,sorted_peaks.size-3):
-                if p in current_se: continue
-                peaks_in_range = (sorted_peaks < sorted_peaks[p] + 900)&(sorted_peaks >= sorted_peaks[p])
-                peaks_before = (sorted_peaks > sorted_peaks[p] - 900)&(sorted_peaks < sorted_peaks[p])
-                peaks_after = (sorted_peaks < sorted_peaks[p] + 900 + 900)&(sorted_peaks > sorted_peaks[p] + 900)
-                if np.count_nonzero(peaks_in_range) > 2 and np.count_nonzero(peaks_before) == 0 and np.count_nonzero(peaks_after) == 0 and np.ptp( sorted_peaks[peaks_in_range] ) > 30:
-                    se_start = sorted_peaks[p] - 50
-                    se_end = sorted_peaks[peaks_in_range][-1] + 200
-                    se_width[i,nFound] = se_end - se_start
-                    current_se = sorted_peaks[peaks_in_range]
-
-                    contributing_ch = sorted_ind[peaks_in_range]
-                    for cch in contributing_ch:
-                        se_area[i,nFound] += np.sum(ch_data_phdPerSample[cch,i-j*block_size,se_start:se_end])
-                    nFound += 1
-                    if nFound > 3: break
-
-                    #break
+            delayed = True
 
 
             
-            """
-
-
-            
-
-
-
-
-
-            
-
-
 
             #max_loc = np.argmax(ch_data_phdPerSample[-1,i-j*block_size,:])
             #if max_loc < 1000 or wsize - max_loc < 1000: continue
 
 
             #ps_baseline = np.mean(ch_data_phdPerSample[-1,i-j*block_size,max_loc-600:max_loc-100])
+            if delayed:
 
-            a1 = s1_filter(ch_data_phdPerSample[-1,i-j*block_size,:],120)
-
-            a2 = s2_filter(ch_data_phdPerSample[-1,i-j*block_size,:],a1,800)
-            
-            se_start = 0
-            se_end = 0
-            max_val_a2 = max(a2)
-            max_loc = np.argmax(a2)
-            thresh = 1e-8
-            peaks, properties = signal.find_peaks(a2,height=0.5,distance=800,width=10)
-            se_start = np.zeros(20,dtype=int)
-            se_end = np.zeros(20,dtype=int)
-            for p in range(min(20,len(peaks))):
-                try:
-                    se_start[p] = peaks[p] - min(peaks[p] - (ch_data_phdPerSample[-1,i-j*block_size,:peaks[p]] == 0).nonzero()[0] )
-                    se_end[p] = 2*peaks[p] +  min(  (ch_data_phdPerSample[-1,i-j*block_size,peaks[p]:] == 0).nonzero()[0] - peaks[p] )
-                except:
-                    continue
                 
-                se_area[i,p] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,se_start[p]:se_end[p]])
-                afs_2l,afs_1,afs_10,afs_25,afs_50,afs_75,afs_90,afs_99 = pq.GetAreaFraction(se_start[p],se_end[p],ch_data_phdPerSample[-1,i-j*block_size,:])
-                se_aft10[i,p] = afs_10
-                se_aft90[i,p] = afs_90 
-                se_width[i,p] = se_end[p] - se_start[p]
-                se_a2_height[i,p] = a2[peaks[p]]
+                a1 = s1_filter(ch_data_phdPerSample[-1,i-j*block_size,:],120)
 
- 
+                
+                a2 = s2_filter(ch_data_phdPerSample[-1,i-j*block_size,:],a1,700)
+                
+                
+                se_start = 0
+                se_end = 0
+                max_val_a2 = max(a2)
+                max_loc = np.argmax(a2)
+                thresh = 1e-8
+                peaks, properties = signal.find_peaks(a2,height=0.5,distance=800,width=10)
+                se_start = np.zeros(10,dtype=int)
+                se_end = np.zeros(10,dtype=int)
+                for p in range(min(10,len(peaks))):
+                    try:
+                        se_start[p] = peaks[p] - min(peaks[p] - (ch_data_phdPerSample[-1,i-j*block_size,:peaks[p]] == 0).nonzero()[0] )
+                        se_end[p] = 2*peaks[p] +  min(  (ch_data_phdPerSample[-1,i-j*block_size,peaks[p]:] == 0).nonzero()[0] - peaks[p] )
+                    except:
+                        continue
+                    
+                    se_area[i,p] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,se_start[p]:se_end[p]])
+                    afs_2l,afs_1,afs_10,afs_25,afs_50,afs_75,afs_90,afs_99 = pq.GetAreaFraction(se_start[p],se_end[p],ch_data_phdPerSample[-1,i-j*block_size,:])
+                    se_aft10[i,p] = afs_10
+                    se_aft90[i,p] = afs_90 
+                    se_width[i,p] = se_end[p] - se_start[p]
+                    se_a2_height[i,p] = a2[peaks[p]]
+
+            else:
+
+                # New pulse finder
+                start_times = []
+                end_times = []
+                areas = []
+                lh_cut = wsize
+                for g in range(2):
+                    temp_start, temp_end = vs.PulseFinderVerySimple(ch_data_phdPerSample[-1,i-j*block_size,:lh_cut], verbose=False)
+                    if temp_start != temp_end:
+                        if g==0: right_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,temp_end:])
+                        start_times.append(temp_start)
+                        end_times.append(temp_end)
+                        areas.append(np.sum(ch_data_phdPerSample[-1,i-j*block_size,temp_start:temp_end]))
+                        lh_cut = temp_start
+                    else:
+                        continue
+                
+                nFound = len(start_times)
+                if nFound == 0: continue
+
+                afs_2l,afs_1,afs_10,afs_25,afs_50,afs_75,afs_90,afs_99 = pq.GetAreaFraction(start_times[0],end_times[0],ch_data_phdPerSample[-1,i-j*block_size,:])
+                this_right_area = np.sum(  ch_data_phdPerSample[-1,i-j*block_size,end_times[0]:] )
 
 
-            """
-            # New pulse finder
-            start_times = []
-            end_times = []
-            areas = []
-            lh_cut = wsize
-            for g in range(max_pulses):
-                temp_start, temp_end = vs.PulseFinderVerySimple(ch_data_phdPerSample[-1,i-j*block_size,:lh_cut], verbose=False)
-                if temp_start != temp_end:
-                    if g==0: right_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,temp_end:])
-                    start_times.append(temp_start)
-                    end_times.append(temp_end)
-                    areas.append(np.sum(ch_data_phdPerSample[-1,i-j*block_size,temp_start:temp_end]))
-                    lh_cut = temp_start
-                else:
-                    continue
+                b_s1 = (tscale*(afs_50 - afs_2l) < 0.15)&(this_right_area < 200)&(areas[0] < 5000)
 
-            """
+                max_wf_loc = np.argmax(ch_data_phdPerSample[-1,i-j*block_size,:]) 
 
-            
+                #b_s1s2 = (nFound == 2) and (areas[0] > 1000) and (areas[1] > 10) and (end_times[1] - start_times[0] > 1000  )
+                #b_s1 = (nFound == 1) and (areas[0] > 100) and (areas[0] < 5000) and (end_times[0] < wsize - 2000)
+
+                #if b_s1s2:
+                #    wf = ch_data_phdPerSample[-1,i-j*block_size,end_times[1]:start_times[0]]
+                #    offset = end_times[1]
+
+                se_start = np.zeros(10,dtype=int)
+                se_end = np.zeros(10,dtype=int)
+                if b_s1:
+
+                    se_start[0] = max_wf_loc + 2/tscale
+                    se_end[0] = se_start[0] + 1.2/tscale
+
+                    se_start[1] = max_wf_loc + 6/tscale
+                    se_end[1] = se_start[1] + 1.2/tscale   
+
+                    """
+                    se_start[0] = 11.5/tscale 
+                    se_end[0] = 11.5/tscale + 800
+
+                    se_start[1] = 15/tscale 
+                    se_end[1] = 15/tscale + 800
+                    """
+                    offset = 0
+                    #wf = ch_data_phdPerSample[-1,i-j*block_size,end_times[0]:]
+                    #offset = end_times[0]
+                #else:
+                    #continue
+
+
+                
+
+
+                #se_start, se_end, a1, a2 = se_pf(wf)
+                #se_start, se_end = se_pf_dumb(wf)
+                #se_start += offset
+                #se_end += offset
+
+                #for p in range(2):
+                #    se_area[i,p] = np.sum( ch_data_phdPerSample[-1,i-j*block_size, se_start[p]:se_end[p]] )
+                #    se_max_height[i,p] = max(ch_data_phdPerSample[-1,i-j*block_size, se_start[p]:se_end[p]])
+                    #se_area[i,p] = np.sum(wf[se_start[p]:se_end[p]])
+                    #se_width[i,p] = tscale*(se_end[p]-se_start[p])
+
+
 
             
 
@@ -408,114 +384,6 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
 
 
 
-            """
-            data_window = ch_data_phdPerSample[-1,i-j*block_size,se_start:se_end]
-            data_window_ch = ch_data_phdPerSample[:-1,i-j*block_size,se_start:se_end]
-            se_area[i] = np.sum(data_window)
-            #print(se_area[i])
-            se_width[i] = se_end - se_start
-            se_max_height[i] = max(data_window)
-            se_rms[i] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
-
-            se_area_ch[i,:] = pq.GetPulseAreaChannel(se_start, se_end, data_window_ch)
-            se_area_top = np.sum(se_area_ch[i,:16])
-            se_area_bottom = np.sum(se_area_ch[i,16:])
-            se_tba[i] = (se_area_top-se_area_bottom)/(se_area_top+se_area_bottom)
-            se_bot_x, se_bot_y, se_top_x[i], se_top_y[i] = pq.GetCentroids(se_area_ch[i,:])
-            """
-            
-
-
-            """
-            if len(start_times) > 0:
-                area2 = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[0]:end_times[0] ])
-
-                if area2 < 5000:
-                    start_window = end_times[0] + 1500
-                    if wsize - start_window < 1000: continue # 3000
-
-                    data_window = ch_data_phdPerSample[-1,i-j*block_size,start_window:]
-                    data_window_ch = ch_data_phdPerSample[:-1,i-j*block_size,start_window:]
-
-                    max_loc = np.argmax(data_window)
-                    max_val = max(data_window)
-
-                    try:
-                        left_zeros = (data_window[:max_loc] == 0).nonzero()[0]
-                        se_start = max_loc - min(max_loc - left_zeros) # + 100
-                        right_zeros = (data_window[max_loc:] == 0).nonzero()[0]
-                        se_end = 2*max_loc + min(right_zeros - max_loc) #- 200
-                    except:
-                        continue
-
-                    if se_start != se_end:
-
-                        se_area[i] = np.sum(data_window[se_start:se_end])
-                        #print(se_area[i])
-                        se_width[i] = se_end - se_start
-                        se_max_height[i] = max_val
-                        se_rms[i] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
-
-                        se_area_ch[i,:] = pq.GetPulseAreaChannel(se_start, se_end, data_window_ch)
-                        se_area_top = np.sum(se_area_ch[i,:16])
-                        se_area_bottom = np.sum(se_area_ch[i,16:])
-                        se_tba[i] = (se_area_top-se_area_bottom)/(se_area_top+se_area_bottom)
-                        se_bot_x, se_bot_y, se_top_x[i], se_top_y[i] = pq.GetCentroids(se_area_ch[i,:])
-
-                        #s1_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[1]:end_times[1] ])
-                        #s2_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[0]:end_times[0] ])
-                        #drift_time[i] = tscale*(start_times[0]-start_times[1])
-                
-                    else: continue
-                else: continue
-            else: continue
-            """
-
-
-            """
-            if len(start_times) > 1 and False:
-                start_window = end_times[1] + 200 #200
-                end_window = start_times[0] - 200   #200
-                if end_window - start_window < 600:
-                    continue
-                else:
-                    data_window = ch_data_phdPerSample[-1,i-j*block_size,start_window:end_window]
-                    data_window_ch = ch_data_phdPerSample[:-1,i-j*block_size,start_window:end_window]
-
-                    max_loc = np.argmax(data_window)
-                    max_val = max(data_window)
-
-                    try:
-                        left_zeros = (data_window[:max_loc] == 0).nonzero()[0]
-                        se_start = max_loc - min(max_loc - left_zeros) # + 100
-                        right_zeros = (data_window[max_loc:] == 0).nonzero()[0]
-                        se_end = 2*max_loc + min(right_zeros - max_loc) #- 200
-                    except:
-                        continue
-                    
-                    if se_start != se_end:
-
-                        se_area[i] = np.sum(data_window[se_start:se_end])
-                        se_width[i] = se_end - se_start
-                        se_max_height[i] = max_val
-                        se_rms[i] = np.sqrt(np.sum(np.power(data_window,2))/(data_window.size))
-
-                        se_area_ch[i,:] = pq.GetPulseAreaChannel(se_start, se_end, data_window_ch)
-                        se_area_top = np.sum(se_area_ch[i,:16])
-                        se_area_bottom = np.sum(se_area_ch[i,16:])
-                        se_tba[i] = (se_area_top-se_area_bottom)/(se_area_top+se_area_bottom)
-                        se_bot_x, se_bot_y, se_top_x[i], se_top_y[i] = pq.GetCentroids(se_area_ch[i,:])
-
-                        s1_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[1]:end_times[1] ])
-                        s2_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,start_times[0]:end_times[0] ])
-                        drift_time[i] = tscale*(start_times[0]-start_times[1])
-
-                #continue
-            else:
-                continue
-            """
-
-
 
           
 
@@ -548,27 +416,32 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
                 #print((se_area[i,:] > 0)&(se_area[i,:] < 2)&(se_width[i,:] > 1.3/tscale)&(se_coincidence[i,:] == 3))
 
                 fspect, tspect, Sxx = signal.spectrogram(ch_data_phdPerSample[-1,i-j*block_size,:], fs=500e6)
-
+                print(np.round(se_area[i,:],1))
                 fig = pl.figure()
                 ax = pl.gca()
                 #pl.pcolormesh(tspect, fspect, np.log10(Sxx), shading="gouraud",)
                 pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=1.2, label = "Summed All" )
-                pl.plot(x*tscale, a2,color='red')
+                for ch in range(32):
+                    pl.plot(x*tscale, ch_data_phdPerSample[ch,i-j*block_size,:] )
+
+                #pl.plot(x*tscale, a2,color='red')
                 #pl.plot(x*tscale, a1,color='green')
                 #pl.plot(all_peaks*tscale, ch_data_phdPerSample[-1,i-j*block_size,all_peaks] ,"ro")
-                pl.ylim(-1,5)
+                #pl.ylim(-1,5)
                 #for ch in range(32):
                 #    pl.plot(x*tscale, ch_data_phdPerSample[ch,i-j*block_size,:])
                 #pl.plot(all_peaks*tscale, np.zeros_like(all_peaks) ,"ro")
                 #pl.plot(x*tscale,  wf_filtered, color="red", lw=0.7)
                 #pl.plot(x*tscale, data_conv,"blue", label="S2 Filtered")
-                #pl.axvspan(tscale*(start_window+se_start),tscale*(start_window+se_end),alpha=0.3,color="blue",zorder=0)
-                #for p in range(20):
-                #    pl.axvspan(tscale*(se_start[p]),tscale*(se_end[p]),alpha=0.2,color="blue",zorder=0)
+                #pl.axvspan(tscale*(se_start[p]),tscale*(se_end[p]),alpha=0.3,color="blue",zorder=0)
+                for p in range(10):
+                #    pl.axvspan(tscale*(offset + se_start[p]),tscale*(offset + se_end[p]),alpha=0.2,color="blue",zorder=0)
+                    pl.axvspan(tscale*( se_start[p]),tscale*(se_end[p]),alpha=0.2,color="blue",zorder=0)
                 #ax.text(tscale*(start_window+se_end), 0.03 + se_max_height[i]/ax.get_ylim()[1], '{:.2f} phd'.format(se_area[i]), fontsize=9, color="blue")
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
-                #pl.title("Event {}".format(i))  
+                pl.ylim(-0.02,0.1)
+                pl.title("Event {}".format(i))  
                 #pl.legend()
                 pl.grid(which="both",axis="both",linestyle="--")
                 #pl.xlim(0,event_window)
@@ -647,7 +520,6 @@ def high_pass_filter(wf,alpha):
 def s1_filter(wf,n1):
     """
     Boxcar filter for S1s
-    (Probably some np wizardry that could replace this function)
 
     Inputs:
       wf: Waveform to filter
@@ -679,7 +551,7 @@ def s2_filter(wf,a1,n2):
     a1 = np.round(a1,8) # saw some floating point errors
     a2 = np.zeros_like(wf)
 
-    # Initial sample before loop
+    # Initial A2 sample before loop
     window_a1 = np.asarray( sorted(a1[0:2*n2_12]) )
     max_a1 = window_a1[-1]
     a2[n2_12] = np.sum(wf[0:2*n2_12]) - max_a1
@@ -688,16 +560,43 @@ def s2_filter(wf,a1,n2):
     # Loop over samples
     for i in range(n2_12+1,wf.size-n2_12):
         
-        # Remove a1 sample not in current window
+        # Remove A1 sample not in current window
         to_remove = a1[i-n2_12-1]
         ind_to_remove = (window_a1 == to_remove).nonzero()[0]
-        if ind_to_remove.size > 0: window_a1[ind_to_remove[0]] = -999999999
+        if ind_to_remove.size > 0: window_a1[ind_to_remove[0]] = -99999
 
-        # Determining max A1 in window
-        # This part is the slowest, need to improve by not creating new arrays every time
-        window_a1 = window_a1[window_a1 >= a1[i+n2_12-1]] 
+        
+
+
+        """
+        # Add new A1 sample in window, determine max A1
+        to_change = a1[i+n2_12-1]
+        ind_to_change = (window_a1 < to_change).nonzero()[0][-1]
+        window_a1[:ind_to_change+1] = -99999
+        window_a1[ind_to_change] = to_change
+        
+        window_a1 = window_a1[window_a1 != -99999]
+        
+        max_a1 = window_a1[-1]
+        """
+ 
+
+        """
+        # Add new A1 sample in window, determine max A1
+        to_change = a1[i+n2_12-1]
+        ind_to_change = (window_a1 < to_change).nonzero()[0]
+        if ind_to_change.size > 0:
+            window_a1[ind_to_change] = -999999999
+            window_a1[ind_to_change[-1]] = to_change
+        max_a1 = window_a1[-1]
+        """
+
+        
+        # Slower version
+        window_a1 = window_a1[window_a1 >= a1[i+n2_12-1]]
         window_a1 = np.concatenate(([a1[i+n2_12-1]],window_a1))
         max_a1 = window_a1[-1]
+        
 
         # Calculating A2
         a2[i] = a2[i-1] + old_max_a1 + wf[i+n2_12-1] - wf[i-n2_12-1] - max_a1
@@ -720,14 +619,138 @@ def test_filter(wf,n12):
 
 
 
+def se_pf(wf):
+
+    a1 = s1_filter(wf,120)
+    a2 = s2_filter(wf,a1,700)
+
+    se_start = 0
+    se_end = 0
+    peaks, properties = signal.find_peaks(a2,height=0.5,distance=800,width=10)
+    se_start = np.zeros(10,dtype=int)
+    se_end = np.zeros(10,dtype=int)
+    for p in range(min(10,len(peaks))):
+        try:
+            se_start[p] = peaks[p] - min(peaks[p] - (wf[:peaks[p]] == 0).nonzero()[0] )
+            se_end[p] = 2*peaks[p] +  min(  (wf[peaks[p]:] == 0).nonzero()[0] - peaks[p] )
+        except:
+            continue
+
+    
+    return se_start, se_end, a1, a2
+
+
+
+def se_pf_dumb(wf):
+
+    se_start = 0
+    se_end = 0
+    peaks, properties = signal.find_peaks(wf,height=0.05,distance=800,width=10)
+    se_start = np.zeros(10,dtype=int)
+    se_end = np.zeros(10,dtype=int)
+    for p in range(min(10,len(peaks))):
+        try:
+            se_start[p] = peaks[p] - min(peaks[p] - (wf[:peaks[p]] == 0).nonzero()[0] )
+            se_end[p] = 2*peaks[p] +  min(  (wf[peaks[p]:] == 0).nonzero()[0] - peaks[p] )
+        except:
+            continue
+
+
+    return se_start, se_end
+
+
+
 
 def main():
     #with open(sys.path[0]+"/path.txt", 'r') as path:
     #    data_dir = path.read()
     #data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202211/20221120/20221120-1302_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.44bar_-94.64ICVbot_2fold_beta_120min/"
     #data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202303/20230307/20230307-1744_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.67bar_-99.78ICVbot_2fold_blank_afterFlow_60min/"
-    data_dir = "/media/xaber/extradrive2/crystalize_data/data-202303/20230320/20230320-0254_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.58bar_77.51ICVbot_2fold_degradedNew_60min/"
-    find_single_electrons(data_dir)
+    #data_dir = "/media/xaber/extradrive2/crystalize_data/data-202303/20230320/20230320-0254_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.58bar_77.51ICVbot_2fold_degradedNew_60min/"
+    
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230512/20230512-0945_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.43bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_60min/"
+    
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230515/20230515-1620_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.51bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_150usdelay_30min/"
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230516/20230516-1729_2DR_10mVtrig_50us_5202.0C_5002.0G_500A_54SiPM_1.55bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SEdelay500us_60min/"
+    
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230517/20230517-1127_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.56bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SEdelay500us_20min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230517/20230517-1712_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.53bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SEdelay100us_slightRecover_20min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230517/20230517-1821_2DR_10mVtrig_20us_5203.0C_5002.0G_500A_54SiPM_1.55bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SEdelay500us_slightRecover_20min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230518/20230518-1016_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.56bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_slightRecover_20min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230518/20230518-1427_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.51bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_3p5slRecover_60min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230518/20230518-1607_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.53bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SE500usdelay_3p5slRecover_20min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-0952_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.44bar_-151.12ICVbot_2fold_plainMesh_liquid_CoTop_6p5slRecover_10min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-1334_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.53bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SE500usDelay_6p5slRecover_20min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-1717_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.56bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SE500usDelay_6p5slRecover_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-1714_2DR_10mVtrig_20us_5703.0C_5503.0G_1000A_54SiPM_1.55bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SE500usDelay_6p5slRecover_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-1408_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.53bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_6p5slRecover_180min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230522/20230522-1421_2DR_10mVtrig_100us_5202.0C_5002.0G_500A_54SiPM_1.67bar_-151.12ICVbot_2fold_plainMesh_liquid_CoOCVTop_random_6p5slRecover_2min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230522/20230522-1424_2DR_10mVtrig_100us_5202.0C_5002.0G_500A_54SiPM_1.67bar_-151.12ICVbot_2fold_plainMesh_liquid_CoOCVTop_SE500usDelay_6p5slRecover_2min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1504_2DR_10mVtrig_20us_5203.0C_5002.0G_500A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_333usDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1512_2DR_10mVtrig_20us_5703.0C_5503.0G_1000A_54SiPM_1.63bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_333usDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1519_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_333usDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1526_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.63bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_500usDelay_6p5slRecover_2slFill_1min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1537_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.62bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_500usDelay_6p5slRecover_2slFill_1min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1544_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_1msDelay_6p5slRecover_2slFill_1min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1552_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.62bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_1msDelay_6p5slRecover_2slFill_1min/"
+
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1602_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_10msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1608_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.65bar_-150.82ICVbot_2fold_plainMesh_liquid_BaOCVTop_5msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1615_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_2msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1621_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_3msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1633_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.62bar_-150.82ICVbot_2fold_plainMesh_liquid_BaOCVTop_1p5msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1646_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.67bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_2p5msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1656_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.67bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_3msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1705_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_6msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1711_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.65bar_-150.82ICVbot_2fold_plainMesh_liquid_10msDelay_6p5slRecover_2slFill_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1717_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_10msDelay_6p5slRecover_2slFill_60min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1103_2DR_10mVtrig_50us_8204.0C_8003.0G_1000A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_10msDelay_1min/"
+
+    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1122_0.5DR_10mVtrig_50us_8203.0C_8003.0G_1000A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_10msDelay_1min/"
+
+
+    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1639_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_1min/"
+
+    find_single_electrons(data_dir, phase="liquid")
 
 if __name__ == "__main__":
     main()
