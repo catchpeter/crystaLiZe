@@ -28,7 +28,10 @@ from scipy.signal import find_peaks
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_swap=False):
+
+
+
+def find_SPEs(data_dir, handscan=False, max_pulses=5, filtered=True, correct_swap=False):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -73,6 +76,9 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
     
     block_size = int(1500*15/event_window) # number of events per compressed file
 
+    l_window = 120
+    r_window = 280
+
     #if avg_wf and spe_height[k,i,0] > 0.16 and spe_height[k,i,0] < 0.67: # 54
     #if avg_wf and spe_height[k,i,0] > 0.16 and spe_height[k,i,0] < 0.6: # 53
     #if avg_wf and spe_height[k,i,0] > 0.16 and spe_height[k,i,0] < 0.5: # 52
@@ -109,41 +115,12 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
     # np.zeros is preferred over np.empty bc/ we want zero to be default value
 
     
-
-    se_area = np.zeros((n_events,20))
-    se_width = np.zeros((n_events,20))
-    se_coincidence = np.zeros((n_events,20))
-    se_max_height = np.zeros((n_events,20))
-    se_rms = np.zeros(n_events)
-    se_area_ch = np.zeros((n_events, n_channels-1))
-    se_tba = np.zeros(n_events)
-    se_top_x = np.zeros(n_events)
-    se_top_y = np.zeros(n_events)
-
-    s1_area = np.zeros(n_events)
-    s2_area = np.zeros(n_events)
-
-    se_a2_height = np.zeros((n_events,20))
-    se_aft10 = np.zeros((n_events,20))
-    se_aft90 = np.zeros((n_events,20))
-
-    drift_time = np.zeros(n_events)
-
-    right_area = np.zeros(n_events)
-
-
-    #spe_area = []
-    #spe_height = []
-    #spe_rms = []
-    #spe_width = []
-
-
     spe_area = np.zeros((n_sipms,n_events,max_pulses))
     spe_height = np.zeros((n_sipms,n_events,max_pulses))
+    spe_height_time = np.zeros((n_sipms,n_events,max_pulses))
     spe_rms = np.zeros((n_sipms,n_events,max_pulses))
-    spe_width = np.zeros((n_sipms,n_events,max_pulses))
-    spe_start = np.zeros((n_sipms,n_events,max_pulses))
-    spe_end = np.zeros((n_sipms,n_events,max_pulses))
+    spe_nPulses = np.zeros((n_sipms,n_events),dtype=int)
+    spe_sum_wf = np.zeros((n_sipms,n_events))
 
     spe_sum = np.zeros((n_sipms,1000))
     spe_nSaved = np.zeros(n_sipms)
@@ -167,6 +144,7 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
         n_tot_samp_per_ch = int( (ch_data_adcc.size)/n_sipms )
         n_events_b = int((ch_data_adcc.size)/(n_sipms*wsize)) # n events per compressed file (same as block_size)
     
+        #dothebetterbaselinesubtraction = asdf
 
         """
         # Better baseline subtraction
@@ -217,7 +195,6 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
         n_events = int(ch_data_mV[0].shape[0])
         if n_events == 0: break
             
-       
         # ====================================================================================================================================
         # Loop over events
         
@@ -227,90 +204,37 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
 
             # Loop over sipms
             for k in range(n_sipms):
-                
-                keep_looking = True
-                while keep_looking:
 
-                    peak = max(ch_data_mV[k,i-j*block_size,:])
-                    peak_i = np.argmax(ch_data_mV[k,i-j*block_size,:])
-                    if peak < 0 or peak > 3 or peak_i < 205 or peak_i > wsize-805: break
+                all_max_i = np.zeros(max_pulses, dtype=int)
 
-                
-                    beg = peak_i - 120
-                    end = peak_i + 280
-                    spe_start[k,i,0] = beg
-                    spe_end[k,i,0] = end
-                    spe_area[k,i,0] = np.sum(tscale*1000*ch_data_mV[k,i-j*block_size,beg:end])
-                    spe_height[k,i,0] = peak
-                    spe_rms[k,i,0] = get_rms(ch_data_mV[k,i-j*block_size,beg:end])
+                wf = np.copy(ch_data_mV[k,i-j*block_size,:])
 
-                  
-
-                    if avg_wf and spe_height[k,i,0] > 0.16 and spe_height[k,i,0] < spe_upper_height:
-                        #print(ch_data_mV[k,i-j*block_size,peak_i-200:peak_i+500].shape, spe_avg[k,:].shape)
-                        spe_sum[k,:] += ch_data_mV[k,i-j*block_size,peak_i-200:peak_i+800]
-                        spe_nSaved[k] += 1
+                for r in range(max_pulses):
+                    max_i, code = analyze_biggest_pulse(wf, l_window, r_window)
+                    if code == 0:
+                        if r > 0: 
+                            if np.count_nonzero( np.absolute(max_i - all_max_i) < l_window + r_window) == 0:
+                                all_max_i[r] = max_i
+                        elif r == 0:
+                            all_max_i[r] = max_i
+                        wf[max_i-l_window:max_i+r_window] = 0
+                    elif code == 1:
+                        wf[:max_i+r_window] = 0
+                    elif code == 2:
+                        wf[max_i-l_window:] = 0
 
 
-                    lh_cut = beg - 500
-                    rh_cut = end + 500
+                spe_sum_wf[k,i] = np.sum(ch_data_mV[k,i-j*block_size,:])
+                spe_nPulses[k,i] = np.count_nonzero(all_max_i > 0) # haha
+                all_max_i[:spe_nPulses[k,i]] = all_max_i[all_max_i > 0]
+                for ps in range(spe_nPulses[k,i]):
 
-                    if lh_cut > 205:
-
-                        peak = max(ch_data_mV[k,i-j*block_size,:lh_cut])
-                        peak_i = np.argmax(ch_data_mV[k,i-j*block_size,:lh_cut])
-                        if peak < 0 or peak > 3: break
-
-                        beg = peak_i - 60
-                        end = peak_i + 110
-                        spe_start[k,i,1] = beg
-                        spe_end[k,i,1] = end
-                        spe_area[k,i,1] = np.sum(tscale*1000*ch_data_mV[k,i-j*block_size,beg:end])
-                        spe_height[k,i,1] = peak
-                        spe_rms[k,i,1] = get_rms(ch_data_mV[k,i-j*block_size,beg:end])
-
-                        """
-                        if avg_wf and spe_height[k,i,0] > 0.2 and spe_height[k,i,0] < 0.45:
-                            #print(ch_data_mV[k,i-j*block_size,peak_i-200:peak_i+500].shape, spe_avg[k,:].shape)
-                            spe_sum[k,:] += ch_data_mV[k,i-j*block_size,peak_i-200:peak_i+500]
-                            spe_nSaved[k] += 1
-                        """
-
-                    if rh_cut < wsize - 505:
-
-                        peak = max(ch_data_mV[k,i-j*block_size,rh_cut:])
-                        peak_i = np.argmax(ch_data_mV[k,i-j*block_size,rh_cut:])
-                        if peak < 0 or peak > 3: break
-
-                        beg = peak_i - 60 + rh_cut
-                        end = peak_i + 110 + rh_cut
-                        spe_start[k,i,2] = beg
-                        spe_end[k,i,2] = end
-                        spe_area[k,i,2] = np.sum(tscale*1000*ch_data_mV[k,i-j*block_size,beg:end])
-                        spe_height[k,i,2] = peak
-                        spe_rms[k,i,2] = get_rms(ch_data_mV[k,i-j*block_size,beg:end])
-
-                        """
-                        if avg_wf and spe_height[k,i,0] > 0.2 and spe_height[k,i,0] < 0.45:
-                            #print(ch_data_mV[k,i-j*block_size,peak_i-200:peak_i+500].shape, spe_avg[k,:].shape)
-                            spe_sum[k,:] += ch_data_mV[k,i-j*block_size,peak_i-200:peak_i+500]
-                            spe_nSaved[k] += 1
-                        """
+                    spe_height_time[k,i,ps] = all_max_i[ps]
+                    spe_height[k,i,ps] = ch_data_mV[k,i-j*block_size,all_max_i[ps]]
+                    spe_area[k,i,ps] = tscale*1000*np.sum(ch_data_mV[k,i-j*block_size,all_max_i[ps]-l_window:all_max_i[ps]+r_window])
+                    spe_rms[k,i,ps] = get_rms(ch_data_mV[k,i-j*block_size,all_max_i[ps]-l_window:all_max_i[ps]+r_window])
 
 
-
-
-                    keep_looking = False
-
-
-
-
-            # Find max thing in pulse
-            # If greater than some value, find pulse bounds
-            # Cut left and right and repeat
-
-            
- 
 
 
 
@@ -340,23 +264,16 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
                 plotyn = handscan[i]
            
             if inn == 's': sys.exit()
-            #plotyn = se_area[i] > 15 and se_area[i] < 25
-            #print(se_area[i,:])
-            #plotyn = np.any(spe_area[]) #True #np.any( a2 > 7  )
-            #plotyn = np.any( (se_area[i,:] > 0)&(se_area[i,:] < 2)&(se_width[i,:] > 1.3/tscale)&(se_coincidence[i,:] == 3)  )
-            plotyn=False #np.any(spe_height[0,i,:] > 0.19)
+
             if not inn == 'q' and plotyn and plot_event_ind == i:
-                #print((se_area[i,:] > 0)&(se_area[i,:] < 2)&(se_width[i,:] > 1.3/tscale)&(se_coincidence[i,:] == 3))
 
  
                 fig = pl.figure()
                 ax = pl.gca()
-                #pl.pcolormesh(tspect, fspect, np.log10(Sxx), shading="gouraud",)
-                #pl.plot(x*tscale, ch_data_mV[-1,i-j*block_size,:],color='black',lw=1.2, label = "Summed All" )
-                for ch in range(0,1):
+                for ch in range(0,31):
                     pl.plot(x*tscale, ch_data_mV[ch,i-j*block_size,:] )
-                    for ps in range(3):
-                        pl.axvspan(tscale*spe_start[ch,i,ps], tscale*spe_end[ch,i,ps],alpha=0.2,color="blue",zorder=0  )
+                    #for ps in range(spe_nPulses[0,i]):
+                    #    #pl.axvspan(tscale*(spe_height_time[ch,i,ps]-l_window), tscale*(spe_height_time[ch,i,ps]+r_window),alpha=0.2,color="blue",zorder=0  )
 
   
   
@@ -382,7 +299,6 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
         t_end = time.time()
         print("total number of events processed:", n_events)
         #print("Time used: {}".format(t_end-t_start))
-        print(np.count_nonzero(se_coincidence))
         j += 1
 
     # end of loop over compressed files
@@ -395,10 +311,11 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
     list_rq = {}
     list_rq['spe_area'] = spe_area
     list_rq['spe_height'] = spe_height
+    list_rq['spe_height_time'] = spe_height_time
     list_rq['spe_rms'] = spe_rms
-    list_rq['spe_width'] = spe_width
     list_rq['spe_sum'] = spe_sum 
     list_rq['spe_nSaved'] = spe_nSaved
+    list_rq['spe_sum_wf'] = spe_sum_wf
    
 
 
@@ -412,156 +329,24 @@ def find_SPEs(data_dir, handscan=False, max_pulses=10, filtered=True, correct_sw
 
   
 
-def high_pass_filter(wf,alpha):
-    wf_filtered = np.zeros_like(wf)
-    wf_filtered[0] = wf[0]
-    for i in range(1,wf.size):
-        wf_filtered[i] = alpha*(wf[i] - wf[i-1] + wf_filtered[i-1])
-    
-    return wf_filtered
 
+def analyze_biggest_pulse(wf, l_window, r_window):
 
+    wf_s = wf.size
+    if wf_s < 2: return -99999, 4
 
-def s1_filter(wf,n1):
-    """
-    Boxcar filter for S1s
+    max_i = -99999
+    code = 0
 
-    Inputs:
-      wf: Waveform to filter
-      n1: Filter width
-    """
+    max_i = np.argmax(wf)
+    if max_i > l_window+5 and max_i < wf_s-r_window-5:
+        area = np.sum(wf[max_i-l_window:max_i+r_window])
+        rms = get_rms(wf[max_i-l_window:max_i+r_window])
+    if max_i < l_window+5: code += 1
+    if max_i > wf_s-r_window-5: code += 2
 
-    n1_12 = int(n1/2)
-    a1 = np.zeros_like(wf)
+    return max_i, code
 
-    a1[n1_12] = np.sum(wf[0:2*n1_12])
-    for i in range(n1_12+1,wf.size-n1_12):
-        a1[i] = a1[i-1] + wf[i+n1_12-1] - wf[i-n1_12-1]
- 
-    return a1
-
-
-def s2_filter(wf,a1,n2):
-    """
-    Boxcar filter with S1 filter subtracted.
-    This uses a sliding window maximum finder algorithm on a1
-
-    Inputs:
-      wf: Waveform to filter
-      a1: S1 filtered waveform
-      n2: Filter width
-    """
-
-    n2_12 = int(n2/2)
-    a1 = np.round(a1,8) # saw some floating point errors
-    a2 = np.zeros_like(wf)
-
-    # Initial A2 sample before loop
-    window_a1 = np.asarray( sorted(a1[0:2*n2_12]) )
-    max_a1 = window_a1[-1]
-    a2[n2_12] = np.sum(wf[0:2*n2_12]) - max_a1
-    old_max_a1 = max_a1
-
-    # Loop over samples
-    for i in range(n2_12+1,wf.size-n2_12):
-        
-        # Remove A1 sample not in current window
-        to_remove = a1[i-n2_12-1]
-        ind_to_remove = (window_a1 == to_remove).nonzero()[0]
-        if ind_to_remove.size > 0: window_a1[ind_to_remove[0]] = -99999
-
-        
-
-
-        """
-        # Add new A1 sample in window, determine max A1
-        to_change = a1[i+n2_12-1]
-        ind_to_change = (window_a1 < to_change).nonzero()[0][-1]
-        window_a1[:ind_to_change+1] = -99999
-        window_a1[ind_to_change] = to_change
-        
-        window_a1 = window_a1[window_a1 != -99999]
-        
-        max_a1 = window_a1[-1]
-        """
- 
-
-        """
-        # Add new A1 sample in window, determine max A1
-        to_change = a1[i+n2_12-1]
-        ind_to_change = (window_a1 < to_change).nonzero()[0]
-        if ind_to_change.size > 0:
-            window_a1[ind_to_change] = -999999999
-            window_a1[ind_to_change[-1]] = to_change
-        max_a1 = window_a1[-1]
-        """
-
-        
-        # Slower version
-        window_a1 = window_a1[window_a1 >= a1[i+n2_12-1]]
-        window_a1 = np.concatenate(([a1[i+n2_12-1]],window_a1))
-        max_a1 = window_a1[-1]
-        
-
-        # Calculating A2
-        a2[i] = a2[i-1] + old_max_a1 + wf[i+n2_12-1] - wf[i-n2_12-1] - max_a1
-
-        # Reset old max for next iteration
-        old_max_a1 = max_a1
-     
-
-    return a2
-
-
-def test_filter(wf,n12):
-
-    aTest = np.zeros_like(wf)
-
-    for i in range(n12,wf.size-n12):
-        aTest[i] = np.count_nonzero( wf[i-n12:i+n12] > 0.01)
-
-    return aTest
-
-
-
-def se_pf(wf):
-
-    a1 = s1_filter(wf,120)
-    a2 = s2_filter(wf,a1,700)
-
-    se_start = 0
-    se_end = 0
-    peaks, properties = signal.find_peaks(a2,height=0.5,distance=800,width=10)
-    se_start = np.zeros(10,dtype=int)
-    se_end = np.zeros(10,dtype=int)
-    for p in range(min(10,len(peaks))):
-        try:
-            se_start[p] = peaks[p] - min(peaks[p] - (wf[:peaks[p]] == 0).nonzero()[0] )
-            se_end[p] = 2*peaks[p] +  min(  (wf[peaks[p]:] == 0).nonzero()[0] - peaks[p] )
-        except:
-            continue
-
-    
-    return se_start, se_end, a1, a2
-
-
-
-def se_pf_dumb(wf):
-
-    se_start = 0
-    se_end = 0
-    peaks, properties = signal.find_peaks(wf,height=0.05,distance=800,width=10)
-    se_start = np.zeros(10,dtype=int)
-    se_end = np.zeros(10,dtype=int)
-    for p in range(min(10,len(peaks))):
-        try:
-            se_start[p] = peaks[p] - min(peaks[p] - (wf[:peaks[p]] == 0).nonzero()[0] )
-            se_end[p] = 2*peaks[p] +  min(  (wf[peaks[p]:] == 0).nonzero()[0] - peaks[p] )
-        except:
-            continue
-
-
-    return se_start, se_end
 
 
 
@@ -576,90 +361,18 @@ def main():
     #with open(sys.path[0]+"/path.txt", 'r') as path:
     #    data_dir = path.read()
    
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1122_0.5DR_10mVtrig_50us_8203.0C_8003.0G_1000A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_10msDelay_1min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1639_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1713_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_53SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1717_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_52SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1721_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_51SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1726_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_50SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1730_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_49SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_1min/"
-
-    #data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/*54SiPM*5min/")
-
-    #data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202305/20230531/*_0.5DR*54SiPM*SPE*/")
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202305/20230531/20230531-1147_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.7bar_-151.12ICVbot_2fold_SPE_500usDelay_plainMesh_liquid_BaTop_20min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202305/20230525/20230525-1317_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_51SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_30min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202305/20230525/20230525-1455_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_52SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_30min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202305/20230525/20230525-1616_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_40SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_10min/"]
-
-    #data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202305/20230525/*BaOCVTop_delay500us_30min/")
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-0907_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.68bar_-151.12ICVbot_2fold_SPEtest_noAmpCh0_plainMesh_liquid_5min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1024_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_50SiPM_1.7bar_-151.12ICVbot_2fold_SPEtest_noAmpCh0_plainMesh_liquid_5min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1030_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_51SiPM_1.72bar_-150.82ICVbot_2fold_SPEtest_noAmpCh0_plainMesh_liquid_5min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230606/20230606-1204_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_50SiPM_1.65bar_-151.12ICVbot_2fold_BaTop_noAmp_SPEdelay500us_plainMesh_liquid_5min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230605/20230605-1037_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_52SiPM_1.7bar_-151.12ICVbot_2fold_SPEtest_noAmpCh0_plainMesh_liquid_5min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202305/20230531/20230531-1147_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.7bar_-151.12ICVbot_2fold_SPE_500usDelay_plainMesh_liquid_BaTop_20min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1124_0.5DR_10mVtrig_50us_8203.0C_8003.0G_1000A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_10msDelay_20min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1023_2DR_10mVtrig_6us_3202.0C_3001.0G_0A_50SiPM_1.89bar_-149.61ICVbot_2fold_SPE_contTrig_noAmp_plainMesh_liquid_1min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1034_2DR_10mVtrig_30us_3202.0C_3001.0G_0A_52SiPM_1.91bar_-149.91ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_1min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1040_2DR_10mVtrig_30us_3202.0C_3001.0G_0A_52SiPM_1.89bar_-149.91ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_2min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1104_2DR_10mVtrig_30us_3702.0C_3502.0G_0A_54SiPM_1.82bar_-149.91ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_2min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1123_2DR_10mVtrig_30us_3702.0C_3501.0G_0A_54SiPM_1.58bar_-149.91ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_2min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1132_2DR_10mVtrig_30us_5202.0C_5002.0G_500A_54SiPM_1.58bar_-149.61ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_2min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1140_2DR_10mVtrig_30us_5202.0C_5002.0G_500A_54SiPM_1.55bar_-149.91ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_2min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1159_0.5DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.58bar_-149.91ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_2min/"]
-
-
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1555_0.5DR_10mVtrig_20us_5203.0C_5003.0G_500A_54SiPM_1.5bar_-149.61ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_1min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1628_0.5DR_10mVtrig_20us_5203.0C_5003.0G_500A_54SiPM_1.51bar_-149.61ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_2min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230622/20230622-1646_0.5DR_10mVtrig_20us_5203.0C_5003.0G_500A_49SiPM_1.48bar_-149.91ICVbot_2fold_SPE_delay500us_noAmp_plainMesh_liquid_2min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230623/20230623-1457_0.5DR_10mVtrig_20us_5203.0C_5002.0G_500A_50SiPM_1.48bar_-149.91ICVbot_2fold_SPE_delay500us_BaTop_noAmp_plainMesh_liquid_30min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230627/20230627-1149_0.5DR_10mVtrig_20us_5203.0C_5003.0G_500A_51SiPM_1.43bar_-149.91ICVbot_2fold_BaTop_SPE_delay500us_noAmp_plainMesh_liquid_30min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230628/20230628-0735_0.5DR_10mVtrig_20us_5203.0C_5002.0G_500A_52SiPM_1.53bar_-149.91ICVbot_2fold_BaTop_SPE_delay500us_noAmp_plainMesh_liquid_30min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230628/20230628-1731_0.5DR_10mVtrig_20us_5203.0C_5003.0G_500A_53SiPM_1.5bar_-149.61ICVbot_2fold_BaTop_SPE_delay500us_noAmp_plainMesh_liquid_30min/"]
-
-    #data_dir_list = ["/media/xaber/G-Drive2/crystalize_data/data-202306/20230629/20230629-1241_0.5DR_10mVtrig_20us_5203.0C_5003.0G_500A_54SiPM_1.51bar_-149.91ICVbot_2fold_BaTop_SPE_delay500us_noAmp_plainMesh_liquid_30min/"]
 
     print("Sleeping before rq-ing")
-    time.sleep(4*60*60)
-    data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202307/20230711/*52SiPM*SPE*60min/")
+    #time.sleep(4*60*60)
+    #data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202307/20230710/*49SiPM*SPE*60min/")
+    data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202307/20230711/*50SiPM*SPE*60min/")
+
+    data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202307/20230720/*SPE*/")
+
     print("\n")
     for i in data_dir_list: print(i)
     print("\n")
-    
+    #time.sleep(9.5*60*60)
 
     for data_dir in data_dir_list:
         print(data_dir)
