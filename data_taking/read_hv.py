@@ -5,7 +5,7 @@ import sys
 
 def read_cathode():
 
-    process = subprocess.Popen("ssh xaber@128.3.183.210 python utilities/hv_ramping/read_cathode_hv.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
+    process = subprocess.Popen("ssh xaber@xaber.dhcp.lbl.gov python utilities/hv_ramping/read_cathode_hv.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
     output,stderr = process.communicate()
 
     all_info = (output.decode(sys.stdout.encoding))
@@ -14,7 +14,7 @@ def read_cathode():
 
 def read_gate():
 
-    process = subprocess.Popen("ssh xaber@128.3.183.210 python utilities/hv_ramping/read_gate_hv.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
+    process = subprocess.Popen("ssh xaber@xaber.dhcp.lbl.gov python utilities/hv_ramping/read_gate_hv.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
     output,stderr = process.communicate()
 
     all_info = (output.decode(sys.stdout.encoding))

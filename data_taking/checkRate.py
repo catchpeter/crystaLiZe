@@ -21,7 +21,7 @@ data_dir_high = "/home/xaber/Data/"
 dynamic_range = 0 # 0 = 2Vpp, 1 = 0.5Vpp
 event_window_us = 1 # us
 pre_trigger = 0.5 # Percentage of event window
-trigger_threshold_mV = 100 # Per channel in mV
+trigger_threshold_mV = 10 #100 # Per channel in mV
 run_time_s = 10000 # sec
 
 

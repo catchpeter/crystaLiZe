@@ -27,17 +27,16 @@ data_dir_high = "/home/xaber/Data/"
 #data_dir_high = "/media/xaber/gpeter/data/"
 
 # Run settings you need to input
-dynamic_range = 0 # 0 = 2Vpp, 1 = 0.5Vpp
-event_window_us = 15 #15 # us
+event_window_us = 15 #20 #15 # us
 pre_trigger = 0.5 # Percentage of event window
-trigger_threshold_mV = 6 # Per channel in mV
-run_time_s = 20 # sec
+trigger_threshold_mV = 10 # Per channel in mV
+run_time_s = 10 # sec
 
 # Run conditions you need to input
+phase = "liquid" # choices are liquid or solid
 anode_v = 500 # V
 sipm_bias = 54 # V
-extra = "test"
-#extra = "2fold_CoOCVtop_{:n}min".format(run_time_s/60) # any other info you want to include in dir
+extra = "CoSideFront_{:n}min".format(run_time_s/60) # any other info you want to include in dir
 
 # Run conditions that are automatically read
 cathode_v = read_cathode() # V
@@ -49,7 +48,9 @@ icv_bot_temperature = read_temp() # deg C
 
 """ Do not edit below here if just taking data
 """
-
+# TO CHANGE DYNAMIC RANGE YOU NEED TO EDIT WAVEDUMP C CODE AND RECOMPILE
+# YOU STILL NEED TO CHANGE THIS VALUE SO THE ANALYSIS WORKS
+dynamic_range = 0 # 0 = 2Vpp, 1 = 0.5Vpp
 
 # Other globals
 if dynamic_range == 0:
@@ -129,7 +130,11 @@ def mkConfig():
             ch_data = np.reshape(ch_data, (n_events, wsize))
 
             # Calculate baseline
-            baseline = int(np.mean(ch_data[:,8:8+100]))   
+            try:
+                baseline = int(np.mean(ch_data[:,8:8+100]))
+            except:
+                print(bd, ch)
+                baseline = 99999
             
             # Change trigger threshold
             prev_lines[trig_lines_all[i]] = "TriggerThreshold "+str(baseline+trigger_threshold_ADCC)+"\n"
@@ -158,6 +163,7 @@ def makeDataDir():
 
     # Get the day and time and format into string
     # There must be an easier way to do this...
+    # Update: wow I actually wrote this shitty code
     dt_now = datetime.datetime.now()
     year = str(dt_now.year)
     month = str(dt_now.month) if dt_now.month > 9 else "0"+str(dt_now.month)
@@ -172,7 +178,7 @@ def makeDataDir():
     data_dir_dt = "data-"+ym+"/"+ymd+"/"+ymd+"-"+hm+"_"
     data_dir_daq = dr+"DR_"+str(trigger_threshold_mV)+"mVtrig_"+str(event_window_us)+"us_"
     data_dir_v = str(cathode_v)+"C_"+str(gate_v)+"G_"+str(anode_v)+"A_"+str(sipm_bias)+"SiPM_"
-    data_dir_tp = str(icv_pressure)+"bar_"+str(icv_bot_temperature)+"ICVbot_"+extra+"/"
+    data_dir_tp = str(icv_pressure)+"bar_"+str(icv_bot_temperature)+"ICVbot_"+phase+"_"+extra+"/"
     data_dir = data_dir_high + data_dir_dt + data_dir_daq + data_dir_v + data_dir_tp
 
     mkdirCommand = "mkdir "+data_dir+" -p"
@@ -251,7 +257,7 @@ def main():
     if process_flag: process_data(data_dir)
 
     # upload data to google drive
-    os.system("rclone -v copy " + data_dir +" gdrive:crystallize/data/"+ data_dir[data_dir.find("data-"):])
+    #os.system("rclone -v copy " + data_dir +" gdrive:crystallize/data/"+ data_dir[data_dir.find("data-"):])
     return
 
 
