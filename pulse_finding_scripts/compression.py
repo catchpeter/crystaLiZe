@@ -149,8 +149,10 @@ def compression(
                         raw_data_front[ch_ind,ev-toss_counts,tot_delay:] = ch_data_BSF
 
                         # Filter data
-                        ch_data_BSF_filtered = filter_channel_event(ch_data_BSF)
-                        ch_data_BSB_filtered = filter_channel_event(ch_data_BSB)
+                        n1 = 5 #5
+                        n2 = 21 #21
+                        ch_data_BSF_filtered = filter_channel_event(ch_data_BSF, n1=n1,n2=n2)
+                        ch_data_BSB_filtered = filter_channel_event(ch_data_BSB, n1=n1,n2=n2)
                         filtered_data_front[ch_ind,ev-toss_counts,tot_delay:] = ch_data_BSF_filtered
 
                         # Get bool for baseline suppression
@@ -159,7 +161,8 @@ def compression(
                         all_bool_front[ch_ind,ev-toss_counts,tot_delay:] = bool_front
                         all_bool_back[ch_ind,ev-toss_counts,tot_delay:] = bool_back
                         
-
+                        # other debug option
+                        """
                         if debug: 
                             t = 2*np.arange(wsize-8-tot_delay)
                             pl.figure()
@@ -172,6 +175,7 @@ def compression(
                             pl.title("Channel 0, Event "+str(ev))
                             pl.grid("major","major")
                             pl.show()
+                        """
 
 
                         # Save header info for the first channel
@@ -196,15 +200,11 @@ def compression(
             t = 2*np.arange(wsize-8)
             for ev in range(n_events[0]):
                 pl.figure()
-                pl.plot(t, raw_data_front[0,ev,:], "black")
-                pl.plot(t, filtered_data_front[0,ev,:] - 100, "red")
-                pl.plot(t, threshold*np.ones_like(t) - 100, "cyan" )
-                pl.plot(t, data_to_save[0,ev,:], "blue", alpha=0.5)
-                pl.plot(t, 100*to_save_or_not_to_save[0,ev,:], "green")
-                #pl.plot(t, 200*all_bool_front[0,ev,:], "green")
-                #pl.legend(("Raw","Filtered (shifted down)","Saved raw"))
+                #pl.plot(t, np.sum(filtered_data_front[:,ev,:],axis=0), "black")
+                for ch in range(1):
+                    pl.plot(t, (2000.0/16384.0)*filtered_data_front[ch,ev,:])
                 pl.xlabel("Time [ns]")
-                pl.ylabel("ADCC")
+                #pl.ylabel("ADCC")
                 pl.title("Channel 0, Event "+str(ev))
                 pl.grid("major","major")
                 pl.show()
@@ -228,9 +228,9 @@ def compression(
 
 
 def main():
-    with open("path.txt", 'r') as path:
-        data_dir = path.read()    
-    compression(data_dir)
+   
+    data_dir = ""
+    compression(data_dir,debug=True,save_mode=None)
 
 if __name__ == "__main__":
     main()

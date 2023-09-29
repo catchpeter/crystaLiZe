@@ -7,7 +7,7 @@ from read_settings import get_event_window, get_vscale
 
 
 
-def quickDraw(data_dir, howMany = 10, showFig = False, hs_fName="handscan.txt"):
+def quickDraw(data_dir, howMany = 10, showFig = False, hs_fName="handscan.txt", plot_ch=False):
 
     # Some important quantites
     vscale = get_vscale(data_dir)
@@ -36,7 +36,7 @@ def quickDraw(data_dir, howMany = 10, showFig = False, hs_fName="handscan.txt"):
 
     # Load rq file
     try:
-        listrq = np.load(data_dir+"rq_filtered.npy")
+        listrq = np.load(data_dir+"rq_filtered_alphas_newSPE.npy")
     except:
         print("Error in loading rq file")
         return
@@ -90,6 +90,7 @@ def quickDraw(data_dir, howMany = 10, showFig = False, hs_fName="handscan.txt"):
 
         # Get specific waveform make a plot
         waveform = v_bls_matrix_all_ch[-1,whereInCompressedFile[i],:]
+        all_wf = v_bls_matrix_all_ch[:,whereInCompressedFile[i],:]
         t = np.arange(0,wsize)*tscale
         evN = eventsToDraw[i]
 
@@ -98,6 +99,19 @@ def quickDraw(data_dir, howMany = 10, showFig = False, hs_fName="handscan.txt"):
         ax = pl.gca()
 
         pl.plot(t,waveform,color='black',lw=0.7, label = "Summed All")
+
+        all_wf = v_bls_matrix_all_ch[:,whereInCompressedFile[i],:]
+        if plot_ch:
+            
+            for ch in range(32): 
+                if ch < 16:
+                    col = 'blue'
+                if ch > 15:
+                    col = 'orange'
+                if ch in [8,13,23,24]:
+                    col = "red"
+                
+                pl.plot(t, all_wf[ch,:], color=col)
         
         pl.xlabel(r"Time [$\mu$s]")
         pl.ylabel("phd/sample")
@@ -132,11 +146,8 @@ def quickDraw(data_dir, howMany = 10, showFig = False, hs_fName="handscan.txt"):
 
 def main():
 
-    #data_dir = sys.argv[1]
-    #"/media/xaber/extradrive4/crystalize_data/data-202211/20221108/20221108-1327_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.41bar_-101.59ICVbot_2fold_degraded_CsSide_120min/"
-    
-    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230511/20230511-1016_2DR_10mVtrig_20us_3202.0C_3001.0G_500A_54SiPM_1.44bar_-106.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_60min/"
-    quickDraw(data_dir, howMany=100, showFig=True, hs_fName = "handscan_test.txt")
+    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202308/20230830/20230830-0911_0.5DR_10mVtrig_15us_5203.0C_5003.0G_500A_50SiPM_1.55bar_-104.61ICVbot_2fold_CoTop_noAmp_plainMesh_liquid_50min/"
+    quickDraw(data_dir, howMany=100, showFig=True, hs_fName = "handscan_co.txt", plot_ch=True)
 
     return
 

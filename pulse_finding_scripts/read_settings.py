@@ -17,3 +17,10 @@ def get_vscale(data_dir):
 def get_sipm_bias(data_dir):
     sipm_bias = int(re.findall(r'_(\d+)SiPM',data_dir)[0])
     return sipm_bias
+
+def get_phase(data_dir):
+    phase = "liquid"
+    if "solid" in data_dir or "crystal" in data_dir:
+        phase = "solid"
+    
+    return phase

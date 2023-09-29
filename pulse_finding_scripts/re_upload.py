@@ -30,7 +30,7 @@ def main():
 
         re_upload()
 
-        # Checks every minute (roughly)
+        # Checks every 5 minutes
         time.sleep(5*60)
 
     return 

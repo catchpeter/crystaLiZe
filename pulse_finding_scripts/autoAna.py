@@ -3,42 +3,46 @@ import os
 import time
 
 from compression import compression
-from rq_generate_32ch import make_rq
-from cut_plot import make_plots
+from rq_generate_alphas import make_rq
+from read_settings import get_vscale, get_phase
 
 
-
-
-def autoAna(data_dir_list, upload=True):
+def autoAna(data_dir_list, upload=False, use_old_liquid_spe=False):
 
     """
     Automatic data analysis.
     This should run in the background during normal TPC operation.
-    For analyzing specific data sets, use re_ana.py
+    For re-analyzing specific data sets, use re_ana.py
     """
 
     for data_dir in data_dir_list:
-
-        print(data_dir)
 
         # Check if data has finished transfering
         if not os.path.exists(data_dir + "transferDone"):
             continue
 
+
         # Check to compress
-        if not os.path.exists(data_dir + "compressed_filtered_data"):
+        if not os.path.exists(data_dir + "compressed_filtered_data/headers.npz"):
             try:
-                compression(data_dir)
+                threshold = 5
+                vscale = get_vscale(data_dir)
+                if vscale == (500.0/16384.0): threshold = 5
+                compression(data_dir, threshold=threshold, save_everything=False)
             except:
                 print("uh oh compression didn't work")
 
-        # Check to generate rq's and plots
-        if not os.path.exists(data_dir + "rq_filtered.npy"):
+
+        # Check to generate rq's
+        if not os.path.exists(data_dir + "rq_filtered_alphas_newSPE.npy") and not os.path.exists(data_dir + "rq_SPE_filtered_new.npy"):
+            
             try:
-                make_rq(data_dir,phase="solid")
-                #make_plots(dir)
+                phase = get_phase(data_dir)
+                if use_old_liquid_spe: phase = "old_liquid"
+                make_rq(data_dir,phase=phase, dead=True)
             except:
                 print("uh oh rq didn't work")
+             
 
         # Send it to the cloud 
         if upload:
@@ -50,20 +54,15 @@ def autoAna(data_dir_list, upload=True):
 
 def main():
 
-    # f5d91b31-9a7d-3278-ac5b-4f9ae16edd60
-    
-
     while True: # lmao
 
-        location = "/media/xaber/G-Drive2/crystalize_data/data-202305/*/*/" 
+        location = "/media/xaber/G-Drive2/crystalize_data/data-202309/202309*/*/" 
         data_dir_list = glob.glob(location)
+        
+        autoAna(data_dir_list, upload=False, use_old_liquid_spe=True)
 
-        autoAna(data_dir_list, upload=False)
+        time.sleep(60)
 
-        # Checks every minute (roughly)
-        time.sleep(5*60)
-
-    return 
 
 
 if __name__ == "__main__":

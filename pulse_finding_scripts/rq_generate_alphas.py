@@ -82,13 +82,21 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=
         spe_sizes_2 = np.array([94.553,95.514,96.554,96.465,96.711,96.920,95.460,95.705])
         spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
+    elif phase == "old_liquid":
+        # SPE sizes in LIQUID, Sept, 28, 2022
+        spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
+        spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
+        spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
+        spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
+        print(spe_sizes)
+
 
     # ====================================================================================================================================
     # Configure header data and event time
 
     # Get list of compressed files and calculate number of events
     if filtered:
-        compressed_file_list = natsorted(glob.glob(data_dir+"/compressed_filtered*/compressed_*.npz") )
+        compressed_file_list = natsorted(glob.glob(data_dir+"/compressed_filtered_data/compressed_*.npz") )
     else:
         compressed_file_list = natsorted(glob.glob(data_dir+"/compressed_data/compressed_*.npz") )
     if len(compressed_file_list) < 1:
@@ -515,33 +523,14 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=
 
 def main():
 
-    data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202211/20221105/20221105-0732_2DR_10mVtrig_30us_5202.0C_5002.0G_500A_54SiPM_1.36bar_-102.19ICVbot_2fold_degraded_afterFill_180min/"
+   
+    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202309/20230921/20230921-1502_2DR_10mVtrig_15us_3002.0C_3202.0G_500A_54SiPM_1.53bar_-149.91ICVbot_2fold_flowrn_0.16slpm_noAmp_plainMesh_liquid_120min/"
+    
     print(data_dir)
-    make_rq(data_dir, handscan=False, correct_swap=True, degraded=True, dead=False)
+    make_rq(data_dir, phase = "old_liquid", handscan=False, correct_swap=False, degraded=False, dead=True)
 
 
-    #with open(sys.path[0]+"/path.txt", 'r') as path:
-    #    data_dir = path.read()
-    #data_dir = "/media/xaber/extradrive2/crystalize_data/data-202303/20230317/20230317-1616_2DR_10mVtrig_20us_5203.0C_5002.0G_500A_54SiPM_1.44bar_77.82ICVbot_2fold_degradedNew_60min/"
-    #make_rq(data_dir)
-    #fName = "/home/xaber/crystalize/Analysis/new_alpha_run_list_200V_newPF.txt"
-    #fName = "/home/xaber/crystalize/Analysis/degraded_alpha/beta_run_list_200V_newPF.txt"
-    #fName = "/home/xaber/crystalize/Analysis/degraded_alpha/new_alpha_run_list_200V_newPF.txt"
-    #fName = "/home/xaber/crystalize/Analysis/degraded_alpha/pb212_2nd_run_list_200V_newPF.txt"
-    #fName = "/home/xaber/crystalize/Analysis/degraded_alpha/co57_200V_newPF.txt"
-    #fName = "/home/xaber/crystalize/Analysis/degraded_alpha/pb212_run_list_200V_newPF.txt"
-    #fName = "/home/xaber/crystalize/Analysis/degraded_alpha/y88_run_list_200V_newPF.txt"
-    #fName = "/home/xaber/crystalize/Analysis/degraded_alpha/alpha_run_list_200V_newPF.txt"
-    #data_dir_array = [np.loadtxt(fName, dtype=str),""]
-    #for data_dir in data_dir_array: 
-    #    #print(data_dir[59:61])
-    #    #if int(data_dir[59:61]) == 10: continue
-    #    print(data_dir)
-    #    make_rq(data_dir, handscan=False, correct_swap=True, degraded=True, dead=False)
 
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202307/20230724/20230724-1559_2DR_10mVtrig_20us_5203.0C_5003.0G_500A_54SiPM_1.48bar_-149.91ICVbot_2fold_CoTop_flowingRn_noAmp_plainMesh_liquid_20min/"
-    #make_rq(data_dir, handscan=True)
 
 if __name__ == "__main__":
     main()
