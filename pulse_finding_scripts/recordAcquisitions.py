@@ -79,7 +79,7 @@ def main():
 
     while True:
 
-        start_time = recordAcquisitions(start_time)
+        recordAcquisitions(start_time)
 
         time.sleep(5*60)
 
