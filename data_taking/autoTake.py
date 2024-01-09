@@ -44,7 +44,7 @@ cathode_v = read_cathode() # V
 gate_v = read_gate() # V
 icv_pressure = read_pressure() # bar
 icv_bot_temperature = read_temp() # deg C
-run_time_min = "{:n}min".format(run_time_s/60)
+run_time_min = "{:n}".format(run_time_s/60)
 
                                         
 """ Do not edit below here if just taking data
