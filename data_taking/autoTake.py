@@ -27,25 +27,26 @@ data_dir_high = "/home/xaber/Data/"
 #data_dir_high = "/media/xaber/gpeter/data/"
 
 # Run settings you need to input
-event_window_us = 15 #20 #15 # us
+event_window_us = 20 #20 #15 # us
 pre_trigger = 0.5 # Percentage of event window
 trigger_threshold_mV = 10 # Per channel in mV
-run_time_s = 10 # sec
+run_time_s = 30*60 # sec
 
 # Run conditions you need to input
-phase = "liquid" # choices are liquid or solid
+phase = "liquid" 
 anode_v = 500 # V
 sipm_bias = 54 # V
-extra = "CoSideFront_{:n}min".format(run_time_s/60) # any other info you want to include in dir
+source = "Co57"
+extra = "" # any other info you want to include in dir
 
 # Run conditions that are automatically read
 cathode_v = read_cathode() # V
 gate_v = read_gate() # V
 icv_pressure = read_pressure() # bar
 icv_bot_temperature = read_temp() # deg C
+run_time_min = "{:n}min".format(run_time_s/60)
 
-
-
+                                        
 """ Do not edit below here if just taking data
 """
 # TO CHANGE DYNAMIC RANGE YOU NEED TO EDIT WAVEDUMP C CODE AND RECOMPILE
@@ -175,11 +176,14 @@ def makeDataDir():
     hm = hour+minute
 
     # Format data_dir
+    data_dir = "data-"+ym+"/"+ymd+"/"+ymd+"-"+hm+"/"
+
+
     data_dir_dt = "data-"+ym+"/"+ymd+"/"+ymd+"-"+hm+"_"
     data_dir_daq = dr+"DR_"+str(trigger_threshold_mV)+"mVtrig_"+str(event_window_us)+"us_"
     data_dir_v = str(cathode_v)+"C_"+str(gate_v)+"G_"+str(anode_v)+"A_"+str(sipm_bias)+"SiPM_"
-    data_dir_tp = str(icv_pressure)+"bar_"+str(icv_bot_temperature)+"ICVbot_"+phase+"_"+extra+"/"
-    data_dir = data_dir_high + data_dir_dt + data_dir_daq + data_dir_v + data_dir_tp
+    data_dir_tp = str(icv_pressure)+"bar_"+str(icv_bot_temperature)+"ICVbot_"+phase+"_source"+source+"_"+extra+"/"
+    #data_dir = data_dir_high + data_dir_dt + data_dir_daq + data_dir_v + data_dir_tp
 
     mkdirCommand = "mkdir "+data_dir+" -p"
     ret = os.system(mkdirCommand)
@@ -191,6 +195,29 @@ def makeDataDir():
         print("===========\nError in creating directory:\n    "+data_dir)
         return 1
         
+
+def writeConditions(data_dir):
+
+    cond_list = []
+    cond_list.append(f"Run time min = {run_time_min}")
+    cond_list.append(f"Dynamic range = {dr}")
+    cond_list.append(f"Trigger threshold mV = {trigger_threshold_mV}")
+    cond_list.append(f"Event window us = {event_window_us}")
+    cond_list.append(f"Cathode voltage = {cathode_v}")
+    cond_list.append(f"Gate voltage = {gate_v}")
+    cond_list.append(f"Anode voltage = {anode_v}")
+    cond_list.append(f"SiPM bias = {sipm_bias}")
+    cond_list.append(f"ICV pressure bar = {icv_pressure}")
+    cond_list.append(f"ICV bottom temp deg C = {icv_bot_temperature}")
+    cond_list.append(f"Phase = {phase}")
+    cond_list.append(f"Source = {source}")
+    cond_list.append(f"Misc = {extra}")
+
+    np.savetxt(data_dir+"/conditions.txt", cond_list, fmt="%s")
+
+
+
+
 
 
 def takeData(data_dir):
@@ -213,6 +240,7 @@ def takeData(data_dir):
 
     return
 
+"""
 def process_data(data_dir):
     #Place the path of this data to path.txt ready to be processed
     process_path = "/home/xaber/Analysis/solid_xenon_tpc/pulse_finding_scripts/"
@@ -226,7 +254,8 @@ def process_data(data_dir):
     compression(data_dir)
     make_rq(data_dir)
     make_plots(data_dir)
-
+"""
+    
 def main():
 
     #Ramp up voltage
@@ -243,6 +272,9 @@ def main():
     data_dir = makeDataDir()
     if data_dir == 1: return
 
+    # Create conditions log
+    writeConditions(data_dir)
+
     # Take data
     takeData(data_dir)
 
@@ -252,13 +284,11 @@ def main():
     # Ramp down voltage
     #ramp_flag = grid_voltage(gate = 0, cathode = 0)
 
-
     # Process the data
-    if process_flag: process_data(data_dir)
+    #if process_flag: process_data(data_dir)
 
     # upload data to google drive
     #os.system("rclone -v copy " + data_dir +" gdrive:crystallize/data/"+ data_dir[data_dir.find("data-"):])
-    return
 
 
 
