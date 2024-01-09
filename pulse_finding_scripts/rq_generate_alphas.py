@@ -14,7 +14,7 @@ from read_settings import get_event_window, get_vscale, get_sipm_bias
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=False, phase="liquid", correct_swap=False, degraded=False, dead=False):
+def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=False, phase="liquid", correct_swap=False, degraded=False, dead=False):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -75,7 +75,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=
             print(spe_sizes)
 
     # Solid data needs to be measured
-    elif phase == "solid":
+    elif phase == "solid" or phase == "crystal":
         # SPE sizes in SOLID, Oct 2022, 54 V
         spe_sizes_0 = np.array([90.836,93.329,90.721,90.831,93.071,91.682,93.485,95.265,88.747,91.275,88.771,89.520,93.875,94.136,94.966,94.632])
         spe_sizes_1 = np.array([94.666,95.533,93.915,99.042,97.783,94.895,97.134,97.501])
@@ -89,6 +89,17 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=
         spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
         spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
         print(spe_sizes)
+
+
+    try: 
+        sipm_bias = get_sipm_bias(data_dir)
+    except:
+        sipm_bias = -1
+
+    # ====================================================================================================================================
+    # Create log file
+    log_list = ["Phase = "+phase, f"bias = {sipm_bias}", f"filtered = {filtered}", f"dead SiPM = {dead}", f"correcting for swap = {correct_swap}"]
+    np.savetxt(data_dir+f"/log_{int(time.time())}.txt",log_list,fmt="%s")
 
 
     # ====================================================================================================================================
@@ -503,6 +514,7 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=
     list_rq['right_area'] = right_area
     list_rq['p_area_window'] = p_area_window
     list_rq['p_area_window_ch'] = p_area_window_ch
+    list_rq['spe_sizes'] = spe_sizes
     #list_rq[''] =    #add more rq
 
     #remove zeros in the end of each RQ array. 
@@ -511,9 +523,9 @@ def make_rq(data_dir, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=
             list_rq[rq] = list_rq[rq][:n_events]
 
     if filtered:
-        save_name = "/rq_filtered_alphas_newSPE.npy"
+        save_name = f"/rq_v{tag}.npy"
     else:
-        save_name = "/rq_alphas.npy"
+        save_name = f"/rq_v{tag}.npy"
     rq = open(data_dir + save_name,'wb')
     np.savez(rq, **list_rq)
     rq.close()
@@ -527,7 +539,7 @@ def main():
     data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202309/20230921/20230921-1502_2DR_10mVtrig_15us_3002.0C_3202.0G_500A_54SiPM_1.53bar_-149.91ICVbot_2fold_flowrn_0.16slpm_noAmp_plainMesh_liquid_120min/"
     
     print(data_dir)
-    make_rq(data_dir, phase = "old_liquid", handscan=False, correct_swap=False, degraded=False, dead=True)
+    make_rq(data_dir, tag=1, phase = "old_liquid", handscan=False, correct_swap=False, degraded=False, dead=True)
 
 
 
