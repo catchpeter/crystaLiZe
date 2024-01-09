@@ -37,7 +37,7 @@ phase = "liquid"
 anode_v = 500 # V
 sipm_bias = 54 # V
 source = "Co57"
-extra = "" # any other info you want to include in dir
+extra = "test" # any other info you want to include in dir
 
 # Run conditions that are automatically read
 cathode_v = read_cathode() # V
@@ -171,20 +171,22 @@ def makeDataDir():
     day = str(dt_now.day) if dt_now.day > 9 else "0"+str(dt_now.day)
     hour = str(dt_now.hour) if dt_now.hour > 9 else "0"+str(dt_now.hour)
     minute = str(dt_now.minute) if dt_now.minute > 9 else "0"+str(dt_now.minute)
+    second = str(dt_now.second) if dt_now.second > 9 else "0"+str(dt_now.second)
     ym = year+month
     ymd = ym+day 
-    hm = hour+minute
+    hms = hour+minute+second
 
     # Format data_dir
-    data_dir = "data-"+ym+"/"+ymd+"/"+ymd+"-"+hm+"/"
+    data_dir = data_dir_high + "data-"+ym+"/"+ymd+"/"+ymd+"-"+hms+"/"
 
-
-    data_dir_dt = "data-"+ym+"/"+ymd+"/"+ymd+"-"+hm+"_"
-    data_dir_daq = dr+"DR_"+str(trigger_threshold_mV)+"mVtrig_"+str(event_window_us)+"us_"
-    data_dir_v = str(cathode_v)+"C_"+str(gate_v)+"G_"+str(anode_v)+"A_"+str(sipm_bias)+"SiPM_"
-    data_dir_tp = str(icv_pressure)+"bar_"+str(icv_bot_temperature)+"ICVbot_"+phase+"_source"+source+"_"+extra+"/"
+    # Old data dir naming
+    #data_dir_dt = "data-"+ym+"/"+ymd+"/"+ymd+"-"+hm+"_"
+    #data_dir_daq = dr+"DR_"+str(trigger_threshold_mV)+"mVtrig_"+str(event_window_us)+"us_"
+    #data_dir_v = str(cathode_v)+"C_"+str(gate_v)+"G_"+str(anode_v)+"A_"+str(sipm_bias)+"SiPM_"
+    #data_dir_tp = str(icv_pressure)+"bar_"+str(icv_bot_temperature)+"ICVbot_"+phase+"_source"+source+"_"+extra+"/"
     #data_dir = data_dir_high + data_dir_dt + data_dir_daq + data_dir_v + data_dir_tp
 
+    
     mkdirCommand = "mkdir "+data_dir+" -p"
     ret = os.system(mkdirCommand)
 
@@ -198,22 +200,53 @@ def makeDataDir():
 
 def writeConditions(data_dir):
 
-    cond_list = []
-    cond_list.append(f"Run time min = {run_time_min}")
-    cond_list.append(f"Dynamic range = {dr}")
-    cond_list.append(f"Trigger threshold mV = {trigger_threshold_mV}")
-    cond_list.append(f"Event window us = {event_window_us}")
-    cond_list.append(f"Cathode voltage = {cathode_v}")
-    cond_list.append(f"Gate voltage = {gate_v}")
-    cond_list.append(f"Anode voltage = {anode_v}")
-    cond_list.append(f"SiPM bias = {sipm_bias}")
-    cond_list.append(f"ICV pressure bar = {icv_pressure}")
-    cond_list.append(f"ICV bottom temp deg C = {icv_bot_temperature}")
-    cond_list.append(f"Phase = {phase}")
-    cond_list.append(f"Source = {source}")
-    cond_list.append(f"Misc = {extra}")
 
-    np.savetxt(data_dir+"/conditions.txt", cond_list, fmt="%s")
+    fields = []
+    fields.append(f"Date time")
+    fields.append(f"Run time min")
+
+    fields.append(f"Dynamic range")
+    fields.append(f"Trigger threshold mV")
+    fields.append(f"Event window us")
+
+    fields.append(f"Cathode voltage")
+    fields.append(f"Gate voltage")
+    fields.append(f"Anode voltage")
+    fields.append(f"SiPM bias")
+
+    fields.append(f"ICV pressure bar")
+    fields.append(f"ICV bottom temp deg C")
+    fields.append(f"Phase")
+    fields.append(f"Source")
+    fields.append(f"Misc")
+
+
+
+    cond_list = []
+    cond_list.append(f"{data_dir[-16:-1]}")
+    cond_list.append(f"{run_time_min}")
+
+    cond_list.append(f"{dr}")
+    cond_list.append(f"{trigger_threshold_mV}")
+    cond_list.append(f"{event_window_us}")
+
+    cond_list.append(f"{cathode_v}")
+    cond_list.append(f"{gate_v}")
+    cond_list.append(f"{anode_v}")
+    cond_list.append(f"{sipm_bias}")
+
+    cond_list.append(f"{icv_pressure}")
+    cond_list.append(f"{icv_bot_temperature}")
+    cond_list.append(f"{phase}")
+    cond_list.append(f"{source}")
+    cond_list.append(f"{extra}")
+
+
+    rows = [fields, cond_list]
+  
+
+
+    np.savetxt(data_dir+"/conditions.csv", rows, delimiter=",", fmt="%s")
 
 
 
