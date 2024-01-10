@@ -14,6 +14,7 @@ from ch_evt_filter_compress import baseline_suppress, filter_channel_event
 
 def compression(
     data_dir,
+    tag,
     threshold=5,
     filtered=True, 
     save_mode="npy", 
@@ -214,9 +215,9 @@ def compression(
         # Save that mf
         if save_mode == "npy":
             if filtered:
-                np.savez_compressed(f'{save_dir}compressed_filtered_{bk}', data_to_save.flatten())
+                np.savez_compressed(f'{save_dir}compressed_filtered_{bk}_v{tag}', data_to_save.flatten())
             else:
-                np.savez_compressed(f'{save_dir}compressed_{bk}', data_to_save.flatten())
+                np.savez_compressed(f'{save_dir}compressed_{bk}_v{tag}', data_to_save.flatten())
             
         elif save_mode in ("none","None", None):
             print("Disabled saving, moving to next block")
