@@ -127,4 +127,26 @@ def change_heater(usb_n, channel, voltage):
     return read_heater(usb_n, channel)
 
 
+# =========================================
+# Misc
+# =========================================
+
+def get_usb_n(name):
+
+    # Yeah this isn't very pythonic
+
+    usb_file = np.loadtxt("usb_ports", delimiter=",", dtype=str)
+
+    if name == "cathode":
+        usb_n = int(usb_file[1,0])
+    elif name == "gate":
+        usb_n = int(usb_file[1,1])
+    elif name == "heaters" or name == "heater":
+        usb_n = int(usb_file[1,2])
+    else:
+        print("Error! Name options are cathode, gate, heaters")
+        usb_n = -1
+
+    return usb_n
+
 

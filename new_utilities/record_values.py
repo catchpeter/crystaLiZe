@@ -17,6 +17,8 @@ n_tries = 10
 
 nl_str = "\n=========================================\n"
 
+heater_usb_n = sf.get_usb_n(name="heater")
+
 
 def exit_email():
     print(f"{nl_str}Too many errors, exiting{nl_str}")
@@ -74,7 +76,7 @@ def main():
 
 
     
-
+        # Sleep until next iteration
         time.sleep(read_period_sec)
 
     return
