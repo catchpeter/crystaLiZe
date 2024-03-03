@@ -4,10 +4,9 @@
 These are basic functions for reading devices for slow control.
 Code rewritten in glorious python3 from the old slow control scripts.
 - RMG Feb 2024
-
     
 uldaq package install: follow instructions https://pypi.org/project/uldaq/
-You will need to first get the C library.        
+You will need to first get the C library, this should be straightforward.
 """
 
 
@@ -70,6 +69,7 @@ def read_hv(usb_n):
     ser.write(cmd.encode() + serial.CR + serial.LF)
     v_raw = ser.readline()
     v = abs(float(v_raw[:-1]))
+    ser.close()
 
     return v
 
@@ -80,6 +80,7 @@ def change_hv(usb_n, value):
 
     cmd = f'VSET {-value}\n'
     ser.write(cmd.encode() + serial.CR + serial.LF)
+    ser.close()
 
     return
 
@@ -91,6 +92,8 @@ def check_trip(usb_n):
     cmd = '*STB? 2\n'
     ser.write(cmd.encode() + serial.CR + serial.LF)
     trip_status = ser.readline()
+    ser.close()
+
     if trip_status == '1\n':
         return 1
     else:
@@ -111,6 +114,7 @@ def read_heater(usb_n, channel):
         output = ser.readline()
         if i == 3: v_return = output
         elif i == 4: i_return = output
+    ser.close()
 
     return [v_return, i_return]
 
@@ -123,6 +127,7 @@ def change_heater(usb_n, channel, voltage):
     for i, cmd in enumerate(cmd_list):
         ser.write(cmd.encode() + serial.CR + serial.LF)
         output = ser.readline()
+    ser.close()
 
     return read_heater(usb_n, channel)
 
@@ -133,15 +138,15 @@ def change_heater(usb_n, channel, voltage):
 
 def get_usb_n(name):
 
-    # Yeah this isn't very pythonic
+    # Yeah this one isn't very pythonic
 
     usb_file = np.loadtxt("usb_ports", delimiter=",", dtype=str)
 
-    if name == "cathode":
+    if name == "cathode" or name == "Cathode":
         usb_n = int(usb_file[1,0])
-    elif name == "gate":
+    elif name == "gate" or name == "Gate":
         usb_n = int(usb_file[1,1])
-    elif name == "heaters" or name == "heater":
+    elif name == "heaters" or name == "heater" or name == "Heaters" or name == "Heater":
         usb_n = int(usb_file[1,2])
     else:
         print("Error! Name options are cathode, gate, heaters")
