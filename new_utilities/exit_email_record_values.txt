@@ -1,0 +1,5 @@
+To: rmg@lbl.gov
+Subject: Record values has stopped
+From: crystalize_slow_control@xena.dhcp.lbl.gov
+
+ERROR: record values has stopped!
