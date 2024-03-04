@@ -116,7 +116,7 @@ def read_heater(usb_n, channel):
         elif i == 4: i_return = output
     ser.close()
 
-    return [v_return, i_return]
+    return [float(v_return), float(i_return)]
 
 
 def change_heater(usb_n, channel, voltage):

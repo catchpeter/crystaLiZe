@@ -64,10 +64,10 @@ def record_values():
                 time.sleep(read_period_sec)
                 continue
 
-            # Try reading heater power supply
+            # Try reading heater power supply 
             try:
-                v1, i1 = read_heater(heater_usb_n, 1)
-                v2, i2 = read_heater(heater_usb_n, 2)
+                v1, i1 = sf.read_heater(heater_usb_n, 1)
+                v2, i2 = sf.read_heater(heater_usb_n, 2)
                 fail = False
             except:
                 print(f"{nl_str}Error in reading heaters! Try {j+1}/{n_tries}{nl_str}")
@@ -107,7 +107,7 @@ def record_values():
             ftemp.write("%s,%s,%f,%3.3f,%1.3f,%1.3f,%3.3f,%3.3f,%3.3f,%1.3f\n" % save_list)
 
         # Read heaters settings
-        with open("heaters_settting.txt") as f:
+        with open("/home/xaber/solid_xenon_tpc/new_utilities/heaters_setting.txt") as f:
             f.readline()
             power_line = f.readline()
             powers = power_line.split(",")
