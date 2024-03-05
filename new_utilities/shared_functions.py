@@ -44,12 +44,12 @@ def read_t_p(verbose=False):
 
     # Convert to actual values
     # Conversions and variables are legacy from James (idk who that even is)
-    tc = raw_data[0]*30 - 149.3
+    tc4 = raw_data[0]*30 - 149.3
     tc5 = raw_data[5]*30 - 149.3
     tc6 = raw_data[6]*30 - 149.3
     tc7 = raw_data[7]*30 - 149.3
     pb = raw_data[1]*1.760
-    all_values = np.round(np.array([tc,tc5,tc6,tc7,pb]),3)
+    all_values = np.round(np.array([tc4,tc5,tc6,tc7,pb]),3)
     
     if verbose:
         print(all_values)

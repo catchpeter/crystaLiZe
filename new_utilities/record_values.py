@@ -88,23 +88,23 @@ def record_values():
         ymd_str = time.strftime("%Y%m%d",time.localtime())
         hms_str = time.strftime("%H%M%S",time.localtime())
         elapsed_time = time.time()-start_sec
-        tc = t_p_arr[0]
-        pow_top = v1*i1
-        pb = t_p_arr[4]
+        tc4 = t_p_arr[0]
         tc5 = t_p_arr[1]
         tc6 = t_p_arr[2]
         tc7 = t_p_arr[3]
+        pb = t_p_arr[4]
+        pow_top = v1*i1
         pow_bot = v2*i2
-        save_list = (ymd_str, hms_str, elapsed_time, tc, pow_top, pb, tc5, tc6, tc7, pow_bot)
-       
-        print ("%s : T4=%3.3f C, T5=%3.3f C, T6=%3.3f C, T7=%3.3f C, P=%1.3f Bar, iteration=%d" % (timestr,tc,tc5,tc6,tc7,pb,i))
+        save_list = (ymd_str, hms_str, elapsed_time, tc4, tc5, tc6, tc7, pb, pow_top, pow_bot)
 
+        print ("%s : T4=%3.3f C, T5=%3.3f C, T6=%3.3f C, T7=%3.3f C, P=%1.3f Bar, Top heater=%3.3f W, Bot heater=%3.3f W, iteration=%d" % (timestr,tc4,tc5,tc6,tc7,pb,pow_top,pow_bot,i))
+        
         # Save values 
         with open(("/home/xaber/ttlogs/%s.csv" % fstr),"a+") as fid:
-            fid.write("%s,%s,%f,%3.3f,%1.3f,%1.3f,%3.3f,%3.3f,%3.3f,%1.3f\n" % save_list)
+            fid.write("%s,%s,%f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f\n" % save_list)
         # Also save to tmp file for remote read out
         with open("/home/xaber/ttlogs/current.csv", "w") as ftemp:
-            ftemp.write("%s,%s,%f,%3.3f,%1.3f,%1.3f,%3.3f,%3.3f,%3.3f,%1.3f\n" % save_list)
+            ftemp.write("%s,%s,%f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f\n" % save_list)
 
         # Read heaters settings
         with open("/home/xaber/solid_xenon_tpc/new_utilities/heaters_setting.txt") as f:
