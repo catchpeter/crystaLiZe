@@ -97,7 +97,7 @@ def record_values():
         pow_bot = v2*i2
         save_list = (ymd_str, hms_str, elapsed_time, tc4, tc5, tc6, tc7, pb, pow_top, pow_bot)
 
-        print ("%s : T4=%3.3f C, T5=%3.3f C, T6=%3.3f C, T7=%3.3f C, P=%1.3f Bar, Top heater=%3.3f W, Bot heater=%3.3f W, iteration=%d" % (timestr,tc4,tc5,tc6,tc7,pb,pow_top,pow_bot,i))
+        print ("%s : T4=%3.3f C, T5=%3.3f C, T6=%3.3f C, T7=%3.3f C, P=%1.3f Bar, iteration=%d" % (timestr,tc4,tc5,tc6,tc7,pb,i))
         
         # Save values 
         with open(("/home/xaber/ttlogs/%s.csv" % fstr),"a+") as fid:
