@@ -5,16 +5,16 @@ import sys
 
 def read_cathode():
 
-    process = subprocess.Popen("ssh xaber@xaber.dhcp.lbl.gov python utilities/hv_ramping/read_cathode_hv.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
+    process = subprocess.Popen("ssh xaber@xena.dhcp.lbl.gov python3 ~/solid_xenon_tpc/new_utilities/read_cathode.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
     output,stderr = process.communicate()
 
     all_info = (output.decode(sys.stdout.encoding))
-
+    print(f"\n{all_info}\n")
     return round(abs(float(all_info)),2)
 
 def read_gate():
 
-    process = subprocess.Popen("ssh xaber@xaber.dhcp.lbl.gov python utilities/hv_ramping/read_gate_hv.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
+    process = subprocess.Popen("ssh xaber@xena.dhcp.lbl.gov python3 ~/solid_xenon_tpc/new_utilities/read_gate.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
     output,stderr = process.communicate()
 
     all_info = (output.decode(sys.stdout.encoding))

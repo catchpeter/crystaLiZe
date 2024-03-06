@@ -10,5 +10,5 @@ def read_temp():
 	all_info = (out.decode(sys.stdout.encoding))
 	info_list = all_info.split(",")
 	
-	return round( (float(info_list[7])+1.54)/0.97 ,2)
+	return round( (float(info_list[5])+1.54)/0.97 ,2)
 		
