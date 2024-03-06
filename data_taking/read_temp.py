@@ -2,7 +2,7 @@ import subprocess
 import sys
 
 def read_temp():
-	ssh_server = "xaber@xaber.dhcp.lbl.gov"
+	ssh_server = "xaber@xena.dhcp.lbl.gov"
 	pressure_command = "cat /home/xaber/ttlogs/current.csv"
 	process_g = subprocess.Popen(['ssh', ssh_server, pressure_command], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	out, err_g = process_g.communicate()
