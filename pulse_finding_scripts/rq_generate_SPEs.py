@@ -9,10 +9,6 @@ from natsort import natsorted
 
 #from scipy.signal import spectogram
 
-import PulseFinderScipy as pf
-import PulseQuantities as pq
-import PulseClassification as pc
-import PulseFinderVerySimple as vs
 from read_settings import get_event_window, get_vscale, get_sipm_bias
 
 from ch_evt_filter_compress import baseline_suppress, filter_channel_event
@@ -144,35 +140,6 @@ def find_SPEs(data_dir, handscan=False, max_pulses=5, filtered=True, correct_swa
         n_tot_samp_per_ch = int( (ch_data_adcc.size)/n_sipms )
         n_events_b = int((ch_data_adcc.size)/(n_sipms*wsize)) # n events per compressed file (same as block_size)
     
-        #dothebetterbaselinesubtraction = asdf
-
-        """
-        # Better baseline subtraction
-        # Super slow
-        ch_data_adcc = np.reshape(ch_data_adcc, (n_sipms,n_events_b,wsize))
-        for s in range(n_sipms):
-            print(j,str(s+1)+"/32")
-            for t in range(n_events_b):
-                suppressed = np.nonzero( (ch_data_adcc[s,t,:] == 0) )[0]
-                for u in range(suppressed.size - 1):
-                    if suppressed[u+1] - suppressed[u] > 100:
-                        baseline = np.mean(ch_data_adcc[s,t,suppressed[u]+1:suppressed[u]+1+75])
-                        ch_data_adcc[s,t,suppressed[u]+1:suppressed[u+1]-1] -= baseline
-
-                        spe_area.append(tscale*1000*vscale*np.sum( ch_data_adcc[s,t,suppressed[u]+1+75:suppressed[u+1]-1]) )
-                        spe_height.append(vscale*max(ch_data_adcc[s,t,suppressed[u]+1+75:suppressed[u+1]-1]) )
-                        spe_rms.append( get_rms(vscale*ch_data_adcc[s,t,suppressed[u]+1+75:suppressed[u+1]-1]) )
-                        spe_width.append(tscale*1000*(suppressed[u+1]-1 - suppressed[u]+1+75)  )
-
-
-                    #if ch_data_adcc[u] == 0 and ch_data_adcc[u+1] != 0:
-        
-                        
-        ch_data_adcc = np.reshape(ch_data_adcc, int(n_sipms*n_events_b*wsize))
-        """
-
-
-
 
         # Convert from ADCC to phd/sample and get summed waveform
         ch_data_adcc = np.concatenate((ch_data_adcc, np.zeros(n_tot_samp_per_ch) ))
@@ -197,8 +164,6 @@ def find_SPEs(data_dir, handscan=False, max_pulses=5, filtered=True, correct_swa
             
         # ====================================================================================================================================
         # Loop over events
-        
-        avg_wf = True
 
         for i in range(j*block_size, j*block_size+n_events):
 
@@ -207,7 +172,7 @@ def find_SPEs(data_dir, handscan=False, max_pulses=5, filtered=True, correct_swa
 
                 all_max_i = np.zeros(max_pulses, dtype=int)
 
-                wf = np.copy(ch_data_mV[k,i-j*block_size,:])
+                wf = np.copy(ch_data_mV[k,i-j*block_size,:int(0.5*wsize)])
 
                 for r in range(max_pulses):
                     max_i, code = analyze_biggest_pulse(wf, l_window, r_window)
@@ -224,7 +189,7 @@ def find_SPEs(data_dir, handscan=False, max_pulses=5, filtered=True, correct_swa
                         wf[max_i-l_window:] = 0
 
 
-                spe_sum_wf[k,i] = np.sum(ch_data_mV[k,i-j*block_size,:])
+                spe_sum_wf[k,i] = np.sum(ch_data_mV[k,i-j*block_size,:int(0.5*wsize)])
                 spe_nPulses[k,i] = np.count_nonzero(all_max_i > 0) # haha
                 all_max_i[:spe_nPulses[k,i]] = all_max_i[all_max_i > 0]
                 for ps in range(spe_nPulses[k,i]):
@@ -235,13 +200,6 @@ def find_SPEs(data_dir, handscan=False, max_pulses=5, filtered=True, correct_swa
                     spe_rms[k,i,ps] = get_rms(ch_data_mV[k,i-j*block_size,all_max_i[ps]-l_window:all_max_i[ps]+r_window])
 
 
-
-
-
-
-
-
-          
 
             # ==========================================================================================================================
             # Plotting code, resist the urge to use this for handscanning blobs
@@ -270,7 +228,7 @@ def find_SPEs(data_dir, handscan=False, max_pulses=5, filtered=True, correct_swa
  
                 fig = pl.figure()
                 ax = pl.gca()
-                for ch in range(0,31):
+                for ch in range(13,14):
                     pl.plot(x*tscale, ch_data_mV[ch,i-j*block_size,:] )
                     #for ps in range(spe_nPulses[0,i]):
                     #    #pl.axvspan(tscale*(spe_height_time[ch,i,ps]-l_window), tscale*(spe_height_time[ch,i,ps]+r_window),alpha=0.2,color="blue",zorder=0  )
@@ -358,26 +316,17 @@ def get_rms(wf):
 
 
 def main():
-    #with open(sys.path[0]+"/path.txt", 'r') as path:
-    #    data_dir = path.read()
-   
 
-    print("Sleeping before rq-ing")
-    #time.sleep(4*60*60)
-    #data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202307/20230710/*49SiPM*SPE*60min/")
-    data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202307/20230711/*50SiPM*SPE*60min/")
-
-    data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-202307/20230720/*SPE*/")
+    data_dir_list = ["/media/xaber/outSSD2/crystalize_data/data-202403/20240306/20240306-175438/"]
 
     print("\n")
     for i in data_dir_list: print(i)
     print("\n")
-    #time.sleep(9.5*60*60)
 
     for data_dir in data_dir_list:
         print(data_dir)
-        #compression(data_dir, save_everything = True, debug=False)
-        find_SPEs(data_dir)
+        #compression(data_dir, tag=1, save_everything = True, debug=False)
+        find_SPEs(data_dir, handscan=False)
 
 if __name__ == "__main__":
     main()

@@ -9,7 +9,6 @@ from natsort import natsorted
 
 #from scipy.signal import spectogram
 
-import PulseFinderScipy as pf
 import PulseQuantities as pq
 import PulseClassification as pc
 import PulseFinderVerySimple as vs
@@ -24,7 +23,7 @@ from scipy import signal
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True, simpleS2=True, save_avg_wfm=False, phase="liquid"):
+def find_single_electrons(data_dir, handscan=False, max_pulses=2, filtered=True, simpleS2=True, save_avg_wfm=False, phase="liquid"):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -69,37 +68,12 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     
     block_size = int(1500*15/event_window) # number of events per compressed file
 
-    # To do: create txt files of SPE sizes to read in
 
-    # SPE sizes, as of April 2022
-    #spe_sizes_0 = np.array([85.406,86.876,84.763,83.986,85.470,85.032,85,968,85.452,84.126,84.825,84.340,85.217,84.285,85.226,83.753,84.609])
-    #spe_sizes_1 = np.array([79.897,78.625,81.818,81.189,74.952,77.289,79.880,76.970])
-    #spe_sizes_2 = np.array([79.597,79.023,80.213,81.023,78.173,79.883,79.069,75.496])
+    #spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
 
-    # SPE sizes, as of May 24, 2022
-    #spe_sizes_0 = np.array([83.325,85.437,84.449,83.025,84.827,84.184,85.503,84.656,85.029,84.984,84.961,84.562,84.014,85.917,83.846,86.926])
-    #spe_sizes_1 = np.array([79.617,79.891,81.203,80.859,75.585,77.097,79.112,78.256])
-    #spe_sizes_2 = np.array([79.232,78.950,78.912,80.191,79.115,77.171,73.503,78.465])
-
-    # SPE sizes in SOLID, June 15, 2022
-    #spe_sizes_0 = np.array([89.524,87.773,85.071,86.106,86.781,86.102,86.417,86.840,86.919,86.675,85.908,86.630,85.881,87.946,87.629,88.216])
-    #spe_sizes_1 = np.array([84.134,83.419,83.957,84.037,79.348,81.228,82.678,81.617])
-    #spe_sizes_2 = np.array([82.342,82.528,82.477,82.523,84.209,81.481,78.693,81.669])
-
-    if phase == "liquid":
-        # SPE sizes in LIQUID, Sept, 28, 2022
-        spe_sizes_0 = np.array([90.010,88.944,88.831,88.209,90.296,91.249,93.823,92.238,87.540,89.733,86.509,83.149,90.761,91.263,91.641,93.016])
-        spe_sizes_1 = np.array([92.661,93.194,92.746,94.623,89.254,94.524,93.302,93.410])
-        spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
-
-    elif phase == "solid":
-        # SPE sizes in SOLID, Oct 2022
-        spe_sizes_0 = np.array([90.836,93.329,90.721,90.831,93.071,91.682,93.485,95.265,88.747,91.275,88.771,89.520,93.875,94.136,94.966,94.632])
-        spe_sizes_1 = np.array([94.666,95.533,93.915,99.042,97.783,94.895,97.134,97.501])
-        spe_sizes_2 = np.array([94.553,95.514,96.554,96.465,96.711,96.920,95.460,95.705])
-
-    spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
-
+    spe_dir = "/home/xaber/crystalize/Analysis/spe_calibration/202403/50V_3-6-2024.txt"
+    spe_sizes = np.loadtxt(spe_dir, dtype='float')
+    print(spe_sizes)
 
     # ====================================================================================================================================
     # Configure header data and event time
@@ -120,7 +94,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     # np.zeros is preferred over np.empty bc/ we want zero to be default value
 
     
-
+    """
     se_area = np.zeros((n_events,20))
     se_width = np.zeros((n_events,20))
     se_coincidence = np.zeros((n_events,20))
@@ -141,6 +115,26 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     drift_time = np.zeros(n_events)
 
     right_area = np.zeros(n_events)
+    """
+
+    gate_start = np.zeros(n_events, dtype=int)
+    gate_end = np.zeros(n_events, dtype=int)
+    gate_max_loc = np.zeros(n_events)
+    gate_area = np.zeros(n_events)
+    gate_height = np.zeros(n_events)
+    gate_rms = np.zeros(n_events)
+
+    cathode_start = np.zeros(n_events, dtype=int)
+    cathode_end = np.zeros(n_events, dtype=int)
+    cathode_area = np.zeros(n_events)
+    cathode_height = np.zeros(n_events)
+
+    n_pulses = np.zeros(n_events, dtype=int)
+    p_start = np.zeros((n_events,4),dtype=int)
+    p_end = np.zeros((n_events,4), dtype=int)
+
+    s1_area = np.zeros(n_events)
+
 
 
     # ====================================================================================================================================
@@ -163,7 +157,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
         n_events_b = int((ch_data_adcc.size)/(n_sipms*wsize)) # n events per compressed file (same as block_size)
     
 
-        
+        """
         # Better baseline subtraction
         # Super slow
         ch_data_adcc = np.reshape(ch_data_adcc, (n_sipms,n_events_b,wsize))
@@ -177,7 +171,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
 
 
                     #if ch_data_adcc[u] == 0 and ch_data_adcc[u+1] != 0:
-
+        """
                         
         ch_data_adcc = np.reshape(ch_data_adcc, int(n_sipms*n_events_b*wsize))
         
@@ -190,6 +184,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
         ch_data_mV = vscale*np.reshape(ch_data_adcc, (n_channels,n_events_b,wsize))
         ch_data_phdPerSample = np.zeros_like(ch_data_mV) 
         for ch in range(n_sipms): # using np.divide to get rid of this for loop is more trouble than it's worth
+            if spe_sizes[ch] == 0: continue
             ch_data_phdPerSample[ch,:,:] = ch_data_mV[ch,:,:]*tscale*(1000)/spe_sizes[ch]
         ch_data_phdPerSample[-1,:,:] = np.sum(ch_data_phdPerSample, axis=0)   
         #ch_data_phdPerSample = np.concatenate((ch_data_phdPerSample, np.sum(ch_data_phdPerSample, axis=0)))
@@ -206,6 +201,98 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
 
         for i in range(j*block_size, j*block_size+n_events):
 
+
+            # Pulse finder
+            start_times, end_times = vs.find_pulses_in_event(ch_data_phdPerSample[-1,i-j*block_size,:], max_pulses=max_pulses, verbose=False)
+
+            # Sort pulses by start times
+            startinds = np.argsort(start_times)
+            n_pulses[i] = min(max_pulses,len(start_times))
+            mp = 0
+            for m in startinds:
+                if m >= max_pulses:
+                    continue
+                if start_times[m] < 0.25/tscale: continue
+                p_start[i,mp] = start_times[m]
+                p_end[i,mp] = end_times[m]
+                mp += 1
+
+            # If drift time is too short, continue
+            if (p_start[i,1] - p_start[i,0])*tscale < 3.8: continue
+                
+            # First pulse should be an S1
+            temp_area = pq.GetPulseArea(p_start[i,0], p_end[i,0], ch_data_phdPerSample[-1,i-j*block_size,:] )
+            (p_afs_2l, p_afs_1, p_afs_10, p_afs_25, p_afs_50, p_afs_75, p_afs_90, p_afs_99) = pq.GetAreaFraction(p_start[i,0], p_end[i,0], ch_data_phdPerSample[-1,i-j*block_size,:] )
+            if (p_afs_50-p_afs_2l)*tscale > 0.125 or temp_area < 10: continue
+            s1_area[i] = temp_area
+            s1_start_afs2 = p_afs_2l
+
+            # Make first window, find max
+            
+            temp_start = int(s1_start_afs2 + 0.8/tscale)
+            temp_end = int(temp_start + (1.9)/tscale)
+            gate_max_loc[i] = np.argmax(ch_data_phdPerSample[-1,i-j*block_size,temp_start:temp_end]) + temp_start
+            if temp_end - gate_max_loc[i] < 0.7/tscale or gate_max_loc[i] - temp_start < 0.7/tscale: continue 
+
+            """
+            gate_max_loc[i] = np.argmax(ch_data_phdPerSample[-1,i-j*block_size,temp_start:temp_end]) + temp_start
+            #if gate_max_loc[i] - temp_start > 0.8: continue
+            if temp_end - gate_max_loc[i] > 0.75/tscale:
+                gate_start[i] = temp_start
+                gate_end[i] = int(gate_max_loc[i] + 0.75/tscale)
+            """
+            gate_start[i] = int(gate_max_loc[i] - 0.7/tscale)
+            gate_end[i] = int(gate_max_loc[i] + 0.7/tscale)
+
+            if gate_end[i] == gate_start[i] or gate_start[i] == 0 or gate_end[i] == 0: continue
+
+            # "Precise" baseline subtract from right before the S1
+            base_precise_end = p_start[i,0] - 50
+            base_precise_start = p_start[i,0] - 50 - 100
+            bases = np.sum( ch_data_phdPerSample[:,i-j*block_size,base_precise_start:base_precise_end], axis=1)/(base_precise_end-base_precise_start)
+            for ch in range(32):
+                ch_data_phdPerSample[ch,i-j*block_size,:] -= bases[ch]
+            ch_data_phdPerSample[-1,i-j*block_size,:] = np.sum(ch_data_phdPerSample[:-1,i-j*block_size,:], axis=0)
+
+            # RQ's
+            gate_area[i] = pq.GetPulseArea(gate_start[i], gate_end[i], ch_data_phdPerSample[-1,i-j*block_size,:] )
+            gate_height[i] = max(ch_data_phdPerSample[-1,i-j*block_size,gate_start[i]:gate_end[i]])
+            gate_rms[i] = np.sqrt(np.sum(np.power(ch_data_phdPerSample[-1,i-j*block_size,gate_start[i]:gate_end[i]],2))/(gate_end[i]-gate_start[i]))
+            #(p_afs_2l[i], p_afs_1, p_afs_10, p_afs_25, p_afs_50, p_afs_75, p_afs_90, p_afs_99) = pq.GetAreaFraction(gate_start[i], gate_end[i], ch_data_phdPerSample[-1,i-j*block_size,:] )
+
+            """
+            # Find an S1
+            temp_area = np.zeros(max_pulses)
+            s1_afs = -1
+            for pp in range(max_pulses):
+                temp_area[pp] = pq.GetPulseArea(p_start[i,pp], p_end[i,pp], ch_data_phdPerSample[-1,i-j*block_size,:] )
+                (p_afs_2l, p_afs_1, p_afs_10, p_afs_25, p_afs_50, p_afs_75, p_afs_90, p_afs_99) = pq.GetAreaFraction(p_start[i,pp], p_end[i,pp], ch_data_phdPerSample[-1,i-j*block_size,:] )
+                if (p_afs_50-p_afs_2l)*tscale < 0.125 and temp_area[pp] > 10:
+                    s1_afs = p_afs_2l
+            if s1_afs == -1: continue
+
+            if (p_start[i,1] - p_start[i,0])*tscale < 3.8 or temp_area[0] < 10: continue
+
+            # If found S1, look for SE's in the S1 echos
+            try:
+                gate_start[i] = int(s1_afs + 0.8/tscale)
+                gate_end[i] = int(s1_afs + (0.8+2.8)/tscale)
+                gate_area[i] = pq.GetPulseArea(gate_start[i], gate_end[i], ch_data_phdPerSample[-1,i-j*block_size,:] )
+                gate_height[i] = max(ch_data_phdPerSample[-1,i-j*block_size,gate_start[i]:gate_end[i]])
+                gate_rms[i] = np.sqrt(np.sum(np.power(ch_data_phdPerSample[-1,i-j*block_size,gate_start[i]:gate_end[i]],2))/(gate_end[i]-gate_start[i]))
+
+                cathode_start[i] = int(s1_afs + 5/tscale)
+                cathode_end[i] = int(s1_afs + (5+2.8)/tscale)
+                cathode_area[i] = pq.GetPulseArea(cathode_start[i], cathode_end[i], ch_data_phdPerSample[-1,i-j*block_size,:] )
+                cathode_height[i] = max(ch_data_phdPerSample[-1,i-j*block_size,cathode_start[i]:cathode_end[i]])
+
+                s1_area[i] = temp_area[0]
+
+            except:
+                print(f"error ev {i}")
+                continue
+
+            
             plot_debug = True
 
 
@@ -296,13 +383,13 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
                     se_start[1] = max_wf_loc + 6/tscale
                     se_end[1] = se_start[1] + 1.2/tscale   
 
-                    """
+                    
                     se_start[0] = 11.5/tscale 
                     se_end[0] = 11.5/tscale + 800
 
                     se_start[1] = 15/tscale 
                     se_end[1] = 15/tscale + 800
-                    """
+                    
                     offset = 0
                     #wf = ch_data_phdPerSample[-1,i-j*block_size,end_times[0]:]
                     #offset = end_times[0]
@@ -329,7 +416,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
             
 
 
-            """
+            
             if len(start_times) > 1 and areas[1] > 5:
                 temp_start = end_times[1] + 300
                 temp_end = start_times[0] - 100
@@ -410,13 +497,13 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
             if inn == 's': sys.exit()
             #plotyn = se_area[i] > 15 and se_area[i] < 25
             #print(se_area[i,:])
-            plotyn = True #True #np.any( a2 > 7  )
+            plotyn = False #(gate_area[i] > 20 and gate_area[i] < 40) #True #True #np.any( a2 > 7  )
             #plotyn = np.any( (se_area[i,:] > 0)&(se_area[i,:] < 2)&(se_width[i,:] > 1.3/tscale)&(se_coincidence[i,:] == 3)  )
             if not inn == 'q' and plotyn and plot_event_ind == i:
                 #print((se_area[i,:] > 0)&(se_area[i,:] < 2)&(se_width[i,:] > 1.3/tscale)&(se_coincidence[i,:] == 3))
 
                 fspect, tspect, Sxx = signal.spectrogram(ch_data_phdPerSample[-1,i-j*block_size,:], fs=500e6)
-                print(np.round(se_area[i,:],1))
+                #print(np.round(se_area[i,:],1))
                 fig = pl.figure()
                 ax = pl.gca()
                 #pl.pcolormesh(tspect, fspect, np.log10(Sxx), shading="gouraud",)
@@ -424,6 +511,10 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
                 for ch in range(32):
                     pl.plot(x*tscale, ch_data_phdPerSample[ch,i-j*block_size,:] )
 
+                pl.axvspan(tscale*(gate_start[i]),tscale*(gate_end[i]),alpha=0.2,color="blue",zorder=0)
+                pl.axvspan(tscale*(base_precise_start),tscale*(base_precise_end),alpha=0.2,color="orange",zorder=0)
+                #pl.axvspan(tscale*(cathode_start[i]),tscale*(cathode_end[i]),alpha=0.2,color="blue",zorder=0)
+                pl.annotate(f"{round(gate_area[i],2)} phd", xy=(tscale*(gate_start[i])+1.5, 0.03 + gate_height[i]/ax.get_ylim()[1]), fontsize=15)
                 #pl.plot(x*tscale, a2,color='red')
                 #pl.plot(x*tscale, a1,color='green')
                 #pl.plot(all_peaks*tscale, ch_data_phdPerSample[-1,i-j*block_size,all_peaks] ,"ro")
@@ -434,13 +525,13 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
                 #pl.plot(x*tscale,  wf_filtered, color="red", lw=0.7)
                 #pl.plot(x*tscale, data_conv,"blue", label="S2 Filtered")
                 #pl.axvspan(tscale*(se_start[p]),tscale*(se_end[p]),alpha=0.3,color="blue",zorder=0)
-                for p in range(10):
+                #for p in range(10):
                 #    pl.axvspan(tscale*(offset + se_start[p]),tscale*(offset + se_end[p]),alpha=0.2,color="blue",zorder=0)
-                    pl.axvspan(tscale*( se_start[p]),tscale*(se_end[p]),alpha=0.2,color="blue",zorder=0)
+                #    pl.axvspan(tscale*( se_start[p]),tscale*(se_end[p]),alpha=0.2,color="blue",zorder=0)
                 #ax.text(tscale*(start_window+se_end), 0.03 + se_max_height[i]/ax.get_ylim()[1], '{:.2f} phd'.format(se_area[i]), fontsize=9, color="blue")
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
-                pl.ylim(-0.02,0.1)
+                #pl.ylim(-0.02,0.1)
                 pl.title("Event {}".format(i))  
                 #pl.legend()
                 pl.grid(which="both",axis="both",linestyle="--")
@@ -459,7 +550,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
         t_end = time.time()
         print("total number of events processed:", n_events)
         #print("Time used: {}".format(t_end-t_start))
-        print(np.count_nonzero(se_coincidence))
+        #print(np.count_nonzero(se_coincidence))
         j += 1
 
     # end of loop over compressed files
@@ -470,7 +561,23 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
 
     #create a dictionary with all RQs
     list_rq = {}
-    print(np.count_nonzero(se_area))
+    #print(np.count_nonzero(se_area))
+
+    list_rq['gate_start'] = gate_start
+    list_rq['gate_end'] = gate_end
+    list_rq['gate_area'] = gate_area
+    list_rq['gate_height'] = gate_height
+    list_rq['gate_rms'] = gate_rms
+
+    list_rq['cathode_start'] = cathode_start
+    list_rq['cathode_end'] = cathode_end
+    list_rq['cathode_area'] = cathode_area
+    list_rq['cathode_height'] = cathode_height
+
+    list_rq['s1_area'] = s1_area
+    
+
+    """
     list_rq['se_area'] = se_area
     list_rq['se_width'] = se_width
     list_rq['se_max_height'] = se_max_height
@@ -487,7 +594,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     list_rq['drift_time'] = drift_time
     list_rq['se_aft10'] = se_aft10
     list_rq['se_aft90'] = se_aft90
-
+    """
 
 
     #list_rq[''] =    #add more rq
@@ -498,7 +605,7 @@ def find_single_electrons(data_dir, handscan=False, max_pulses=4, filtered=True,
     #        list_rq[rq] = list_rq[rq][:n_events]
 
     if filtered:
-        save_name = "/rq_SE_filtered_test2.npy"
+        save_name = "/rq_SE_v1.npy"
     else:
         save_name = "/rq_SE_test.npy"
     rq = open(data_dir + save_name,'wb')
@@ -664,93 +771,26 @@ def se_pf_dumb(wf):
 def main():
     #with open(sys.path[0]+"/path.txt", 'r') as path:
     #    data_dir = path.read()
-    #data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202211/20221120/20221120-1302_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.44bar_-94.64ICVbot_2fold_beta_120min/"
-    #data_dir = "/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-202303/20230307/20230307-1744_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.67bar_-99.78ICVbot_2fold_blank_afterFlow_60min/"
-    #data_dir = "/media/xaber/extradrive2/crystalize_data/data-202303/20230320/20230320-0254_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.58bar_77.51ICVbot_2fold_degradedNew_60min/"
-    
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230512/20230512-0945_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.43bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_60min/"
-    
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230515/20230515-1620_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.51bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_150usdelay_30min/"
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230516/20230516-1729_2DR_10mVtrig_50us_5202.0C_5002.0G_500A_54SiPM_1.55bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SEdelay500us_60min/"
-    
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230517/20230517-1127_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.56bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SEdelay500us_20min/"
+   
+    #data_dir_list = glob.glob("/media/xaber/outSSD2/crystalize_data/data-202403/20240309/*")
+    data_dir_list = ["/media/xaber/extradrive1/crystalize_data/data-202403/20240315/20240315-091729/"]
 
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230517/20230517-1712_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.53bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SEdelay100us_slightRecover_20min/"
+    data_dir_list = glob.glob("/media/xaber/extradrive1/crystalize_data/data-202403/20240315/*/")
+    # next
+    #"/media/xaber/extradrive1/crystalize_data/data-202403/20240315/20240315-091729/"
 
+    #data_dir_list = ["/media/xaber/outSSD2/crystalize_data/data-202403/20240309/20240309-184356/"]
 
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230517/20230517-1821_2DR_10mVtrig_20us_5203.0C_5002.0G_500A_54SiPM_1.55bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SEdelay500us_slightRecover_20min/"
+    for data_dir in data_dir_list:
+        print(data_dir)
+        try:
+            find_single_electrons(data_dir, phase="liquid")
+        except:
+            print("error")
+            continue
 
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230518/20230518-1016_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.56bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_slightRecover_20min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230518/20230518-1427_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.51bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_3p5slRecover_60min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230518/20230518-1607_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.53bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SE500usdelay_3p5slRecover_20min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-0952_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.44bar_-151.12ICVbot_2fold_plainMesh_liquid_CoTop_6p5slRecover_10min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-1334_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.53bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SE500usDelay_6p5slRecover_20min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-1717_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.56bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SE500usDelay_6p5slRecover_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-1714_2DR_10mVtrig_20us_5703.0C_5503.0G_1000A_54SiPM_1.55bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_SE500usDelay_6p5slRecover_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230519/20230519-1408_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.53bar_-151.12ICVbot_2fold_plainMesh_liquid_BaTop_6p5slRecover_180min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230522/20230522-1421_2DR_10mVtrig_100us_5202.0C_5002.0G_500A_54SiPM_1.67bar_-151.12ICVbot_2fold_plainMesh_liquid_CoOCVTop_random_6p5slRecover_2min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230522/20230522-1424_2DR_10mVtrig_100us_5202.0C_5002.0G_500A_54SiPM_1.67bar_-151.12ICVbot_2fold_plainMesh_liquid_CoOCVTop_SE500usDelay_6p5slRecover_2min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1504_2DR_10mVtrig_20us_5203.0C_5002.0G_500A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_333usDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1512_2DR_10mVtrig_20us_5703.0C_5503.0G_1000A_54SiPM_1.63bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_333usDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1519_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_333usDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1526_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.63bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_500usDelay_6p5slRecover_2slFill_1min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1537_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.62bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_500usDelay_6p5slRecover_2slFill_1min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1544_2DR_10mVtrig_20us_6203.0C_6003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_1msDelay_6p5slRecover_2slFill_1min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1552_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.62bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_1msDelay_6p5slRecover_2slFill_1min/"
-
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1602_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_10msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1608_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.65bar_-150.82ICVbot_2fold_plainMesh_liquid_BaOCVTop_5msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1615_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_2msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1621_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_3msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1633_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_54SiPM_1.62bar_-150.82ICVbot_2fold_plainMesh_liquid_BaOCVTop_1p5msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1646_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.67bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_2p5msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1656_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.67bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_3msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1705_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_6msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1711_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.65bar_-150.82ICVbot_2fold_plainMesh_liquid_10msDelay_6p5slRecover_2slFill_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230523/20230523-1717_2DR_10mVtrig_20us_7203.0C_7003.0G_1000A_55SiPM_1.65bar_-151.12ICVbot_2fold_plainMesh_liquid_10msDelay_6p5slRecover_2slFill_60min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1103_2DR_10mVtrig_50us_8204.0C_8003.0G_1000A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_10msDelay_1min/"
-
-    #data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1122_0.5DR_10mVtrig_50us_8203.0C_8003.0G_1000A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_10msDelay_1min/"
-
-
-    data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202305/20230524/20230524-1639_2DR_10mVtrig_20us_5202.0C_5002.0G_500A_54SiPM_1.68bar_-151.12ICVbot_2fold_plainMesh_liquid_BaOCVTop_delay500us_1min/"
-
-    find_single_electrons(data_dir, phase="liquid")
+    #data_dir = "/media/xaber/outSSD2/crystalize_data/data-202403/20240306/20240306-181727/"
+    #find_single_electrons(data_dir, phase="liquid")
 
 if __name__ == "__main__":
     main()

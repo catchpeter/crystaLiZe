@@ -8,7 +8,7 @@ import os
 def recordAcquisitions(start_time):
 
     # Tracking spreadsheet file name
-    run_name = "test" #"24A"
+    run_name = "24B"
     csv_file_name = f"/home/xaber/crystalize/Analysis/acquisitions/run_{run_name}.xlsx"
 
     # If it exists, get the final line, which is the start time to start recording new entries
@@ -20,8 +20,9 @@ def recordAcquisitions(start_time):
             start_time = dt.datetime(int(last_dt[:4]), int(last_dt[4:6]), int(last_dt[6:8]), int(last_dt[9:11]), int(last_dt[11:13]), int(last_dt[13:15]))
     
     # Where to look for data
-    data_dir_base = "/media/xaber/outSSD1/crystalize_data/"
-    long_list = sorted(glob.glob(data_dir_base+"*/*/*/"))
+    data_dir_base = "/media/xaber/outSSD2/crystalize_data/"
+    data_dir_base_2 = "/media/xaber/extradrive1/crystalize_data/"
+    long_list = sorted(glob.glob(data_dir_base+"*/*/*/"))+sorted(glob.glob(data_dir_base_2+"*/*/*/"))
 
     # Loop over data dirs
     for i, data_dir in enumerate(long_list):
@@ -31,13 +32,20 @@ def recordAcquisitions(start_time):
 
         # Get the datetime
         dt_stamp = data_dir[-16:-1]
-        dt_dt = dt.datetime(int(dt_stamp[:4]), int(dt_stamp[4:6]), int(dt_stamp[6:8]), int(dt_stamp[9:11]), int(dt_stamp[11:13]), int(dt_stamp[13:15]))
+        try:
+            dt_dt = dt.datetime(int(dt_stamp[:4]), int(dt_stamp[4:6]), int(dt_stamp[6:8]), int(dt_stamp[9:11]), int(dt_stamp[11:13]), int(dt_stamp[13:15]))
+        except:
+            continue
 
         # Should we record it?
         if (dt_dt - start_time).total_seconds() > 1:
+            print(data_dir)
 
             # Open the conditions file
-            conds = np.loadtxt(data_dir+"conditions.csv", delimiter=",", dtype=str)
+            try:
+                conds = np.loadtxt(data_dir+"conditions.csv", delimiter=",", dtype=str)
+            except:
+                break
             fields = conds[0].tolist()
             values = conds[1].tolist()
             
@@ -70,12 +78,9 @@ def recordAcquisitions(start_time):
 
 
 
-
-
-
 def main():
 
-    start_time = dt.datetime(2024,1,1,0,0,0)
+    start_time = dt.datetime(2024,3,6,0,0,0)
 
     while True:
 
@@ -85,12 +90,6 @@ def main():
 
 
     return
-
-
-   
-    
-
-
 
 
 if __name__ == "__main__":

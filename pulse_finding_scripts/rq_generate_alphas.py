@@ -6,7 +6,6 @@ import sys
 import glob
 from natsort import natsorted
 
-import PulseFinderScipy as pf
 import PulseQuantities as pq
 import PulseClassification as pc
 import PulseFinderVerySimple as vs
@@ -57,6 +56,7 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
     block_size = int(1500*15/event_window) # number of events per compressed file
 
     # Load in SPE calibrations
+    """
     if phase == "liquid":
 
         if degraded:
@@ -89,6 +89,11 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
         spe_sizes_2 = np.array([92.955,93.619,93.944,93.199,95.470,96.461,92.317,93.509])
         spe_sizes = np.concatenate((spe_sizes_0,spe_sizes_1,spe_sizes_2))
         print(spe_sizes)
+    """
+
+    spe_dir = "/home/xaber/crystalize/Analysis/spe_calibration/202403/50V_3-6-2024.txt"
+    spe_sizes = np.loadtxt(spe_dir, dtype='float')
+    print(spe_sizes)
 
 
     try: 
@@ -417,11 +422,14 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
 
                 fig = pl.figure()
                 ax = pl.gca()
-                pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=0.7, label = "Summed All" )
-                pl.plot(x[:-1]*tscale, np.diff(ch_data_phdPerSample[-1,i-j*block_size,:]),"blue", label="Derivative")
+                #pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=0.3, label = "Summed All" )
+                for test in range(32):
+                    pl.plot(x*tscale, ch_data_phdPerSample[test,i-j*block_size,:],lw=0.7 )
+                #pl.plot(x[:-1]*tscale, np.diff(ch_data_phdPerSample[-1,i-j*block_size,:]),"blue", label="Derivative")
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
                 pl.title("Event {}".format(i))
+                """
                 for ps in range(n_pulses[i]):
                     pl.axvspan(tscale*p_start[i,ps],tscale*p_end[i,ps],alpha=0.3,color=pulse_class_colors[p_class[i,ps]],zorder=0)
                     pl.axvline(tscale*p_afs_1[i,ps],color=pulse_class_colors[p_class[i,ps]],zorder=0,linestyle='--')
@@ -432,8 +440,9 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
                     ax.text((p_end[i,ps]) * tscale, (0.86-ps*0.2) * ax.get_ylim()[1], 'Rise={:.2f} us'.format(afs50_2[ps]),
                         fontsize=9, color=pulse_class_colors[p_class[i, ps]])
                     #ax.text((end_times[ps]) * tscale, (0.82-ps*0.2) * ax.get_ylim()[1], 'Check={}'.format(temp_condition[ps]),
-                    #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])    
-                pl.legend()
+                    #    fontsize=9, color=pulse_class_colors[p_class[i, ps]])  
+                """  
+                #pl.legend()
                 pl.grid(which="both",axis="both",linestyle="--")
                 pl.xlim(0,event_window)
                 pl.show()
@@ -538,8 +547,11 @@ def main():
    
     data_dir = "/media/xaber/G-Drive2/crystalize_data/data-202309/20230921/20230921-1502_2DR_10mVtrig_15us_3002.0C_3202.0G_500A_54SiPM_1.53bar_-149.91ICVbot_2fold_flowrn_0.16slpm_noAmp_plainMesh_liquid_120min/"
     
+
+    data_dir = "/media/xaber/outSSD2/crystalize_data/data-202403/20240307/20240307-105650/"
     print(data_dir)
-    make_rq(data_dir, tag=1, phase = "old_liquid", handscan=False, correct_swap=False, degraded=False, dead=True)
+    make_rq(data_dir, tag=1, phase="liquid", dead=True, handscan=True)
+    #make_rq(data_dir, tag=1, phase = "old_liquid", handscan=False, correct_swap=False, degraded=False, dead=True)
 
 
 
