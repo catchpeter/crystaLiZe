@@ -8,4 +8,4 @@ For compressing data, generating rq's, finding SPEs, etc. See the specific READM
 Instrument i/o for pressure gauge, RTDs, heaters, and HV electrodes. See the specific README.md.
 
 ## DAQ scripts: data_taking
-Code for CAEN DAQ system. Needs to be cleaned up...for now just bug Ryan.
+Python wrappers for CAEN DAQ system. See the specific README.md.
