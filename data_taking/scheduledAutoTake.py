@@ -3,8 +3,8 @@ import os
 import time 
 
 
-how_often = 1 # inverse rate of data sets per hour
-how_many = 200 # how many data sets to take. actual time = how_many*how_often
+#how_often = 1 # inverse rate of data sets per hour
+how_many = 10 # how many data sets to take. actual time = how_many*how_often
 
 for i in range(how_many):
 
@@ -15,5 +15,7 @@ for i in range(how_many):
     end_time = time.clock_gettime(time.CLOCK_BOOTTIME)
 
     print("===========\nSleeping until the next data set")
-    time.sleep( how_often*3600 - (end_time - start_time) )
+    time.sleep(5)
+    #time.sleep(60*60*2)
+    #time.sleep( how_often*3600 - (end_time - start_time) )
     

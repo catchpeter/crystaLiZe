@@ -27,17 +27,17 @@ data_dir_high = "/home/xaber/Data/"
 #data_dir_high = "/media/xaber/gpeter/data/"
 
 # Run settings you need to input
-event_window_us = 20 #20 #15 # us
+event_window_us = 20 #30 #20 #15 # us
 pre_trigger = 0.5 # Percentage of event window
-trigger_threshold_mV = 10 # Per channel in mV
-run_time_s = 30*60 # sec
+trigger_threshold_mV = 400 #10 # Per channel in mV
+run_time_s = 20*60 # sec
 
 # Run conditions you need to input
 phase = "liquid" 
-anode_v = 500 # V
-sipm_bias = 54 # V
-source = "Co57"
-extra = "test" # any other info you want to include in dir
+anode_v = 1000 # V
+sipm_bias = 50 # V
+source = "57Co side" # NO COMMAS
+extra = "trigger threshold test" # NO COMMAS. any other info you want to include in dir
 
 # Run conditions that are automatically read
 cathode_v = read_cathode() # V
@@ -51,7 +51,7 @@ run_time_min = "{:n}".format(run_time_s/60)
 """
 # TO CHANGE DYNAMIC RANGE YOU NEED TO EDIT WAVEDUMP C CODE AND RECOMPILE
 # YOU STILL NEED TO CHANGE THIS VALUE SO THE ANALYSIS WORKS
-dynamic_range = 0 # 0 = 2Vpp, 1 = 0.5Vpp
+dynamic_range = 1 # 0 = 2Vpp, 1 = 0.5Vpp
 
 # Other globals
 if dynamic_range == 0:
