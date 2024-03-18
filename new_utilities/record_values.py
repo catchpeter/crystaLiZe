@@ -29,9 +29,9 @@ def exit_email(fail=False):
         email_str = "Record values has concluded without errors"
 
     print(f"{nl_str}{email_str}{nl_str}")
-    save_dir = "/home/xaber/solid_xenon_tpc/new_utilities/exit_email_record_values.txt"
+    save_dir = "/home/xaber/crystaLiZe/new_utilities/exit_email_record_values.txt"
     np.savetxt(save_dir, np.array(["To: rmg@lbl.gov","Subject: Record values has stopped","From: crystalize_slow_control@xena.dhcp.lbl.gov", "" ,email_str]), fmt="%s")
-    os.system("sendmail -t < /home/xaber/solid_xenon_tpc/new_utilities/exit_email_record_values.txt")
+    os.system("sendmail -t < /home/xaber/crystaLiZe/new_utilities/exit_email_record_values.txt")
 
     return
 
@@ -108,7 +108,7 @@ def record_values():
 
         # Read heaters settings
         try:
-            with open("/home/xaber/solid_xenon_tpc/new_utilities/heaters_setting.txt") as f:
+            with open("/home/xaber/crystaLiZe/new_utilities/heaters_setting.txt") as f:
                 f.readline()
                 power_line = f.readline()
                 powers = power_line.split(",")

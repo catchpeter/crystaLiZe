@@ -19,7 +19,7 @@ def wriiit(Wt,Wb):
 	f.close()
 
 filename1='/home/xaber/ttlogs/current.csv'
-filename2='/home/xaber/solid_xenon_tpc/new_utilities/heaters_setting.txt'
+filename2='/home/xaber/crystaLiZe/new_utilities/heaters_setting.txt'
 
 # read heaters_setting.txt ONCE at the start to get the baseline settings
 with open(filename2) as file:

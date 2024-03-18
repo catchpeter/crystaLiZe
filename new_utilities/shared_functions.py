@@ -140,7 +140,7 @@ def get_usb_n(name):
 
     # Yeah this one isn't very pythonic
 
-    usb_file = np.loadtxt("/home/xaber/solid_xenon_tpc/new_utilities/usb_ports", delimiter=",", dtype=str)
+    usb_file = np.loadtxt("/home/xaber/crystaLiZe/new_utilities/usb_ports", delimiter=",", dtype=str)
 
     if name == "cathode" or name == "Cathode":
         usb_n = int(usb_file[1,0])
