@@ -1,4 +1,4 @@
-# LBNL crystaLiZe Codebase
+# LBNL crystaLiZe codebase
 2024/03/18: initial write up - RMG
 
 ## Data analysis: pulse_finding_scripts
