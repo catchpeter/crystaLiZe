@@ -1,3 +1,9 @@
+"""
+Simple script to upload data to google drive.
+Should be run in the background, seperate from autoAna to avoid infinite upload loops in processing.
+Edit data_dir_list for where it should look for data to upload.
+"""
+
 import glob
 import os
 import time
@@ -5,8 +11,7 @@ import time
 
 def re_upload():
 
-    #data_dir_list = glob.glob("/media/xaber/f5d91b31-9a7d-3278-ac5b-4f9ae16edd60/crystalize_data/data-*/*/*/")
-    data_dir_list = glob.glob("/media/xaber/G-Drive2/crystalize_data/data-*/*/*/")
+    data_dir_list = glob.glob("/media/xaber/extradrive2/crystalize_data/data-*/*/*/")
 
     for data_dir in data_dir_list:
 
@@ -21,17 +26,14 @@ def re_upload():
     print("Done looping through data")
 
 
-
-
-
 def main():
 
     while True: # lmao
 
         re_upload()
 
-        # Checks every 5 minutes
-        time.sleep(5*60)
+        # Checks every so often
+        time.sleep(10)
 
     return 
 

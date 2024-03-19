@@ -1,3 +1,9 @@
+"""
+Script to automate acquistion spreadsheet.
+Should be run in the background.
+Before running, have correct inputs, see example in main().
+"""
+
 import numpy as np
 import time
 import glob
@@ -5,10 +11,9 @@ import datetime as dt
 import os
 
 
-def recordAcquisitions(start_time):
+def recordAcquisitions(start_time, data_dir_base, run_name):
 
     # Tracking spreadsheet file name
-    run_name = "24B"
     csv_file_name = f"/home/xaber/crystalize/Analysis/acquisitions/run_{run_name}.xlsx"
 
     # If it exists, get the final line, which is the start time to start recording new entries
@@ -20,9 +25,7 @@ def recordAcquisitions(start_time):
             start_time = dt.datetime(int(last_dt[:4]), int(last_dt[4:6]), int(last_dt[6:8]), int(last_dt[9:11]), int(last_dt[11:13]), int(last_dt[13:15]))
     
     # Where to look for data
-    data_dir_base = "/media/xaber/outSSD2/crystalize_data/"
-    data_dir_base_2 = "/media/xaber/extradrive1/crystalize_data/"
-    long_list = sorted(glob.glob(data_dir_base+"*/*/*/"))+sorted(glob.glob(data_dir_base_2+"*/*/*/"))
+    long_list = sorted(glob.glob(data_dir_base+"*/*/*/")) 
 
     # Loop over data dirs
     for i, data_dir in enumerate(long_list):
@@ -80,11 +83,13 @@ def recordAcquisitions(start_time):
 
 def main():
 
-    start_time = dt.datetime(2024,3,6,0,0,0)
+    start_time = dt.datetime(2024,3,18,0,0,0)
+    data_dir_base = "/media/xaber/extradrive2/crystalize_data/"
+    run_name = "24C"
 
     while True:
 
-        recordAcquisitions(start_time)
+        recordAcquisitions(start_time, data_dir_base, run_name)
 
         time.sleep(5*60)
 
