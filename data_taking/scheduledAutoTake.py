@@ -10,7 +10,7 @@ for i in range(how_many):
 
     start_time = time.clock_gettime(time.CLOCK_BOOTTIME)
     
-    ret = os.system("python3 /home/xaber/Analysis/solid_xenon_tpc/data_taking/autoTake.py")
+    ret = os.system("python3 /home/xaber/Analysis/crystaLiZe/data_taking/autoTake.py")
 
     end_time = time.clock_gettime(time.CLOCK_BOOTTIME)
 
