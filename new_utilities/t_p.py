@@ -19,8 +19,8 @@ t_plot_start = 0 # in hours
 t_plot_end = -1 # in hours -1 means plotting all data points
 
 download_flag = True  # set if need to download log file
-no_of_download = 2 # number of files to download
-no_of_files = 2 # number of files to plot
+no_of_download = 1 # number of files to download
+no_of_files = 1 # number of files to plot
 
 
 def where_to_save():
