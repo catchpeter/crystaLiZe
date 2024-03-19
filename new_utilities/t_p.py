@@ -7,6 +7,7 @@ Script to plot slow control values. Rewritten from older version.
 import os 
 import sys 
 import glob
+import datetime
 import subprocess
 import numpy as np
 import pandas as pd
@@ -18,8 +19,8 @@ t_plot_start = 0 # in hours
 t_plot_end = -1 # in hours -1 means plotting all data points
 
 download_flag = True  # set if need to download log file
-no_of_download = 1 # number of files to download
-no_of_files = 1 # number of files to plot
+no_of_download = 2 # number of files to download
+no_of_files = 2 # number of files to plot
 
 
 def where_to_save():
@@ -63,6 +64,18 @@ def download_data(local_path, download_flag):
     return
 
 
+def get_time_offset(file_name):
+
+    t_str = file_name[-17:-4]
+    year = int(t_str[:4])
+    month = int(t_str[4:6])
+    day = int(t_str[6:8])
+    hour = int(t_str[9:11])
+    minute = int(t_str[11:13])
+
+    return datetime.datetime(year,month,day,hour,minute)
+
+    
 def t_p():
 
     local_path = where_to_save() # where to local logs are
@@ -88,14 +101,19 @@ def t_p():
     bot_power = np.array([])
 
     # Loop over files 
-    for data_file in list_files:
+    for i, data_file in enumerate(list_files):
+
+        if i == 0: t0_offset = get_time_offset(data_file)
 
         # Load each data file and add to arrays
         df = np.loadtxt(data_file, delimiter=",", dtype=str)
         #raw_ymd = np.append(raw_ymd, df[:,0].astype(str))
         #raw_hms = np.append(raw_hms, df[:,1].astype(str))
         try:
-            elapsed_time_s = np.append(elapsed_time_s, df[:,2].astype(float))
+            temp_elapsed_time_s = df[:,2].astype(float)
+            if i > 0: 
+                temp_elapsed_time_s += (get_time_offset(data_file) - t0_offset).total_seconds()
+            elapsed_time_s = np.append(elapsed_time_s, temp_elapsed_time_s)
             t4 = np.append(t4, df[:,3].astype(float))
             t5 = np.append(t5, df[:,4].astype(float))
             t6 = np.append(t6, df[:,5].astype(float))
@@ -104,7 +122,10 @@ def t_p():
             top_power = np.append(top_power, df[:,8].astype(float))
             bot_power = np.append(bot_power, df[:,9].astype(float))
         except:
-            elapsed_time_s = np.append(elapsed_time_s, df[2].astype(float))
+            temp_elapsed_time_s = df[2].astype(float)
+            if i > 0: 
+                temp_elapsed_time_s += (get_time_offset(data_file) - t0_offset).total_seconds()
+            elapsed_time_s = np.append(elapsed_time_s, temp_elapsed_time_s)
             t4 = np.append(t4, df[3].astype(float))
             t5 = np.append(t5, df[4].astype(float))
             t6 = np.append(t6, df[5].astype(float))
