@@ -1,7 +1,5 @@
 """
-The main analysis script. This looks for SS events and calculates rq's.
-Takes in compressed data and saves an .npy rq file.
-Cobbled together from years of previous work.
+Code to find S2 echos. Essentially a perturbation to rq_generate_alphas
 
 Required inputs:
   data_dir: str, location of data
@@ -24,7 +22,7 @@ from read_settings import get_event_window, get_vscale, get_sipm_bias
 #from ch_evt_filter_compress import filter_channel_event
 
 
-def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg_wfm=False, correct_swap=False, dead=True):
+def find_echos(data_dir, tag, handscan=False, max_pulses=2, filtered=True, save_avg_wfm=False, correct_swap=False, dead=True):
     # ====================================================================================================================================
     # Plotting parameters
 
@@ -194,6 +192,11 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
     s1_before_s2 = np.zeros(n_events, dtype=bool)
     right_area = np.zeros(n_events)
 
+    gate_area = np.zeros(n_events)
+    gate_height = np.zeros(n_events)
+    cathode_area = np.zeros(n_events)
+    cathode_height = np.zeros(n_events)
+
     # Avg waveform quantities
     waveform_area = np.zeros(n_events)  #integrate the whole waveform
     rq_ev_time_s = np.zeros(n_events,dtype="int")
@@ -357,6 +360,24 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
                     s1_before_s2[i] = np.argmax(index_s1) < np.argmax(index_s2) 
                     drift_Time_AS[i] = tscale*(p_start[i, np.argmax(index_s2)] - p_start[i, np.argmax(index_s1)]) #For multi-scatter events. 
             
+            # Code for echos
+            gate_start = 0
+            gate_end = 0
+            cathode_start = 0
+            cathode_end = 0
+            if (p_class[i,1] == 3 or p_class[i,1] == 4) and ((p_class[i,0] == 1 or p_class[i,0] == 2)):
+                gate_start = int(p_afs_2l[i,1] + 1.1/tscale)
+                gate_end = gate_start + int(1.9/tscale)
+
+                cathode_start = int(p_afs_2l[i,1] + 5.4/tscale)
+                cathode_end = cathode_start + int(1.9/tscale)
+                try:
+                    gate_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,gate_start:gate_end])
+                    gate_height[i] = max(ch_data_phdPerSample[-1,i-j*block_size,gate_start:gate_end])
+                    cathode_area[i] = np.sum(ch_data_phdPerSample[-1,i-j*block_size,cathode_start:cathode_end])
+                    cathode_height[i] = max(ch_data_phdPerSample[-1,i-j*block_size,cathode_start:cathode_end])
+                except:
+                    pass
 
             # ==========================================================================================================================
             # Plotting code, resist the urge to use this for handscanning blobs
@@ -397,10 +418,11 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
 
                 fig = pl.figure()
                 ax = pl.gca()
-                #pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=0.3, label = "Summed All" )
-                for test in range(32):
-                    pl.plot(x*tscale, ch_data_phdPerSample[test,i-j*block_size,:],lw=0.7 )
-                #pl.plot(x[:-1]*tscale, np.diff(ch_data_phdPerSample[-1,i-j*block_size,:]),"blue", label="Derivative")
+                pl.plot(x*tscale, ch_data_phdPerSample[-1,i-j*block_size,:],color='black',lw=0.3, label = "Summed All" )
+                #for test in range(32):
+                #    pl.plot(x*tscale, ch_data_phdPerSample[test,i-j*block_size,:],lw=0.7 )
+                pl.axvspan(tscale*(gate_start),tscale*(gate_end),alpha=0.2,color="blue",zorder=0)
+                pl.axvspan(tscale*(cathode_start),tscale*(cathode_end),alpha=0.2,color="blue",zorder=0)
                 pl.xlabel(r"Time [$\mu$s]")
                 pl.ylabel("phd/sample")
                 pl.title("Event {}".format(i))
@@ -499,6 +521,10 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
     list_rq['p_area_window'] = p_area_window
     list_rq['p_area_window_ch'] = p_area_window_ch
     list_rq['spe_sizes'] = spe_sizes
+    list_rq['gate_area'] = gate_area
+    list_rq['gate_height'] = gate_height
+    list_rq['cathode_area'] = cathode_area
+    list_rq['cathode_height'] = cathode_height
     #list_rq[''] =    #add more rq
 
     #remove zeros in the end of each RQ array. 
@@ -507,9 +533,9 @@ def make_rq(data_dir, tag, handscan=False, max_pulses=4, filtered=True, save_avg
             list_rq[rq] = list_rq[rq][:n_events]
 
     if filtered:
-        save_name = f"/rq_v{tag}.npy"
+        save_name = f"/rq_echo_v{tag}.npy"
     else:
-        save_name = f"/rq_v{tag}.npy"
+        save_name = f"/rq_echo_v{tag}.npy"
     rq = open(data_dir + save_name,'wb')
     np.savez(rq, **list_rq)
     rq.close()
@@ -522,7 +548,7 @@ def main():
     data_dir = "/media/xaber/outSSD2/crystalize_data/data-202403/20240307/20240307-105650/"
     print(data_dir)
 
-    make_rq(data_dir, tag=1, dead=True, handscan=True)
+    find_echos(data_dir, tag=1, dead=True, handscan=True)
 
     return
 
