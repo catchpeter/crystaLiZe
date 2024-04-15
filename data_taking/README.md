@@ -17,7 +17,7 @@ For the CAEN V1730S multiboard setup, we use a modified version of multiboard wa
 3. (Optional) Run alert.py in the background such that you are alerted to detector changes.
 
 ### Important note
-To change dynamic range, you need to recompile the C wavedump code. Slack Ryan for now.
+To change dynamic range, you need to recompile the C wavedump code. See [here](https://docs.google.com/document/d/1PZcBzSNf7uQdnl2_TCMCjeTFrwEFF9t0pqfaSXodmwE/edit)
 
 ### Troubleshooting
-Slack Ryan (more documentation forthcoming)
+See [here](https://docs.google.com/document/d/1PZcBzSNf7uQdnl2_TCMCjeTFrwEFF9t0pqfaSXodmwE/edit), then slack Ryan.
