@@ -26,8 +26,14 @@ with open(filename2) as file:
 	csvFile = csv.reader(file)
 	for lines in csvFile: # ignores the first line
 		tmp=lines[0]
-	Wt = float(lines[0]) # latest read of top heater power (Watts)
-	Wb = float(lines[1]) # latest read of bot heater power (Watts)
+	Wt = float(lines[0]) # starting read of top heater power (Watts) -- does not get modified
+	Wb = float(lines[1]) # starting read of bot heater power (Watts) -- does not get modified
+
+dp = 0.005
+# 0.818 Bar triple point	
+# set point p
+spp = 0.800 # crystal triple phase setting
+# spp = 1.17 # liquid/vapor (note: approx stable with 2.15,2.15)
 
 #for i in range(1,2):
 while True:
@@ -37,38 +43,42 @@ while True:
 			for lines in csvFile:
 				PB = float(lines[7]) # latest read of pressure (Bar)
 
-		print ("pressure now %1.3f and heater powers: %1.3f W (top) %1.3f W (bot)" % (PB,Wt,Wb) )
+		with open(filename2) as file:
+			csvFile = csv.reader(file)
+			for lines in csvFile: # ignores the first line
+				tmp=lines[0]
+			Wtnow = float(lines[0]) # starting read of top heater power (Watts) -- does not get modified
+			Wbnow = float(lines[1]) # starting read of bot heater power (Watts) -- does not get modified
 
-		# 0.818 Bar triple point	
-		# set point p
-		spp = 0.84 # crystal triple phase setting
-		spp = 1.17 # liquid/vapor (note: approx stable with 2.15,2.15)
-		if ( (PB<=(spp+0.01)) and (PB>=(spp-0.01)) ): # do nothing
+		print ("baseline goal p=%1.3f with Wt=%1.3f and Wb=%1.3f" % (spp,Wt,Wb))
+		print (".......... latest: p=%1.3f and heater powers: %1.3f W (top) %1.3f W (bot)" % (PB,Wtnow,Wbnow) )
+
+		if ( (PB<=(spp+dp)) and (PB>=(spp-dp)) ): # do nothing
 			print("P=%1.3f Bar - in range!" % PB)
 			wriiit(Wt,Wb)							
 
-		if (PB>(spp+0.01)):
+		if (PB>(spp+dp)):
 			print("P=%1.3f Bar - above range!" % PB)
 			wriiit(Wt,Wb*0.9)							
-			if (PB>(spp+0.02)):
+			if (PB>(spp+2*dp)):
 				wriiit(Wt,Wb*0.8)
-				if (PB>(spp+0.03)):
+				if (PB>(spp+3*dp)):
 					wriiit(Wt,Wb*0.7)
-					if (PB>(spp+0.04)):
+					if (PB>(spp+4*dp)):
 						wriiit(Wt,Wb*0.6)
-						if (PB>(spp+0.05)):
+						if (PB>(spp+5*dp)):
 							wriiit(Wt,Wb*0.5)
 
-		if (PB<(spp-0.01)):
+		if (PB<(spp-dp)):
 			print("P=%1.3f Bar - below range!" % PB)
 			wriiit(Wt,Wb*1.1)
-			if (PB<(spp-0.02)):
+			if (PB<(spp-2*dp)):
 				wriiit(Wt,Wb*1.2)
-				if (PB<(spp-0.03)):
+				if (PB<(spp-3*dp)):
 					wriiit(Wt,Wb*1.3)
-					if (PB<(spp-0.04)):
+					if (PB<(spp-4*dp)):
 						wriiit(Wt,Wb*1.4)
-						if (PB<(spp-0.05)):
+						if (PB<(spp-5*dp)):
 							wriiit(Wt,Wb*1.5)
 		time.sleep(5)
 		

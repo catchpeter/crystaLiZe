@@ -115,17 +115,17 @@ def record_values():
             top_heater_power = float(powers[0])
             bottom_heater_power = float(powers[1])
 
-            # Change heaters settings
-            if abs(top_heater_power-current_top_power)>0.005:
-                print("the current top heater power is {:.2f}W, will change to {:.2f}W".format(current_top_power, top_heater_power))
-                top_heater_v = np.sqrt(25.*top_heater_power)
-                (v_top_now, i_top_now) = sf.change_heater(heater_usb_n, 1, top_heater_v)
-                current_top_power = top_heater_power
-            if abs(bottom_heater_power-current_bottom_power)>0.005:
-                print("the current bottome heater power is {:.2f}W, will change to {:.2f}W".format(current_bottom_power, bottom_heater_power))
-                bot_heater_v = np.sqrt(25.*bottom_heater_power)
-                (v_bottom_now, i_bottom_now) = sf.change_heater(heater_usb_n, 2, bot_heater_v)
-                current_bottom_power= bottom_heater_power
+#             # Change heaters settings
+#             if abs(top_heater_power-current_top_power)>0.005:
+#                 print("the current top heater power is {:.2f}W, will change to {:.2f}W".format(current_top_power, top_heater_power))
+#                 top_heater_v = np.sqrt(25.*top_heater_power)
+#                 (v_top_now, i_top_now) = sf.change_heater(heater_usb_n, 1, top_heater_v)
+#                 current_top_power = top_heater_power
+#             if abs(bottom_heater_power-current_bottom_power)>0.005:
+#                 print("the current bottome heater power is {:.2f}W, will change to {:.2f}W".format(current_bottom_power, bottom_heater_power))
+#                 bot_heater_v = np.sqrt(25.*bottom_heater_power)
+#                 (v_bottom_now, i_bottom_now) = sf.change_heater(heater_usb_n, 2, bot_heater_v)
+#                 current_bottom_power= bottom_heater_power
         except:
             print("error in reading/writing")
 
