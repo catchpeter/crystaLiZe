@@ -3,6 +3,7 @@
 # 2023-12-08 pfs add new cases since pressure is rising beyond where we want to keep it
 # 2023-12-10 pfs further tuning on acceptable pressure range
 # 2024-03-06 pfs/rmg updating for new MeasurementComputing ADC and new slowcontrol box (xena)
+# 2024-04-22 sx optimize heater control algorithm
 
 import sys
 import os
