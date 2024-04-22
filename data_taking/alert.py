@@ -6,8 +6,8 @@ from read_temp import read_temp
 from read_hv import read_cathode, read_gate
 
 interval = 1800 #how often to check, in seconds
-pressure_lower_limit = 1 #bar
-pressure_higher_limit = 1.9 #bar
+pressure_lower_limit = 0.8 #bar
+pressure_higher_limit = 0.81 #bar
 bottom_temperature_lower_limit = -999999 #-123 #C
 bottom_temperature_higher_limit = 999999 #-113 #C
 average_window = 5
