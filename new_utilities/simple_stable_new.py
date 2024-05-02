@@ -30,10 +30,11 @@ with open(filename2) as file:
 	Wt = float(lines[0]) # starting read of top heater power (Watts) -- does not get modified
 	Wb = float(lines[1]) # starting read of bot heater power (Watts) -- does not get modified
 
+scale=2
 dp = 0.005
 # 0.818 Bar triple point	
 # set point p
-spp = 0.815 # crystal triple phase setting
+spp = 0.81 # crystal triple phase setting
 # spp = 1.17 # liquid/vapor (note: approx stable with 2.15,2.15)
 
 #for i in range(1,2):
@@ -62,62 +63,62 @@ while True:
 				print ("same setting as previous step")				
 		elif (PB>(spp+5*dp)):
 			print("P=%1.3f Bar - above range!" % PB)
-			if abs(Wb*0.5-Wbnow)>0.01:
-				wriiit(Wt,Wb*0.5)
+			if abs(Wb*0.3-Wbnow)>0.01:
+				wriiit(Wt,Wb*0.3)
 			else:
 				print ("same setting as previous step")				
 		elif (PB>(spp+4*dp)):
 			print("P=%1.3f Bar - above range!" % PB)
-			if abs(Wb*0.6-Wbnow)>0.01:	
-				wriiit(Wt,Wb*0.6)
+			if abs(Wb*0.4-Wbnow)>0.01:	
+				wriiit(Wt,Wb*0.4)
 			else:
 				print ("same setting as previous step")				
 		elif (PB>(spp+3*dp)):
 			print("P=%1.3f Bar - above range!" % PB)
-			if abs(Wb*0.7-Wbnow)>0.01:	
-				wriiit(Wt,Wb*0.7)
+			if abs(Wb*0.5-Wbnow)>0.01:	
+				wriiit(Wt,Wb*0.5)
 			else:
 				print ("same setting as previous step")				
 		elif (PB>(spp+2*dp)):
 			print("P=%1.3f Bar - above range!" % PB)
-			if abs(Wb*0.8-Wbnow)>0.01:	
-				wriiit(Wt,Wb*0.8)
+			if abs(Wb*(1-scale*0.2)-Wbnow)>0.01:	
+				wriiit(Wt,Wb*(1-scale*0.2))
 			else:
 				print ("same setting as previous step")				
 		elif (PB>(spp+dp)):
 			print("P=%1.3f Bar - above range!" % PB)
-			if abs(Wb*0.9-Wbnow)>0.01:	
-				wriiit(Wt,Wb*0.9)							
+			if abs(Wb*(1-scale*0.1)-Wbnow)>0.01:	
+				wriiit(Wt,Wb*(1-scale*0.1))							
 			else:
 				print ("same setting as previous step")				
 		elif (PB<(spp-5*dp)):
 			print("P=%1.3f Bar - below range!" % PB)
-			if abs(Wb*1.5-Wbnow)>0.01:	
-				wriiit(Wt,Wb*1.5)	
+			if abs(Wb*1.8-Wbnow)>0.01:	
+				wriiit(Wt*1.5,Wb*1.8)	
 			else:
 				print ("same setting as previous step")				
 		elif (PB<(spp-4*dp)):
 			print("P=%1.3f Bar - below range!" % PB)
-			if abs(Wb*1.4-Wbnow)>0.01:	
-				wriiit(Wt,Wb*1.4)
+			if abs(Wb*1.7-Wbnow)>0.01:	
+				wriiit(Wt*1.4,Wb*1.7)
 			else:
 				print ("same setting as previous step")				
 		elif (PB<(spp-3*dp)):
 			print("P=%1.3f Bar - below range!" % PB)
-			if abs(Wb*1.3-Wbnow)>0.01:	
-				wriiit(Wt,Wb*1.3)
+			if abs(Wb*(1+scale*0.3)-Wbnow)>0.01:	
+				wriiit(Wt*1.3,Wb*(1+scale*0.3))
 			else:
 				print ("same setting as previous step")				
 		elif (PB<(spp-2*dp)):
 			print("P=%1.3f Bar - below range!" % PB)
-			if abs(Wb*1.2-Wbnow)>0.01:	
-				wriiit(Wt,Wb*1.2)
+			if abs(Wb*(1+scale*0.2)-Wbnow)>0.01:	
+				wriiit(Wt*1.2,Wb*(1+scale*0.2))
 			else:
 				print ("same setting as previous step")				
 		elif (PB<(spp-dp)):
 			print("P=%1.3f Bar - below range!" % PB)
-			if abs(Wb*1.1-Wbnow)>0.01:	
-				wriiit(Wt,Wb*1.1)
+			if abs(Wb*(1+scale*0.1)-Wbnow)>0.01:	
+				wriiit(Wt,Wb*(1+scale*0.1))
 			else:
 				print ("same setting as previous step")				
 		time.sleep(5)
