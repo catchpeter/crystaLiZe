@@ -92,19 +92,20 @@ def record_values():
         tc5 = t_p_arr[1]
         tc6 = t_p_arr[2]
         tc7 = t_p_arr[3]
-        pb = t_p_arr[4]
+        tc8 = t_p_arr[4]
+        pb = t_p_arr[5]
         pow_top = v1*i1
         pow_bot = v2*i2
-        save_list = (ymd_str, hms_str, elapsed_time, tc4, tc5, tc6, tc7, pb, pow_top, pow_bot)
+        save_list = (ymd_str, hms_str, elapsed_time, tc4, tc5, tc6, tc7, tc8,pb, pow_top, pow_bot)
 
-        print ("%s : T4=%3.3f C, T5=%3.3f C, T6=%3.3f C, T7=%3.3f C, P=%1.3f Bar, iteration=%d" % (timestr,tc4,tc5,tc6,tc7,pb,i))
+        print ("%s : T4=%3.3f C, T5=%3.3f C, T6=%3.3f C, T7=%3.3f C, T8=%3.3f, P=%1.3f Bar, iteration=%d" % (timestr,tc4,tc5,tc6,tc7,tc8,pb,i))
         
         # Save values 
         with open(("/home/xaber/ttlogs/%s.csv" % fstr),"a+") as fid:
-            fid.write("%s,%s,%f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f\n" % save_list)
+            fid.write("%s,%s,%f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f\n" % save_list)
         # Also save to tmp file for remote read out
         with open("/home/xaber/ttlogs/current.csv", "w") as ftemp:
-            ftemp.write("%s,%s,%f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f\n" % save_list)
+            ftemp.write("%s,%s,%f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f,%3.3f\n" % save_list)
 
         # Read heaters settings
         try:
@@ -115,7 +116,6 @@ def record_values():
             top_heater_power = float(powers[0])
             bottom_heater_power = float(powers[1])
 
-<<<<<<< HEAD
              # Change heaters settings
             if abs(top_heater_power-current_top_power)>0.005:
                  print("the current top heater power is {:.2f}W, will change to {:.2f}W".format(current_top_power, top_heater_power))
@@ -127,19 +127,6 @@ def record_values():
                  bot_heater_v = np.sqrt(25.*bottom_heater_power)
                  (v_bottom_now, i_bottom_now) = sf.change_heater(heater_usb_n, 2, bot_heater_v)
                  current_bottom_power= bottom_heater_power
-=======
-#             # Change heaters settings
-#             if abs(top_heater_power-current_top_power)>0.005:
-#                 print("the current top heater power is {:.2f}W, will change to {:.2f}W".format(current_top_power, top_heater_power))
-#                 top_heater_v = np.sqrt(25.*top_heater_power)
-#                 (v_top_now, i_top_now) = sf.change_heater(heater_usb_n, 1, top_heater_v)
-#                 current_top_power = top_heater_power
-#             if abs(bottom_heater_power-current_bottom_power)>0.005:
-#                 print("the current bottome heater power is {:.2f}W, will change to {:.2f}W".format(current_bottom_power, bottom_heater_power))
-#                 bot_heater_v = np.sqrt(25.*bottom_heater_power)
-#                 (v_bottom_now, i_bottom_now) = sf.change_heater(heater_usb_n, 2, bot_heater_v)
-#                 current_bottom_power= bottom_heater_power
->>>>>>> 37ddaf8a6c9bdfacb7a9b1acf05174c6e9299b9e
         except:
             print("error in reading/writing")
 

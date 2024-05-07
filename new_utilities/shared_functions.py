@@ -48,9 +48,9 @@ def read_t_p(verbose=False):
     tc5 = raw_data[5]*30 - 149.3
     tc6 = raw_data[6]*30 - 149.3
     tc7 = raw_data[7]*30 - 149.3
+    tc8 = raw_data[4]*10
     pb = raw_data[1]*1.760
-    all_values = np.round(np.array([tc4,tc5,tc6,tc7,pb]),3)
-    
+    all_values = np.round(np.array([tc4,tc5,tc6,tc7,tc8,pb]),3)
     if verbose:
         print(all_values)
     
