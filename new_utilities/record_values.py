@@ -88,17 +88,17 @@ def record_values():
         ymd_str = time.strftime("%Y%m%d",time.localtime())
         hms_str = time.strftime("%H%M%S",time.localtime())
         elapsed_time = time.time()-start_sec
-        tc4 = t_p_arr[0]
+        tc0 = t_p_arr[0]
         tc5 = t_p_arr[1]
         tc6 = t_p_arr[2]
         tc7 = t_p_arr[3]
-        tc8 = t_p_arr[4]
+        tc4 = t_p_arr[4]
         pb = t_p_arr[5]
         pow_top = v1*i1
         pow_bot = v2*i2
-        save_list = (ymd_str, hms_str, elapsed_time, tc4, tc5, tc6, tc7, tc8,pb, pow_top, pow_bot)
+        save_list = (ymd_str, hms_str, elapsed_time, tc0, tc5, tc6, tc7, tc4,pb, pow_top, pow_bot)
 
-        print ("%s : T4=%3.3f C, T5=%3.3f C, T6=%3.3f C, T7=%3.3f C, T8=%3.3f, P=%1.3f Bar, iteration=%d" % (timestr,tc4,tc5,tc6,tc7,tc8,pb,i))
+        print ("%s : T0=%3.3f C, T5=%3.3f C, T6=%3.3f C, T7=%3.3f C, T4=%3.3f, P=%1.3f Bar, iteration=%d" % (timestr,tc0,tc5,tc6,tc7,tc4,pb,i))
         
         # Save values 
         with open(("/home/xaber/ttlogs/%s.csv" % fstr),"a+") as fid:

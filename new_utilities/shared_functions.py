@@ -44,13 +44,13 @@ def read_t_p(verbose=False):
 
     # Convert to actual values
     # Conversions and variables are legacy from James (idk who that even is)
-    tc4 = raw_data[0]*30 - 149.3
-    tc5 = raw_data[5]*30 - 149.3
-    tc6 = raw_data[6]*30 - 149.3
-    tc7 = raw_data[7]*30 - 149.3
-    tc8 = raw_data[4]*10
-    pb = raw_data[1]*1.760
-    all_values = np.round(np.array([tc4,tc5,tc6,tc7,tc8,pb]),3)
+    tc0 = raw_data[0]*30 - 149.3 #ICV top
+    tc5 = raw_data[5]*30 - 149.3 #copper rod
+    tc6 = raw_data[6]*30 - 149.3 #ICV bottom
+    tc7 = raw_data[7]*30 - 149.3 # HV cable
+    tc4 = raw_data[4]*10 # room temp
+    pb = raw_data[1]*1.760 # pressure
+    all_values = np.round(np.array([tc0,tc5,tc6,tc7,tc4,pb]),3)
     if verbose:
         print(all_values)
     
