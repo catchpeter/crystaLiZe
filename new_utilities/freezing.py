@@ -54,7 +54,7 @@ def freezing(top_heater_start):
         with open(current_csv) as f:
             csvFile = csv.reader(f)
             for lines in csvFile:
-                PB = float(lines[7]) # latest read of pressure (Bar)
+                PB = float(lines[8]) # latest read of pressure (Bar)
         if PB < 0.78:
             print("Freezing has concluded! Exiting")
             write_heater_file(heater_file, top_heater_end, bot_heater_end)
