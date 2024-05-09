@@ -43,7 +43,7 @@ while True:
 		with open(filename1) as file:
 			csvFile = csv.reader(file)
 			for lines in csvFile:
-				PB = float(lines[7]) # latest read of pressure (Bar)
+				PB = float(lines[8]) # latest read of pressure (Bar)
 
 		with open(filename2) as file:
 			csvFile = csv.reader(file)
