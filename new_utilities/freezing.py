@@ -38,7 +38,7 @@ def freezing(top_heater_start):
 
     print("Starting to freeze")
 
-    dt = 3600 # time interval for lowering heater
+    dt = 2*3600 # time interval for lowering heater
     dPdt = 0.01 # change in heater power every time interval
     top_heater_low = 1 # lower limit on heater power
     heater_file = "/home/xaber/crystaLiZe/new_utilities/heaters_setting.txt"
@@ -54,7 +54,7 @@ def freezing(top_heater_start):
         with open(current_csv) as f:
             csvFile = csv.reader(f)
             for lines in csvFile:
-                PB = float(lines[7]) # latest read of pressure (Bar)
+                PB = float(lines[8]) # latest read of pressure (Bar)
         if PB < 0.78:
             print("Freezing has concluded! Exiting")
             write_heater_file(heater_file, top_heater_end, bot_heater_end)
@@ -92,7 +92,7 @@ def freezing(top_heater_start):
 
 def main():
 
-    top_heater_start = 3.5
+    top_heater_start = 3.7
     freezing(top_heater_start)
 
     return

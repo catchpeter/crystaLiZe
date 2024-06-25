@@ -3,6 +3,7 @@
 # 2023-12-08 pfs add new cases since pressure is rising beyond where we want to keep it
 # 2023-12-10 pfs further tuning on acceptable pressure range
 # 2024-03-06 pfs/rmg updating for new MeasurementComputing ADC and new slowcontrol box (xena)
+# 2024-04-22 sx optimize heater control algorithm
 
 import sys
 import os
@@ -29,10 +30,11 @@ with open(filename2) as file:
 	Wt = float(lines[0]) # starting read of top heater power (Watts) -- does not get modified
 	Wb = float(lines[1]) # starting read of bot heater power (Watts) -- does not get modified
 
+scale=2
 dp = 0.005
 # 0.818 Bar triple point	
 # set point p
-spp = 0.800 # crystal triple phase setting
+spp = 0.81 # crystal triple phase setting
 # spp = 1.17 # liquid/vapor (note: approx stable with 2.15,2.15)
 
 #for i in range(1,2):
@@ -41,7 +43,7 @@ while True:
 		with open(filename1) as file:
 			csvFile = csv.reader(file)
 			for lines in csvFile:
-				PB = float(lines[7]) # latest read of pressure (Bar)
+				PB = float(lines[8]) # latest read of pressure (Bar)
 
 		with open(filename2) as file:
 			csvFile = csv.reader(file)
@@ -55,31 +57,70 @@ while True:
 
 		if ( (PB<=(spp+dp)) and (PB>=(spp-dp)) ): # do nothing
 			print("P=%1.3f Bar - in range!" % PB)
-			wriiit(Wt,Wb)							
-
-		if (PB>(spp+dp)):
+			if abs(Wb-Wbnow)>0.01:
+				wriiit(Wt,Wb)			
+			else:
+				print ("same setting as previous step")				
+		elif (PB>(spp+5*dp)):
 			print("P=%1.3f Bar - above range!" % PB)
-			wriiit(Wt,Wb*0.9)							
-			if (PB>(spp+2*dp)):
-				wriiit(Wt,Wb*0.8)
-				if (PB>(spp+3*dp)):
-					wriiit(Wt,Wb*0.7)
-					if (PB>(spp+4*dp)):
-						wriiit(Wt,Wb*0.6)
-						if (PB>(spp+5*dp)):
-							wriiit(Wt,Wb*0.5)
-
-		if (PB<(spp-dp)):
+			if abs(Wb*0.3-Wbnow)>0.01:
+				wriiit(Wt,Wb*0.3)
+			else:
+				print ("same setting as previous step")				
+		elif (PB>(spp+4*dp)):
+			print("P=%1.3f Bar - above range!" % PB)
+			if abs(Wb*0.4-Wbnow)>0.01:	
+				wriiit(Wt,Wb*0.4)
+			else:
+				print ("same setting as previous step")				
+		elif (PB>(spp+3*dp)):
+			print("P=%1.3f Bar - above range!" % PB)
+			if abs(Wb*0.5-Wbnow)>0.01:	
+				wriiit(Wt,Wb*0.5)
+			else:
+				print ("same setting as previous step")				
+		elif (PB>(spp+2*dp)):
+			print("P=%1.3f Bar - above range!" % PB)
+			if abs(Wb*(1-scale*0.2)-Wbnow)>0.01:	
+				wriiit(Wt,Wb*(1-scale*0.2))
+			else:
+				print ("same setting as previous step")				
+		elif (PB>(spp+dp)):
+			print("P=%1.3f Bar - above range!" % PB)
+			if abs(Wb*(1-scale*0.1)-Wbnow)>0.01:	
+				wriiit(Wt,Wb*(1-scale*0.1))							
+			else:
+				print ("same setting as previous step")				
+		elif (PB<(spp-5*dp)):
 			print("P=%1.3f Bar - below range!" % PB)
-			wriiit(Wt,Wb*1.1)
-			if (PB<(spp-2*dp)):
-				wriiit(Wt,Wb*1.2)
-				if (PB<(spp-3*dp)):
-					wriiit(Wt,Wb*1.3)
-					if (PB<(spp-4*dp)):
-						wriiit(Wt,Wb*1.4)
-						if (PB<(spp-5*dp)):
-							wriiit(Wt,Wb*1.5)
+			if abs(Wb*1.8-Wbnow)>0.01:	
+				wriiit(Wt*1.5,Wb*1.8)	
+			else:
+				print ("same setting as previous step")				
+		elif (PB<(spp-4*dp)):
+			print("P=%1.3f Bar - below range!" % PB)
+			if abs(Wb*1.7-Wbnow)>0.01:	
+				wriiit(Wt*1.4,Wb*1.7)
+			else:
+				print ("same setting as previous step")				
+		elif (PB<(spp-3*dp)):
+			print("P=%1.3f Bar - below range!" % PB)
+			if abs(Wb*(1+scale*0.3)-Wbnow)>0.01:	
+				wriiit(Wt*1.3,Wb*(1+scale*0.3))
+			else:
+				print ("same setting as previous step")				
+		elif (PB<(spp-2*dp)):
+			print("P=%1.3f Bar - below range!" % PB)
+			if abs(Wb*(1+scale*0.2)-Wbnow)>0.01:	
+				wriiit(Wt*1.2,Wb*(1+scale*0.2))
+			else:
+				print ("same setting as previous step")				
+		elif (PB<(spp-dp)):
+			print("P=%1.3f Bar - below range!" % PB)
+			if abs(Wb*(1+scale*0.1)-Wbnow)>0.01:	
+				wriiit(Wt,Wb*(1+scale*0.1))
+			else:
+				print ("same setting as previous step")				
 		time.sleep(5)
 		
 	except KeyboardInterrupt: # does not work...
