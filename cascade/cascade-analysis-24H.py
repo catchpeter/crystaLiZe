@@ -148,7 +148,7 @@ if 1: # 24H  LED 235 nm
 # 	data_dir = '/Users/peter/Public/data/20240612-173658/' # 133Ba+LED0.5us cascade	
 
 	aht = 900 # need to lower aht so as not to pick up false SE
-	data_dir = '/Users/peter/Public/data/20240613-155550/' # LED0.5 cascade		
+# 	data_dir = '/Users/peter/Public/data/20240613-155550/' # LED0.5 cascade		
 
 #	data_dir = '/Users/peter/Public/data/20240614-154900/' # LED0.5 cascade	lower V	
 #	data_dir = '/Users/peter/Public/data/20240614-155007/' # LED0.5 cascade	lower V	
