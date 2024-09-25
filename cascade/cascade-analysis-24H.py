@@ -121,7 +121,7 @@ def boxcarGen(y1s,y2s,y3s):
 bxt = 0.4 # boxcar height threshold for SE-finder
 aht = 1000 # ad-hoc threshold, above which the waveform is too messy to try to find SE
 
-if 1: # 24B
+if 0: # 24B
 #	seht = 1.8 # threshold for y3s SE-finding
 	data_dir = '/Users/peter/Public/data/20240314-190415/' # first good cascade data, 0.5,1.0,5.0 ms
 if 0: # 24C
@@ -131,9 +131,9 @@ if 0: # 24D
 #	seht = 1.8
 	data_dir = '/Users/peter/Public/data/20240411-103253/' # after 100C bake overnight 0.5,1.0,5.0 ms
 
-if 0: # 24G  LED 490 nm
+if 1: # 24G  LED 490 nm
 #	seht = 1.3 # threshold for y3s SE-finding
-	data_dir = '/Users/peter/Public/data/20240604-163805/' # regular cascade, S1 trigger attempt
+#	data_dir = '/Users/peter/Public/data/20240604-163805/' # regular cascade, S1 trigger attempt
 
 	data_dir = '/Users/peter/Public/data/20240604-181209/' # regular cascade, S1 trigger attempt
 #	data_dir = '/Users/peter/Public/data/20240604-192140/' # regular cascade, S1 trigger attempt
@@ -142,18 +142,29 @@ if 0: # 24G  LED 490 nm
 # 	data_dir = '/Users/peter/Public/data/20240604-222237/' # regular cascade, S1 trigger attempt
 # 	data_dir = '/Users/peter/Public/data/20240604-232256/' # regular cascade, S1 trigger attempt
 
-if 1: # 24H  LED 235 nm
+if 0: # 24H  LED 235 nm
 #	seht = 1.3 # threshold for y3s SE-finding
 	data_dir = '/Users/peter/Public/data/20240611-173543/' # 133Ba cascade		
 # 	data_dir = '/Users/peter/Public/data/20240612-173658/' # 133Ba+LED0.5us cascade	
 
 	aht = 900 # need to lower aht so as not to pick up false SE
-# 	data_dir = '/Users/peter/Public/data/20240613-155550/' # LED0.5 cascade		
+	data_dir = '/Users/peter/Public/data/20240613-155550/' # LED0.5 cascade		
 
 #	data_dir = '/Users/peter/Public/data/20240614-154900/' # LED0.5 cascade	lower V	
 #	data_dir = '/Users/peter/Public/data/20240614-155007/' # LED0.5 cascade	lower V	
 
-
+if 1: # 24L # S1 from BG but similar trigger to 24G
+# 	data_dir = '/Users/peter/Public/data/20240917-154415/' 
+# 	data_dir = '/Users/peter/Public/data/20240917-193113/' 
+# 	data_dir = '/Users/peter/Public/data/20240917-203328/' 
+# 	data_dir = '/Users/peter/Public/data/20240918-065259/' 
+# 	data_dir = '/Users/peter/Public/data/20240918-090427/' 
+# 	data_dir = '/Users/peter/Public/data/20240918-100716/' 
+# 
+# got the pressure stable:
+	data_dir = '/Users/peter/Public/data/20240919-072902/' 
+# 	data_dir = '/Users/peter/Public/data/20240919-082943/' 
+# 	data_dir = '/Users/peter/Public/data/20240919-093025/' 
 
 spe_dir = "/Users/peter/Dropbox/GitHub/crystaLiZe/cascade/50V_3-6-2024.txt"
 
@@ -360,18 +371,23 @@ for compressed_file in compressed_file_list:
 			aa[i,n+1] = np.sum(y1z[i,y1z[i,:]>s8]) * 2 / spe_sizes[i] # factor x2 for 2 ns samples
 			aa[i,n+2] = np.sum(y2z[i,y2z[i,:]>s8]) * 2 / spe_sizes[i] # factor x2 for 2 ns samples
 			aa[i,n+3] = np.sum(y3z[i,y3z[i,:]>s8]) * 2 / spe_sizes[i] # factor x2 for 2 ns samples
-			
-			s1[i,n+0] = np.sum(y0z[:,i_s1:i_s1+i_w]) * 2 / spe_sizes[i] # rough, but should be close
+				
+# 			s1[i,n+0] = np.sum(y0z[:,i_s1:i_s1+i_w]) * 2 / spe_sizes[i] # rough, but should be close
 			if i_s2>(i_ee+i_w) and i_s1<(i_ee-i_w):
 				ee[i,n+0] = np.sum(y0z[i,i_ee-i_w:i_ee+i_w]) * 2 / spe_sizes[i] # maybe SE in S1 echo
+
+			# UPDATE Sept 2024 also sum the top channels. this means the plot script needs to be checked...
+			aa[i,n+0] = np.sum(y0z[i,10000:24999]) * 2 / spe_sizes[i] 
+			s1[i,n+0] = np.sum(y0z[i,0:10000]) * 2 / spe_sizes[i] 
 
 # 			ss[int(ss.shape[0]/2):,n+0] = y0spe[int(ss.shape[0]/2):] # save last half of initial trigger
 # 			ss[:,n+1] = y1spe # save summed 1st cascade trigger
 # 			ss[:,n+2] = y2spe # save summed 1st cascade trigger
 # 			ss[:,n+3] = y3spe # save summed 1st cascade trigger
 			
-		for i in range(16,32): # integrate bottom channels only, for first 20 us
- 			aa[i,n+0] = np.sum(y0z[i,0:10000]) * 2 / spe_sizes[i] # rough, but should be close
+# 		for i in range(16,32): # integrate bottom channels only, for first 20 us
+# 		for i in range(0,32): # integrate bottom channels only, for first 20 us
+#  			aa[i,n+0] = np.sum(y0z[i,0:10000]) * 2 / spe_sizes[i] # rough, but should be close
  		
 # 		s2cf[n+0] = np.sum(np.sum(y0z[np.array([2,7,8,13]),i_s2:i_s2+1000],axis=1)) / np.sum(np.sum(y0z[0:16,i_s2:i_s2+1000],axis=1)) # approx S2 center fraction
 # 		s2cf[n+0] = np.argmax(np.sum(y0z[0:16,i_s2:i_s2+1000],axis=1))
@@ -449,7 +465,7 @@ for compressed_file in compressed_file_list:
 		print("s2 radial = %1.2f"%s2cf[n+0])	
 		print("cascade sums:%1.0f,%1.0f,%1.0f,%1.0f"%(np.sum(aa[:,n+0],axis=0),np.sum(aa[:,n+1],axis=0),np.sum(aa[:,n+2],axis=0),np.sum(aa[:,n+3],axis=0) ))
 
-		if 1:#(np.sum(aa[:,n+0],axis=0)<1.5e5): #& ((eec[n+1]>0)|(eec[n+2]>0)):
+		if 1: # plotzzz 			#(np.sum(aa[:,n+0],axis=0)<1.5e5): #& ((eec[n+1]>0)|(eec[n+2]>0)):
 			# re-gen for plotting
 			(boxcar1n,boxcar2n,boxcar3n) = boxcarGen(y1s,y2s,y3s)
 

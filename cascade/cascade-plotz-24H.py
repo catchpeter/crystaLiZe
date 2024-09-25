@@ -15,14 +15,19 @@ data_dir = '/Users/peter/Public/data/20240314-190415/' # first good cascade data
 #data_dir = '/Users/peter/Public/data/20240411-103253/' # after 100C bake overnight 0.5,1.0,5.0 ms
 
 # 24G
-#data_dir = '/Users/peter/Public/data/20240604-163805/' # regular cascade
-#data_dir = '/Users/peter/Public/data/20240604-181209/' # regular cascade, S1 trigger attempt
+data_dir = '/Users/peter/Public/data/20240604-163805/' # regular cascade
+data_dir = '/Users/peter/Public/data/20240604-181209/' # regular cascade, S1 trigger attempt
 
 # 24H
-data_dir = '/Users/peter/Public/data/20240611-173543/' # 133Ba cascade
+#data_dir = '/Users/peter/Public/data/20240611-173543/' # 133Ba cascade
 #data_dir = '/Users/peter/Public/data/20240611-180620/' # 133Ba cascade
 #data_dir = '/Users/peter/Public/data/20240612-173658/' # 133Ba+LED0.5us cascade	
-data_dir = '/Users/peter/Public/data/20240613-155550/' # LED0.5us cascade	
+#data_dir = '/Users/peter/Public/data/20240613-155550/' # LED0.5us cascade	
+
+# 24L			S1 from BG but similar trigger to 24G
+data_dir = '/Users/peter/Public/data/20240917-154415/' # Vc = 0
+data_dir = '/Users/peter/Public/data/20240917-193113/' # Vc = 1 kV
+data_dir = '/Users/peter/Public/data/20240917-203328/' # Vc = 2 kV
 
 aa_file_list = glob.glob(data_dir+"./aa/*v1.npz")
 print('found %d files'%len(aa_file_list))
@@ -54,11 +59,29 @@ for aa_file in aa_file_list:
 asum = np.sum(aa,axis=0)
 ei = (asum.shape[0]-1) # end index
 ei = int(np.floor(ei/4)*4)
-a0 = ( asum[np.arange(0,ei,4)] )
-a1 = ( asum[np.arange(1,ei,4)] )
-a2 = ( asum[np.arange(2,ei,4)] )
-a3 = ( asum[np.arange(3,ei,4)] )
+
+if 1: # bottom channels
+	a0 = np.sum( aa[16:32,np.arange(0,ei,4)] ,axis=0 )
+	a1 = np.sum( aa[16:32,np.arange(1,ei,4)] ,axis=0 )
+	a2 = np.sum( aa[16:32,np.arange(2,ei,4)] ,axis=0 )
+	a3 = np.sum( aa[16:32,np.arange(3,ei,4)] ,axis=0 )
+if 0: # top channels
+	a0 = np.sum( aa[0:16,np.arange(0,ei,4)] ,axis=0 )
+	a1 = np.sum( aa[0:16,np.arange(1,ei,4)] ,axis=0 )
+	a2 = np.sum( aa[0:16,np.arange(2,ei,4)] ,axis=0 )
+	a3 = np.sum( aa[0:16,np.arange(3,ei,4)] ,axis=0 )
+if 1: # default
+	a0 = ( asum[np.arange(0,ei,4)] )
+	a1 = ( asum[np.arange(1,ei,4)] )
+	a2 = ( asum[np.arange(2,ei,4)] )
+	a3 = ( asum[np.arange(3,ei,4)] )
+
 s2cf = s2cf[np.arange(0,ei,4)]
+
+abot = np.sum(aa[16:32,np.arange(0,ei,4)],axis=0)
+atop = np.sum(aa[0:16,np.arange(0,ei,4)],axis=0)
+pl.figure(13);pl.clf();pl.plot((atop+abot),atop/abot,'k.')
+
 
 if 0: # orignial method
 	ee0 = np.sum(ee[:,np.arange(0,ei,4),:],axis=0)
@@ -87,8 +110,9 @@ else:
 	fit = 150/tt # photons
 
 if (data_dir[-12:-1]=='0604-181209'):
-	cut = (a0>100) & (a0<1e4)
-	fit = 2.5/tt # photons
+	cut = (a0>100) & (a0<1e4) # first pass, June 2024
+	cut = (a0>100) & (a0<8000) # revisit, Sept 2024, notice two alpha peaks, probably LC, does not appear to matter 	
+	cut = (a0>800) & (a0<12000) # revisit, Sept 2024, now have all channels in aa
 
 nz=np.nonzero(cut); nz = nz[0]
 N = np.sum(cut)
@@ -131,14 +155,22 @@ if (data_dir[-12:-1]=='0613-154900'):
 
 
 
+pl.figure(10);pl.clf();
 db=3
 beans = np.arange(0,100,db)
 beanc = (beans[1:]+beans[0:-1])/2
-pl.figure(10);pl.clf();
 [cts,beans] = np.histogram(np.concatenate([ee1[cut,:],ee2[cut,:],ee3[cut,:]]),beans); cts[0]=0
 pl.errorbar(beanc,cts,yerr=np.sqrt(cts),xerr=db/2,fmt='k.')
 se = 25
 #se = np.average(beanc,axis=0,weights=cts) # over-estimate
+
+pl.figure(11);pl.clf();
+db=200
+beans = np.arange(0,2.5e5,db)
+beanc = (beans[1:]+beans[0:-1])/2
+[cts,beans] = np.histogram(a0,beans); cts[0]=0
+pl.errorbar(beanc,cts,yerr=np.sqrt(cts),xerr=db/2,fmt='k.')
+se = 25
 
 ### aggregate the data
 dpt = np.array([0.01, 0.5, 1.0, 5.0]) # trigger cascade (set by hardware)
@@ -170,21 +202,25 @@ if 1:
 		pl.plot(tt,5*2e-4/tt,'--',linewidth=0.5,color='steelblue')#,label=(r'$t^{-1}$ ($\gamma$)'))
 	if (data_dir[-12:-1]=='0613-155550'):
 		pl.plot(tt,35*2e-4/tt,'--',linewidth=0.5,color='steelblue')#,label=(r'$t^{-1}$ ($\gamma$)'))
-		
+	if (data_dir[-12:-1]=='0604-181209'):
+		pl.plot(tt,1e-4*tt**-0.75,':')
+
+	pl.plot(tt,0.8e-4*tt**-0.99,':')		
 # 	pl.step(tt,fit,'-',linewidth=0.5,color='steelblue',label=(r'$1/t$ ($\gamma$)'))
 #	delayed_p_3ms = np.sum(fit[tt>3])*dtt/pbw
 #	print('delayed photons in 3-1000 ms window: %1.2f%% (%1.0f total)'% (delayed_p_3ms/(detp[0])*100,delayed_p_3ms) )
 
 	# electrons
-	pl.errorbar(dpt,dete/detp[0],yerr=np.sqrt(dete*N)/N/detp[0],fmt='o',color='darkorange',markersize=5,markerfacecolor='white',label=(r'electron signal'))
-	if (data_dir[-12:-1]=='0612-173658'):
-		pl.plot(tt,3*elbl/detp[0],'--',linewidth=0.5,color='darkorange')#,label=(r'$t^{-%1.1f}$ (e-)'%pwr))
-	if (data_dir[-12:-1]=='0613-155550'):
-		#pl.plot(tt,1/50*elbl/detp[0],'--',linewidth=0.5,color='darkorange')#,label=(r'$t^{-%1.1f}$ (e-)'%pwr))
-		print('skip curve plot for this dataset')
-	else:
-		pl.plot(tt,elbl/detp[0],'-',linewidth=0.5,color='darkorange',label=(r'$t^{-%1.1f}$ (e-)'%pwr))
-
+	if (data_dir[-12:-8] != '0917'): # S1o studies
+		pl.errorbar(dpt,dete/detp[0],yerr=np.sqrt(dete*N)/N/detp[0],fmt='o',color='darkorange',markersize=5,markerfacecolor='white',label=(r'electron signal'))
+		if (data_dir[-12:-1]=='0612-173658'):
+			pl.plot(tt,3*elbl/detp[0],'--',linewidth=0.5,color='darkorange')#,label=(r'$t^{-%1.1f}$ (e-)'%pwr))
+		if (data_dir[-12:-1]=='0613-155550'):
+			#pl.plot(tt,1/50*elbl/detp[0],'--',linewidth=0.5,color='darkorange')#,label=(r'$t^{-%1.1f}$ (e-)'%pwr))
+			print('skip curve plot for this dataset')
+		else:
+			pl.plot(tt,elbl/detp[0],'-',linewidth=0.5,color='darkorange',label=(r'$t^{-%1.1f}$ (e-)'%pwr))
+			
 # 	pl.step(tt,elbl,'-',linewidth=0.5,color='darkorange',label=(r'$1/t$ (e-)'))
 #	lbl_delayed_e_3ms = np.sum(elbl[tt>3])*dtt/pbw
 #	print('delayed electrons in 3-1000 ms window: %1.2f%% (%1.0f total)'% (lbl_delayed_e_3ms/dete[0]*100,lbl_delayed_e_3ms) )
