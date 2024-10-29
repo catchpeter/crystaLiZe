@@ -10,7 +10,7 @@ def read_pressure():
 	all_info = (out.decode(sys.stdout.encoding))
 	info_list = all_info.split(",")
 
-	return round(float(info_list[7]),2)
+	return round(float(info_list[8]),2)
 
 def main():
 	print("The pressure in the ICV is {}bar.".format(read_pressure()))
