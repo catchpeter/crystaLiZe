@@ -27,21 +27,24 @@ data_dir_high = "/home/xaber/Data/"
 #data_dir_high = "/media/xaber/gpeter/data/"
 
 # Run settings you need to input
-event_window_us = 100 #30 #20 #15 # us
-pre_trigger = 0.1 # Percentage of event window
-trigger_threshold_mV = 400 #10 # Per channel in mV
-run_time_s = 5*60 # sec
+event_window_us = 100 #15 #30 #20 #15 # us
+pre_trigger = 0.1 #0.5 # Percentage of event window
+trigger_threshold_mV = 5 #400 #10 # Per channel in mV
+run_time_s = 60*60 # sec
 
 # Run conditions you need to input
 phase = "liquid" 
-anode_v = 1000 # V
+anode_v = 0 # V
 sipm_bias = 50 # V
-source = "bkg" # NO COMMAS
-extra = "etrain test cascade 0p5 1 2 5ms" # NO COMMAS. any other info you want to include in dir
+pmt = True # is the PMT here?
+pmt_bias = 0 # V
+source = "rn flow" # NO COMMAS
+extra = "no grids full metal S1 trigger" #"elifetime"
+#extra = "cascade random led 6p0 V 0p5us window 0p5 1 5 ms" # NO COMMAS. any other info you want to include in dir
 
 # Run conditions that are automatically read
-cathode_v = read_cathode() # V
-gate_v = read_gate() # V
+cathode_v = 0 #read_cathode() # V
+gate_v = 0 #read_gate() # V
 icv_pressure = read_pressure() # bar
 icv_bot_temperature = read_temp() # deg C
 run_time_min = "{:n}".format(run_time_s/60)
@@ -70,7 +73,7 @@ baseline_data_dir = "/home/xaber/Data/temp/"
 
 
 
-def takeBaseData():
+def takeBaseData(pmt):
 
     """Takes short data set for baseline calibration
     """
@@ -78,7 +81,10 @@ def takeBaseData():
     print("===========\nStarted baseline data collection")
 
     os.chdir(baseline_data_dir)
-    os.system("wavedumpMB /home/xaber/Data/oneBaseConfig.txt 5 1 "+str(int(dynamic_range))+" >/dev/null 2>&1")
+    if pmt:
+        os.system("wavedumpMB /home/xaber/Data/oneBaseConfig_pmt.txt 5 1 "+str(int(dynamic_range))+" >/dev/null 2>&1")
+    else:
+        os.system("wavedumpMB /home/xaber/Data/oneBaseConfig.txt 5 1 "+str(int(dynamic_range))+" >/dev/null 2>&1")
 
     print("===========\nFinished baseline data collection")
     time.sleep(1)
@@ -87,15 +93,22 @@ def takeBaseData():
 
 
 
-def mkConfig():
+def mkConfig(pmt):
 
     """Calculates baseline, edits other config file settings
     """
 
     print("===========\nStarted writing config file")
 
-    n_boards = 3
-    n_sipms = [16,8,8]
+    if pmt:
+        n_boards = 2
+        n_sipms = [16,1]
+        cf_name = "/home/xaber/Data/config_normal_pmt.txt"
+    else:
+        n_boards = 3
+        n_sipms = [16,8,8]
+        cf_name = "/home/xaber/Data/config_normal.txt"
+
     wsize = 3000+8 # 8 = size of header
     load_dtype = "int16"
 
@@ -107,7 +120,6 @@ def mkConfig():
     trig_lines_all = np.concatenate((trig_lines_0,trig_lines_1,trig_lines_2), dtype=int)
 
     # Copy over previous file
-    cf_name = "/home/xaber/Data/config_normal.txt"
     prev = open(cf_name, "r")
     prev_lines = prev.readlines()
     prev.close()
@@ -164,7 +176,7 @@ def makeDataDir():
 
     # Get the day and time and format into string
     # There must be an easier way to do this...
-    # Update: wow I actually wrote this shitty code
+    # Update: wow I actually wrote this crappy code
     dt_now = datetime.datetime.now()
     year = str(dt_now.year)
     month = str(dt_now.month) if dt_now.month > 9 else "0"+str(dt_now.month)
@@ -213,6 +225,8 @@ def writeConditions(data_dir):
     fields.append(f"Gate voltage")
     fields.append(f"Anode voltage")
     fields.append(f"SiPM bias")
+    fields.append(f"PMT present")
+    fields.append(f"PMT bias")
 
     fields.append(f"ICV pressure bar")
     fields.append(f"ICV bottom temp deg C")
@@ -234,6 +248,8 @@ def writeConditions(data_dir):
     cond_list.append(f"{gate_v}")
     cond_list.append(f"{anode_v}")
     cond_list.append(f"{sipm_bias}")
+    cond_list.append(f"{pmt}")
+    cond_list.append(f"{pmt_bias}")
 
     cond_list.append(f"{icv_pressure}")
     cond_list.append(f"{icv_bot_temperature}")
@@ -253,7 +269,7 @@ def writeConditions(data_dir):
 
 
 
-def takeData(data_dir):
+def takeData(data_dir, pmt):
 
     """Take data
     """
@@ -262,7 +278,10 @@ def takeData(data_dir):
 
     os.chdir(data_dir)
 
-    dataCommand = "wavedumpMB /home/xaber/Data/config_normal.txt "+str(run_time_s)+" 0 "+str(dynamic_range) 
+    if pmt:
+        dataCommand = "wavedumpMB /home/xaber/Data/config_normal_pmt.txt "+str(run_time_s)+" 0 "+str(dynamic_range) 
+    else:
+        dataCommand = "wavedumpMB /home/xaber/Data/config_normal.txt "+str(run_time_s)+" 0 "+str(dynamic_range) 
     ret = os.system(dataCommand)
     if ret != 0:
         print("===========\nError in running wavedumb")
@@ -296,10 +315,10 @@ def main():
     # time.sleep(300)
 
     # Take baseline data
-    takeBaseData()
+    takeBaseData(pmt=pmt)
 
     # Change config file
-    mkConfig()
+    mkConfig(pmt=pmt)
 
     # Create data directory
     data_dir = makeDataDir()
@@ -309,7 +328,7 @@ def main():
     writeConditions(data_dir)
 
     # Take data
-    takeData(data_dir)
+    takeData(data_dir, pmt=pmt)
 
     # Create transfer flag file
     os.system("touch "+data_dir+"readyToTransfer")

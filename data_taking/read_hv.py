@@ -2,10 +2,11 @@ import numpy as np
 import subprocess
 import sys
 
+xena_ip = np.loadtxt("/home/xaber/Analysis/crystaLiZe/data_taking/xena_ip.txt",dtype=str)
 
 def read_cathode():
 
-    process = subprocess.Popen("ssh xaber@xena.dhcp.lbl.gov python3 ~/crystaLiZe/new_utilities/read_cathode.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
+    process = subprocess.Popen(f"ssh xaber@{xena_ip} python3 ~/crystaLiZe/new_utilities/read_cathode.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
     output,stderr = process.communicate()
 
     all_info = (output.decode(sys.stdout.encoding))
@@ -14,7 +15,7 @@ def read_cathode():
 
 def read_gate():
 
-    process = subprocess.Popen("ssh xaber@xena.dhcp.lbl.gov python3 ~/crystaLiZe/new_utilities/read_gate.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
+    process = subprocess.Popen(f"ssh xaber@{xena_ip} python3 ~/crystaLiZe/new_utilities/read_gate.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
     output,stderr = process.communicate()
 
     all_info = (output.decode(sys.stdout.encoding))
