@@ -164,13 +164,24 @@ if 1: # 24L # S1 from BG but similar trigger to 24G
 # 	data_dir = '/Users/peter/Public/data/20240918-090427/' 
 # 	data_dir = '/Users/peter/Public/data/20240918-100716/' 
 # 
-# got the pressure stable:
+# got the pressure stable, sweep electric field:
 	data_dir = '/Users/peter/Public/data/20240919-072902/' 
-	data_dir = '/Users/peter/Public/data/20240919-082943/' 
-	data_dir = '/Users/peter/Public/data/20240919-093025/' 
-	data_dir = '/Users/peter/Public/data/20240919-103105/' 
-	data_dir = '/Users/peter/Public/data/20240919-113144/' 
-	data_dir = '/Users/peter/Public/data/20240919-123224/' 
+# 	data_dir = '/Users/peter/Public/data/20240919-082943/' 
+# 	data_dir = '/Users/peter/Public/data/20240919-093025/' 
+# 	data_dir = '/Users/peter/Public/data/20240919-103105/' 
+# 	data_dir = '/Users/peter/Public/data/20240919-113144/' 
+# 	data_dir = '/Users/peter/Public/data/20240919-123224/' 
+# 	data_dir = '/Users/peter/Public/data/20240925-145336/' 
+
+# installed aluminum TPC, E=0
+# 	data_dir = '/Users/peter/Public/data/20241002-170523/' # usual liquid fill height ~77 SL
+# 	data_dir = '/Users/peter/Public/data/20241003-152154/' # overfill ~101 SL liquid above top SiPM array
+# aluminum TPC, E=0, removed stainless steel electrode meshes
+# 	data_dir = '/Users/peter/Public/data/20241009-132504/' # usual liquid fill height ~77 SL
+
+# aluminum TPC, E=0, removed stainless steel electrode meshes
+	data_dir = '/Users/peter/Public/data/20241007-130705/' # cold xenon gas
+
 
 spe_dir = "/Users/peter/Dropbox/GitHub/crystaLiZe/cascade/50V_3-6-2024.txt"
 
@@ -487,8 +498,9 @@ for compressed_file in compressed_file_list:
 	
 			pl.subplot(1,4,1)
 			pl.plot(t,y0s+1,'-',linewidth=0.5,color='grey')
-			for i in range(16,32):
+			for i in range(0,32):
 				pl.plot(t,y0z[i,:],'-',linewidth=0.5)
+				pl.plot(t[25000:],2+y0p5z[i,:],'-',linewidth=0.5)
 			
 			pl.plot(t[i_s1],1,'ko',markerfacecolor='None')
 			pl.plot(t[i_s2],1,'ko',markerfacecolor='None')

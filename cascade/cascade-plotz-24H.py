@@ -19,15 +19,15 @@ data_dir = '/Users/peter/Public/data/20240604-163805/' # regular cascade
 data_dir = '/Users/peter/Public/data/20240604-181209/' # regular cascade, S1 trigger attempt
 
 # 24H
-#data_dir = '/Users/peter/Public/data/20240611-173543/' # 133Ba cascade
+data_dir = '/Users/peter/Public/data/20240611-173543/' # 133Ba cascade
 #data_dir = '/Users/peter/Public/data/20240611-180620/' # 133Ba cascade
 #data_dir = '/Users/peter/Public/data/20240612-173658/' # 133Ba+LED0.5us cascade	
 #data_dir = '/Users/peter/Public/data/20240613-155550/' # LED0.5us cascade	
 
 # 24L			S1 from BG but similar trigger to 24G
-data_dir = '/Users/peter/Public/data/20240917-154415/' # Vc = 0
-data_dir = '/Users/peter/Public/data/20240917-193113/' # Vc = 1 kV
-data_dir = '/Users/peter/Public/data/20240917-203328/' # Vc = 2 kV
+#data_dir = '/Users/peter/Public/data/20240917-154415/' # Vc = 0
+#data_dir = '/Users/peter/Public/data/20240917-193113/' # Vc = 1 kV
+#data_dir = '/Users/peter/Public/data/20240917-203328/' # Vc = 2 kV
 
 aa_file_list = glob.glob(data_dir+"./aa/*v1.npz")
 print('found %d files'%len(aa_file_list))

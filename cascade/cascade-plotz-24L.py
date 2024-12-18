@@ -14,13 +14,18 @@ import glob
 # data_dir = '/Users/peter/Public/data/20240918-090427/' # Vc = 4 kV
 # data_dir = '/Users/peter/Public/data/20240918-100716/' # Vc = 5 kV
 
-data_folders = np.array(['20240919-072902','20240919-082943','20240919-093025','20240919-103105','20240919-113144','20240919-123224'])
-colorz = np.array(['gray','steelblue','olivedrab','goldenrod','firebrick','sienna'])
-labl = np.array(['0 kV','1 kV','2 kV','3 kV','4 kV','5 kV'])
-#pwrlabl = np.array([(r'$t^{-1}$'),(r'$t^{-1}$')])
+if 0: # PTFE TPC
+	data_folders = np.array(['20240919-072902','20240919-082943','20240919-093025','20240919-103105','20240919-113144','20240919-123224'])
+	colorz = np.array(['gray','steelblue','olivedrab','goldenrod','firebrick','sienna'])
+	labl = np.array(['0 kV','1 kV','2 kV','3 kV','4 kV','5 kV'])
+	#pwrlabl = np.array([(r'$t^{-1}$'),(r'$t^{-1}$')])
 
+if 1: # aluminum TPC
+	data_folders = np.array(['20241002-170523','20241003-152154','20241009-132504','20241007-130705'])
+	colorz = np.array(['gray','steelblue','olivedrab','goldenrod','firebrick','sienna'])
+	labl = np.array(['Al TPC','Al, overfill','Al, remove electrodes','cold gas'])
 
-dtt = 0.05
+dtt = 0.01
 tt = np.arange(dtt,1.5,dtt)
 fitdp = np.array([1.0e-4*tt**-1,1.2e-4*tt**-1])
 
@@ -28,7 +33,7 @@ fitdp = np.array([1.0e-4*tt**-1,1.2e-4*tt**-1])
 
 af = np.zeros((5,data_folders.shape[0]))
 
-for ii in range(0,6):#data_folders.shape[0]):
+for ii in range(3,4):#data_folders.shape[0]):
 	data_dir = '/Users/peter/Public/data/'+data_folders[ii]+'/'
 	aa_file_list = glob.glob(data_dir+"./aa/*v1.npz")
 	print('found %d files'%len(aa_file_list))
@@ -72,6 +77,8 @@ for ii in range(0,6):#data_folders.shape[0]):
 	s1bot = np.sum(s1[16:32,np.arange(0,ei,4)],axis=0)
 	s1top = np.sum(s1[0:16,np.arange(0,ei,4)],axis=0)
 	pl.figure(13);pl.clf();pl.plot((s1top+s1bot),(s1top-s1bot)/(s1top+s1bot),'k.')
+	pl.xlim([-100,15000])
+	pl.ylim([-1,1])
 
 	coin = np.sum(ee[:,:,:]>(1/3),axis=0)
 	ees = np.sum(ee[:,:,:],axis=0)
@@ -100,7 +107,7 @@ for ii in range(0,6):#data_folders.shape[0]):
 	### aggregate the data
 	triggerS1 = np.sum(s10[cut])/N
 
-	dpt = np.array([0.01, 0.075, 0.5, 1.0, 5.0]) # trigger cascade (set by hardware)
+	dpt = np.array([0.01, 0.075, 0.5+0.05, 1.0+0.05, 5.0+0.05]) # trigger cascade (set by hardware)
 	# Rce = 0.0063 # small-s2 limit of ratio S2ce/S2 -- should triple check
 	### define the number of detected photons. subtract the number of phd identified as single e-
 	detp = np.array([ triggerS1 , np.sum(a0[cut])/N*2 , np.sum(a1[cut])/N , np.sum(a2[cut])/N , np.sum(a3[cut])/N ])
@@ -109,30 +116,39 @@ for ii in range(0,6):#data_folders.shape[0]):
 	if 1:
 		pbw = 0.1 # plot bin width, fixed to cascade event window!
 		pl.figure(8);#pl.clf()
-		pl.errorbar(dpt,detp/triggerS1,yerr=np.sqrt(detp*N)/N/triggerS1,xerr=np.array([0.0025,0.025,0.1,0.1,0.1]),fmt='o',color=colorz[ii],markersize=5,markerfacecolor='white',label=(labl[ii]))
+		pl.errorbar(dpt,detp/triggerS1,yerr=np.sqrt(detp*N)/N/triggerS1,xerr=np.array([0.0025,0.025,0.05,0.05,0.05]),fmt='o',color=colorz[ii],markersize=5,markerfacecolor='white',label=(labl[ii]))
 # 		pl.errorbar(dpt,detp,yerr=np.sqrt(detp*N)/N,xerr=np.array([0.0025,0.025,0.1,0.1,0.1]),fmt='o',color=colorz[ii],markersize=5,markerfacecolor='white',label=(labl[ii]))
 
 		# photons	
-		pl.plot(tt,1.2e-4*tt**-1.3,'k-',linewidth=0.5)
+		pl.plot(tt,1.2e-4*tt**-1.3,'k-',linewidth=0.5) # PTFE
+		pl.plot(tt,0.8e-4*tt**-1.3,'k:',linewidth=0.5) # Aluminum
+		pl.plot(tt,73e-4*tt**-1.0,'k--',linewidth=0.5) # cold gas
+		
 # 		pl.plot(tt,fitdp[ii],'-',linewidth=0.5,color=colorz[ii],label=pwrlabl[ii])
 				
 # 		pl.plot(np.array([1e-3,1e-1]),np.array([1,1]),'k:',label='progenitor window')	
 		pl.xlabel('time (ms)')
-		pl.ylabel('(e- or $\gamma$) / 0.1 ms')
+		pl.ylabel('photons / 0.1 ms')
 # 		pl.ylim([1e-5,2])
 		pl.xscale('log')
 		pl.yscale('log')
 		pl.legend()
 		pl.title(data_dir[-16:-1])
+		pl.ylim([1e-5,2])
 
 # 		pl.figure(88);pl.clf()
 # 		pl.plot(s10[cut],a0[cut],'b.')
 # 		pl.xlim([1e3,16e3])
-# 		pl.ylim([-50,1050])
 		
 # 		pl.plot(np.arange(1e-2,1,1e-2),1e-4*np.arange(1e-2,1,1e-2)**-2)
 
-
+	print('cascade times:')
+	print(dpt)
+	print('detected photons:')
+	print(detp)
+	print('yerr:')
+	print(np.sqrt(detp*N)/N/triggerS1)
+	
 	if 0:
 		Ef = np.array([0,1,2,3,4,5]) # electric field
 		pl.figure(7);pl.clf()
