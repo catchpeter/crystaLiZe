@@ -134,7 +134,7 @@ if 0: # 24D
 #	seht = 1.8
 	data_dir = '/Users/peter/Public/data/20240411-103253/' # after 100C bake overnight 0.5,1.0,5.0 ms
 
-if 1: # 24G  LED 490 nm
+if 0: # 24G  LED 490 nm
 #	seht = 1.3 # threshold for y3s SE-finding
 #	data_dir = '/Users/peter/Public/data/20240604-163805/' # regular cascade, S1 trigger attempt
 
@@ -180,7 +180,7 @@ if 1: # 24L # S1 from BG but similar trigger to 24G
 # 	data_dir = '/Users/peter/Public/data/20241009-132504/' # usual liquid fill height ~77 SL
 
 # aluminum TPC, E=0, removed stainless steel electrode meshes
-	data_dir = '/Users/peter/Public/data/20241007-130705/' # cold xenon gas
+#	data_dir = '/Users/peter/Public/data/20241007-130705/' # cold xenon gas
 
 
 spe_dir = "/Users/peter/Dropbox/GitHub/crystaLiZe/cascade/50V_3-6-2024.txt"
@@ -490,6 +490,9 @@ for compressed_file in compressed_file_list:
 		print("s1 = %1.2f"% np.sum(s1[:,n+0],axis=0))	
 		print("cascade sums:%1.0f,%1.0f,%1.0f,%1.0f"%(np.sum(aa[:,n+0],axis=0),np.sum(aa[:,n+1],axis=0),np.sum(aa[:,n+2],axis=0),np.sum(aa[:,n+3],axis=0) ))
 
+		print('s1 top: %5.0f'% (np.sum(y0z[0:16,4500:5000])*2/25) )
+		print('s1 bot: %5.0f'% (np.sum(y0z[16:32,4500:5000])*2/25) )
+		
 		if 1: # plotzzz 			#(np.sum(aa[:,n+0],axis=0)<1.5e5): #& ((eec[n+1]>0)|(eec[n+2]>0)):
 			# re-gen for plotting
 			(boxcar1n,boxcar2n,boxcar3n) = boxcarGen(y1s,y2s,y3s)
