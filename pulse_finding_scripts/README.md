@@ -1,5 +1,12 @@
 # Pulse finding scripts
+2024/02/20: added info to start analysis - RMG
 2024/03/18: Initital write up - RMG
+
+
+## How to start the auto analysis
+* Run autoAna.py to start analysis. Review the settings before running.
+* Run re_upload.py to start upload to google drive. Review the settings before running.
+* Run recordAcquisitions.py to start the acquisitions spreadsheet. IMPORTANT: make sure you edit the the start time and run name.
 
 ## What each file does
 ### Regular analysis flow
