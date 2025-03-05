@@ -20,10 +20,16 @@ if 0: # PTFE TPC
 	labl = np.array(['0 kV','1 kV','2 kV','3 kV','4 kV','5 kV'])
 	#pwrlabl = np.array([(r'$t^{-1}$'),(r'$t^{-1}$')])
 
-if 1: # aluminum TPC
+if 0: # aluminum TPC
 	data_folders = np.array(['20241002-170523','20241003-152154','20241009-132504','20241007-130705'])
 	colorz = np.array(['gray','steelblue','olivedrab','goldenrod','firebrick','sienna'])
 	labl = np.array(['Al TPC','Al, overfill','Al, remove electrodes','cold gas'])
+
+if 1: # compare PTFE and Al
+	data_folders = np.array(['20240919-072902','20241002-170523'])
+	colorz = np.array(['steelblue','olivedrab'])
+	labl = np.array(['PTFE TPC','Al TPC'])
+
 
 dtt = 0.01
 tt = np.arange(dtt,1.5,dtt)
@@ -33,7 +39,7 @@ fitdp = np.array([1.0e-4*tt**-1,1.2e-4*tt**-1])
 
 af = np.zeros((5,data_folders.shape[0]))
 
-for ii in range(3,4):#data_folders.shape[0]):
+for ii in range(0,4):#data_folders.shape[0]):
 	data_dir = '/Users/peter/Public/data/'+data_folders[ii]+'/'
 	aa_file_list = glob.glob(data_dir+"./aa/*v1.npz")
 	print('found %d files'%len(aa_file_list))
@@ -121,8 +127,8 @@ for ii in range(3,4):#data_folders.shape[0]):
 
 		# photons	
 		pl.plot(tt,1.2e-4*tt**-1.3,'k-',linewidth=0.5) # PTFE
-		pl.plot(tt,0.8e-4*tt**-1.3,'k:',linewidth=0.5) # Aluminum
-		pl.plot(tt,73e-4*tt**-1.0,'k--',linewidth=0.5) # cold gas
+		pl.plot(tt,0.85e-4*tt**-1.3,'k:',linewidth=0.5) # Aluminum
+# 		pl.plot(tt,73e-4*tt**-1.0,'k--',linewidth=0.5) # cold gas
 		
 # 		pl.plot(tt,fitdp[ii],'-',linewidth=0.5,color=colorz[ii],label=pwrlabl[ii])
 				

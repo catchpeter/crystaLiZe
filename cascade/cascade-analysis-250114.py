@@ -34,7 +34,7 @@ def linfit(X,Y):
 #https://drive.google.com/drive/folders/1DjYev4OSSBny3FIhqXFQoQJvNfHxt7ow
 ### sandboxing #(socket.gethostname()[0]=='b') :
 
-plotz=0
+plotz=1
 if 1: # single PMT bottom, cathode alphas (?)
 	#data_dir = '/Users/peter/Public/data/20250114-211818/'
 	#data_dir = '/Users/peter/Public/data/20250115-145123/'
@@ -50,6 +50,15 @@ if 1: # single PMT bottom, cathode alphas (?)
 
 #	data_dir = '/Users/peter/Public/data/20250205-171102/' # 3000 events
 	data_dir = '/Users/peter/Public/data/20250205-174037/' # 10000 events
+
+	data_dir = '/Users/peter/Public/data/20250220-094512/' # 10000 events, 300 us
+# 	data_dir = '/Users/peter/Public/data/20250220-103023/' # 1000 events, 300 us, x5 atten on PMT
+	data_dir = '/Users/peter/Public/data/20250220-131431/' # 10000 events, 200 us
+
+	data_dir = '/Users/peter/Public/data/20250226-202029/' # 5000 events, 200 us
+
+	data_dir = '/Users/peter/Public/data/20250227-132142/' # few 1000 events, 200 us, no Xe
+
 
 aa_dir = data_dir + "aa/" # output rqs "aa" here
 try:
@@ -269,8 +278,8 @@ for compressed_file in compressed_file_list:
 				aa[i,n+3] = np.sum(y3z[i,y3z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
 			
 				# no threshold here since all channels are enormous
-				s1[i,n+0] = np.sum(y0z[i,4750:5000]) * 2 # mV ns / spe_sizes[i] 
-				s1ap[i,n+0] = np.sum(y0z[i,5000:5250]) * 2 # mV ns / spe_sizes[i] 
+				s1[i,n+0] = np.sum(y0z[i,4900:5150]) * 2 # mV ns / spe_sizes[i] 
+				s1ap[i,n+0] = np.sum(y0z[i,5150:5400]) * 2 # mV ns / spe_sizes[i] 
 	# 			s1[i,n+0] = np.sum(y0z[i,0:10000]) * 2 # mV ns / spe_sizes[i] 
 	# 			s1[i,n+0] = np.sum(y0z[:,i_s1:i_s1+i_w]) * 2 / spe_sizes[i] # rough, but should be close
 
@@ -290,27 +299,29 @@ for compressed_file in compressed_file_list:
 	#
 
 	# 		print("s2 radial = %1.2f"%s2cf[n+0])	
-			print("s1 = %1.2f"% np.sum(s1[:,n+0],axis=0))	
+	#		print("s1 = %1.2f"% np.sum(s1[:,n+0],axis=0))	
 			print("cascade sums:%1.0f,%1.0f,%1.0f,%1.0f"%(np.sum(aa[:,n+0],axis=0),np.sum(aa[:,n+1],axis=0),np.sum(aa[:,n+2],axis=0),np.sum(aa[:,n+3],axis=0) ))
-			print('s1 top: %5.0f'% (np.sum(y0z[0:16,4500:5000])*2/25) )
-			print('s1 bot: %5.0f'% ( np.sum(y0z[pmt_ch,4500:5000])*2/35*ds_pmt) )
+			print('approx s1 top: %5.0f'% (np.sum(s1[0:16,n])/25) )
+			print('approx s1 bot: %5.0f'% ( np.sum(s1[pmt_ch,n])/32*ds_pmt) )
+			print('approx s1ap bot: %5.0f'% ( np.sum(s1ap[pmt_ch,n])/32*ds_pmt) )
 			
 			if plotz: # 
 				pl.figure(8);pl.clf()
 	
 				pl.subplot(1,4,1)
-	# 			pl.plot(t,y0s+1,'-',linewidth=0.5,color='grey')
 				for i in range(0,nch-1):
 					pl.plot(t,y0z[i,:],'-',linewidth=0.5)
-	# 				pl.plot(t[25000:],2+y0p5z[i,:],'-',linewidth=0.5)
 				pl.plot(t,0+y0z[pmt_ch,:],'-',color='powderblue',linewidth=0.5)
 			
 	# 			pl.plot(t[i_s1],1,'ko',markerfacecolor='None')
 	# 			pl.plot(t[i_s2],1,'ko',markerfacecolor='None')
 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');pl.title('event %d'%n);
-				pl.xlim([9,12])
-	# 			pl.ylim([-10,500])
-				pl.ylim([-20,120])
+				if 1:
+					pl.ylim([-0.3,150])
+# 					pl.ylim([-0.3,1.5])#pl.ylim([-0.2,3])
+				else:
+					pl.xlim([9,12])
+					pl.ylim([-20,120])
 	
 				pl.subplot(1,4,2)
 				for i in range(0,nch-1):
@@ -321,7 +332,7 @@ for compressed_file in compressed_file_list:
 					print('')
 				pl.plot(t,0+y1z[pmt_ch,:],'-',color='powderblue',linewidth=0.5);
 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[0]);
-				pl.ylim([-0.3,1])
+				pl.ylim([-0.3,1.5])
 	
 				pl.subplot(1,4,3)
 				for i in range(0,nch-1):
@@ -332,7 +343,7 @@ for compressed_file in compressed_file_list:
 					print('')
 				pl.plot(t,0+y2z[pmt_ch,:],'-',color='powderblue',linewidth=0.5);
 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[1]);
-				pl.ylim([-0.3,1])#pl.ylim([-0.2,3])
+				pl.ylim([-0.3,1.5])#pl.ylim([-0.2,3])
 	
 				pl.subplot(1,4,4)
 				for i in range(0,nch-1):
@@ -343,7 +354,7 @@ for compressed_file in compressed_file_list:
 					print('')
 				pl.plot(t,0+y3z[pmt_ch,:],'-',color='powderblue',linewidth=0.5);
 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[2]);
-				pl.ylim([-0.3,1])
+				pl.ylim([-0.3,1.5])
 	
 				pl.show();pl.pause(0.1)	
 

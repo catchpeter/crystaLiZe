@@ -48,7 +48,8 @@ def read_t_p(verbose=False):
     tc5 = raw_data[5]*30 - 149.3 #copper rod
     tc6 = raw_data[6]*30 - 149.3 #ICV bottom
     tc7 = raw_data[7]*30 - 149.3 # HV cable
-    tc4 = raw_data[4]*10 # room temp
+#     tc4 = raw_data[4]*10 # room temp
+    tc4 = raw_data[4] # flow meter
     pb = raw_data[1]*1.760 # pressure
     all_values = np.round(np.array([tc0,tc5,tc6,tc7,tc4,pb]),3)
     if verbose:
