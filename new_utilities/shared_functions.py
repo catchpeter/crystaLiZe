@@ -48,6 +48,7 @@ def read_t_p(verbose=False):
     tc5 = raw_data[5]*30 - 149.3 #copper rod
     tc6 = raw_data[6]*30 - 149.3 #ICV bottom
     tc7 = raw_data[7]*30 - 149.3 # HV cable
+    tc4 = raw_data[4]/5*3 # 5V full scale, and full scale is 3 SL. flow meter 300 Vue analog out
 #     tc4 = raw_data[4]*10 # room temp
     tc4 = raw_data[4] # flow meter
     pb = raw_data[1]*1.760 # pressure
