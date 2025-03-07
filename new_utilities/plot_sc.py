@@ -26,6 +26,9 @@ for ii in range(0,nf):
 	t=np.zeros(nn)
 	p=np.zeros(nn)
 	T0=np.zeros(nn)
+	T5=np.zeros(nn)
+	T6=np.zeros(nn)
+	SLM=np.zeros(nn)
 	wb=np.zeros(nn)
 
 	MM = csvfilez[0][6:8]
@@ -35,6 +38,9 @@ for ii in range(0,nf):
 	for n in range(0,vv.shape[0]):
 		t[lastn+n]=vv.iat[n,2]+lastt;
 		T0[lastn+n]=vv.iat[n,3];
+		T5[lastn+n]=vv.iat[n,4];
+		T6[lastn+n]=vv.iat[n,5];
+		SLM[lastn+n]=vv.iat[n,7];
 		p[lastn+n]=vv.iat[n,8];
 		wb[lastn+n]=vv.iat[n,9];
 	lastt=t[n]
@@ -44,8 +50,11 @@ for ii in range(0,nf):
 	tt = t/3600
 # 	ra = np.arange(0,1500,1)
 # 	pl.plot(tt[ra],T0[ra],mk[ii],markersize=3,markerfacecolor='None')
-	pl.plot(tt,T0,mk[ii],markersize=3,markerfacecolor='None',label='temperature [C]')
+	pl.plot(tt,T0,mk[ii],markersize=3,markerfacecolor='None',label='T0 [C]')
+	pl.plot(tt,T5,mk[ii],markersize=3,markerfacecolor='None',label='T5 [C]')
+	pl.plot(tt,T6,mk[ii],markersize=3,markerfacecolor='None',label='T6 [C]')
 	pl.plot(tt,p,mk[ii],markersize=3,markerfacecolor='None',label='presure [Bar]')
+	pl.plot(tt,SLM,mk[ii],markersize=3,markerfacecolor='None',label='flow [SLM]')
 	pl.plot(tt,wb,mk[ii],markersize=3,markerfacecolor='None',label='top heater [W]')
 	#pl.xlabel('hours since %s-%s @%s%s'%(MM,DD,HH,mm))
 	pl.minorticks_on()
