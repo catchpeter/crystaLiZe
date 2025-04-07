@@ -14,7 +14,12 @@ if 1: # PTFE, Xe liquid, alphas from cathode pointing down I think, PMT bottom, 
 
 	data_folders = np.array(['20250226-202029']) # liquid Xe, new PMT
 
-	data_folders = np.array(['20250227-132142']) # 300K no Xe
+# 	data_folders = np.array(['20250227-132142']) # 300K no Xe
+
+	data_folders = np.array(['20250305-164200']) # 165 K no Xe, sipms at 54 V, BG
+# 	data_folders = np.array(['20250305-204032']) # 165 K no Xe, sipms at 50 V, 220Rn plate out
+# 	data_folders = np.array(['20250306-081350']) # 165 K no Xe, sipms at 50 V, 220Rn plate out
+# 	data_folders = np.array(['20250306-083545']) # 165 K no Xe, sipms at 49 V, 220Rn plate out
 
 	colorz = np.array(['gray','steelblue','olivedrab','goldenrod','firebrick','sienna'])
 	labl = np.array(['','','',''])
@@ -73,23 +78,31 @@ for ii in range(0,1):#data_folders.shape[0]):
 		beanc = (beans[1:]+beans[0:-1])/2
 		[cts0,beans] = np.histogram(ss[ch,np.arange(0,ei,4),:],beans); cts0[0]=0 
 		[cts1,beans] = np.histogram(ss[ch,np.arange(1,ei,4),:],beans); cts1[0]=0 
+		[cts2,beans] = np.histogram(ss[ch,np.arange(2,ei,4),:],beans); cts2[0]=0 
+		[cts3,beans] = np.histogram(ss[ch,np.arange(3,ei,4),:],beans); cts3[0]=0 
+		cts0123 = cts0+cts1+cts2+cts3
+		cts123 = cts1+cts2+cts3
+		
+		lr = 7  # lower fit range for finding gain
+		ur = 55 # upper fit range for finding gain
 		if (ch<pmt_ch):
-			gains[ch] = np.average(beanc[7:33],axis=0,weights=cts0[7:33]) # 7 picked to stay above noise bkg
+			gains[ch] = np.average(beanc[lr:ur],axis=0,weights=cts0123[lr:ur]) # 7 picked to stay above noise bkg
 		else:
-			gains[ch] = np.average(beanc[7:],axis=0,weights=cts1[7:]) # 7 picked to stay above noise bkg
+			gains[ch] = np.average(beanc[lr:],axis=0,weights=cts1[lr:]) # 7 picked to stay above noise bkg
 		
 		if 1:
 			pl.figure(6);pl.clf();
 			pl.errorbar(beanc,cts0,yerr=np.sqrt(cts0),xerr=db/2,fmt='k.')
-
 			pl.errorbar(beanc,cts1,yerr=np.sqrt(cts1),xerr=db/2,fmt='r.')
-			
-			[cts,beans] = np.histogram(ss[ch,np.arange(2,ei,4),:],beans); cts[0]=0 
-			pl.errorbar(beanc,cts,yerr=np.sqrt(cts),xerr=db/2,fmt='b.')
-			[cts,beans] = np.histogram(ss[ch,np.arange(3,ei,4),:],beans); cts[0]=0 
-			pl.errorbar(beanc,cts,yerr=np.sqrt(cts),xerr=db/2,fmt='g.')
+			pl.errorbar(beanc,cts2,yerr=np.sqrt(cts2),xerr=db/2,fmt='b.')
+			pl.errorbar(beanc,cts3,yerr=np.sqrt(cts3),xerr=db/2,fmt='g.')
+
+			pl.errorbar(beanc,cts0123,yerr=np.sqrt(cts0123),xerr=db/2,fmt='.',color='gray')
 	
-			pl.plot(np.ones(2)*gains[ch],np.array([1,max(cts0)]),'m:')
+			pl.plot(np.ones(2)*gains[ch],np.array([1,max(cts0)]),':',color='gray')
+			pl.plot(np.ones(2)*beanc[lr],np.array([1,max(cts0)]),'-',color='gray')
+			pl.plot(np.ones(2)*beanc[ur],np.array([1,max(cts0)]),'-',color='gray')
+				
 
 			pl.yscale('log')
 			pl.title('ch %d, gain %2.1f'%(ch,gains[ch]))
@@ -120,6 +133,16 @@ for ii in range(0,1):#data_folders.shape[0]):
 	
 	print('NOTE: code assumes last channel in the array is the PMT')
 	s1bot = (s1[pmt_ch,np.arange(0,ei,4)])
+	if    (data_folders[0][-15:-7]=='20250227') \
+		| (data_folders[0][-15:-7]=='20250305') \
+		| (data_folders[0][-15:-7]=='20250306'): # then looking at no-xenon data
+		print('identified as no Xe data')
+		xe=0
+	else:
+		s1bot = s1bot*(5/3)
+		print('\n*** Assuming alphas in Xe (ADC saturated): accounting for PMT ADC saturation factor 5/3, obtained from afterpulse size')
+		xe=1
+
 	s1bot_ap = (s1ap[pmt_ch,np.arange(0,ei,4)])
 	s1top = np.sum(s1[0:pmt_ch,np.arange(0,ei,4)],axis=0)
 	s1top_ap = np.sum(s1ap[0:pmt_ch,np.arange(0,ei,4)],axis=0)
@@ -149,23 +172,25 @@ for ii in range(0,1):#data_folders.shape[0]):
 			pl.plot(a3t,'+')
 	
 	
-		pl.figure(12);pl.clf();
-		pl.plot((s1top+s1bot),s1tba,'k.')
-# 		pl.plot((s1top),s1tba,'c+')
-		pl.xlim([-100,12e3])
-		pl.ylim([-1,1])
+		if 0:
+			pl.figure(12);pl.clf();
+			pl.plot((s1top+s1bot),s1tba,'k.')
+	# 		pl.plot((s1top),s1tba,'c+')
+			pl.xlim([-100,12e3])
+			pl.ylim([-1,1])
 
 		# not a cut, rather a calibration of afterpulse as proxy for (saturated) S1
-		pl.figure(13);pl.clf();
-		pl.plot(s1bot,s1bot_ap,'o',color='powderblue',markersize=2)
-		db=2
-		beans = np.arange(0,3500,db)
-		beanc = (beans[1:]+beans[0:-1])/2
-		[cts,beans] = np.histogram(s1bot,beans); cts[0]=0
-		pl.errorbar(beanc,cts,yerr=np.sqrt(cts),xerr=db/2,fmt='k.')
+		if 0:
+			pl.figure(13);pl.clf();
+			pl.plot(s1bot,s1bot_ap,'o',color='powderblue',markersize=2)
+			db=2
+			beans = np.arange(0,3500,db)
+			beanc = (beans[1:]+beans[0:-1])/2
+			[cts,beans] = np.histogram(s1bot,beans); cts[0]=0
+			pl.errorbar(beanc,cts,yerr=np.sqrt(cts),xerr=db/2,fmt='k.')
 		
-		[cts,beans] = np.histogram(s1bot_ap,beans); cts[0]=0
-		pl.errorbar(cts,beanc,xerr=np.sqrt(cts),yerr=db/2,fmt='.',color='grey')
+			[cts,beans] = np.histogram(s1bot_ap,beans); cts[0]=0
+			pl.errorbar(cts,beanc,xerr=np.sqrt(cts),yerr=db/2,fmt='.',color='grey')
 		
 		if 0:
 			pl.figure(14);pl.clf();
@@ -179,13 +204,24 @@ for ii in range(0,1):#data_folders.shape[0]):
 			pl.figure(15);pl.clf();
 			pl.plot(s1bot,s1top,'o',color='gray',markersize=1)
 
+		if 0:
+			for ch in range (0,nch):
+				pl.figure(7);pl.clf();
+				pl.loglog(s1[ch,np.arange(0,ei,4)],aa[ch,np.arange(1,ei,4)],'o',color='gray',markersize=1)
+				pl.loglog(s1[ch,np.arange(0,ei,4)],aa[nch-ch-1,np.arange(1,ei,4)],'o',color='blue',markersize=1)
+				pl.xlim([0.3,3e3])
+				pl.ylim([0.3,1e2])
+				pl.title('ch %1.0f' % ch)
+				pl.show();pl.pause(0.1)	
+	# 			input('press any key')
+
 
 	###
-	cut = (s10>1000) & (s10<10000) \
-		& (a1t<a0t) & (a2t<a0t) & (a3t<a0t) & (a1b<a0b) & (a2b<a0b) & (a3b<a0b)
-
-	if (data_folders[0][-15:-7]=='20250227'): # then looking at no-xenon data
-		cut = (s10>300) & (s10<1000)
+	if xe:
+		cut = (s10>1000) & (s10<10000) \
+			& (a1t<a0t) & (a2t<a0t) & (a3t<a0t) & (a1b<a0b) & (a2b<a0b) & (a3b<a0b)
+	else:
+		cut = (s10>100) & (s10<1000) \
 	
 # 	cut = (s10>1000) & (s10<5000) \
 # 		& (a0t<50) & (a1t<20) & (a2t<20) & (a3t<20) \
@@ -194,7 +230,7 @@ for ii in range(0,1):#data_folders.shape[0]):
 
 	nz=np.nonzero(cut); nz = nz[0]
 	N = np.sum(cut)
-	print('cut keeps %d events'%N)
+	print('\n*** cut keeps %d events ***\n'%N)
 	###
 
 			
@@ -212,67 +248,46 @@ for ii in range(0,1):#data_folders.shape[0]):
 	# Rce = 0.0063 # small-s2 limit of ratio S2ce/S2 -- should triple check
 	### define the number of detected photons. subtract the number of phd identified as single e-
 	dpt = np.array([ np.sum(s1top[cut])/N , np.sum(a0t[cut])*2/N , np.sum(a1t[cut])/N , np.sum(a2t[cut])/N , np.sum(a3t[cut])/N ])
-	print('\n*** NOTE: accounting for PMT ADC saturation factor 5/3, obtained from afterpulse size')
-	dpb = np.array([ np.sum(s1bot[cut])/N*(5/3) , np.sum(a0b[cut])*2/N , np.sum(a1b[cut])/N , np.sum(a2b[cut])/N , np.sum(a3b[cut])/N ])
+	dpb = np.array([ np.sum(s1bot[cut])/N , np.sum(a0b[cut])*2/N , np.sum(a1b[cut])/N , np.sum(a2b[cut])/N , np.sum(a3b[cut])/N ])
 # 	af[:,ii] = detp#/triggerS1
 	
 	if 1:
 		pbw = 0.1 # plot bin width, fixed to cascade event window!
-		pl.figure(8);#pl.clf()
-		pl.errorbar(ct,dpt,yerr=np.sqrt(dpt*N)/N,xerr=np.array([0.0025,0.025,0.05,0.05,0.05]),fmt='o',color='grey',markersize=5,markerfacecolor='white',label='sipm')
-		pl.errorbar(ct,dpb,yerr=np.sqrt(dpb*N)/N,xerr=np.array([0.0025,0.025,0.05,0.05,0.05]),fmt='o',color='powderblue',markersize=5,markerfacecolor='white',label='pmt')
-
+		pl.figure(8);pl.clf()
+		pl.errorbar(ct[1:],dpt[1:],yerr=np.sqrt(dpt[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='s',color='grey',markersize=5,markerfacecolor='white',label='sipm')
+		pl.errorbar(ct[1:],dpb[1:],yerr=np.sqrt(dpb[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='o',color='powderblue',markersize=5,markerfacecolor='white',label='pmt')
+		
+		pl.plot(ct[0],dpt[0],'s',color='grey',markersize=7,markerfacecolor='white')
+		pl.plot(ct[0],dpb[0],'o',color='powderblue',markersize=7,markerfacecolor='white')
 		# photons	
 		#pl.plot(tt,1.2e-4*tt**-1.3,'k-',linewidth=0.5) # PTFE
 		#pl.plot(tt,0.8e-4*tt**-1.3,'k:',linewidth=0.5) # Aluminum
-		pl.plot(tt,np.sum(s1top[cut])/N*1.2e-4*tt**-1.3,'k-',linewidth=0.5,label='2024 PTFE') # PTFE
+		#pl.plot(tt,np.sum(s1top[cut])/N*1.2e-4*tt**-1.3,'k-',linewidth=0.5,label='2024 PTFE') # PTFE
+		#pl.plot(tt,np.sum(s1bot[cut])/N*1.2e-4*tt**-1.3,'k-',linewidth=0.5,color='powderblue',label='2024 PTFE') # PTFE
 		
-		if (int(data_folders[0][-15:-7]) == 20250220): # original PMT		
-			pl.plot(tt,1.7*tt**-1.0,'k--',linewidth=0.5) 
-			pl.plot(tt,0.8*tt**-1.5,'--',color='powderblue',linewidth=0.5) 
-		if (int(data_folders[0][-15:-7]) == 20250226): # new PMT		
-			pl.plot(tt,1.8*tt**-1.0,'k--',linewidth=0.5) 
-			pl.plot(tt,0.6*tt**-1.5,'--',color='powderblue',linewidth=1) 
+# 		if (int(data_folders[0][-15:-7]) == 20250220): # original PMT		
+# 			pl.plot(tt,1.7*tt**-1.0,'k--',linewidth=0.5) 
+# 			pl.plot(tt,0.8*tt**-1.5,'--',color='powderblue',linewidth=0.5) 
 
-		if (int(data_folders[0][-15:-7]) == 20250227): # new PMT, no Xe		
-			pl.plot(tt,1.8*tt**-1.0,'k--',linewidth=0.5) 
-			pl.plot(tt,0.15*0.6*tt**-1.5,'--',color='powderblue',linewidth=1) 
+		if (int(data_folders[0][-15:-7]) == 20250226): # new PMT		
+			pl.plot(tt,1.6*tt**-1.0,'k--',linewidth=0.5) 
+			pl.plot(tt,0.7*tt**-1.3,'--',color='powderblue',linewidth=1) 
+
+		if (int(data_folders[0][-15:-7]) == 20250305): # new PMT, no Xe		
+			pl.plot(tt,(dpt[0]/4185)*1.6*tt**-1.0,'k--',linewidth=0.5) 
+			pl.plot(tt,(dpb[0]/3893)*0.7*tt**-1.3,'--',color='powderblue',linewidth=1) 
 		
 # 		pl.plot(tt,fitdp[ii],'-',linewidth=0.5,color=colorz[ii],label=pwrlabl[ii])
 				
 # 		pl.plot(np.array([1e-3,1e-1]),np.array([1,1]),'k:',label='progenitor window')	
 		pl.xlabel('time (ms)')
-		pl.ylabel('photons / 0.1 ms')
+		pl.ylabel('photon counts')
 # 		pl.ylim([1e-5,2])
 		pl.xscale('log')
 		pl.yscale('log')
 		pl.legend()
 		pl.title(data_dir[-16:-1])
-		pl.ylim([0.1,1e4])
+		pl.ylim([0.01,1e4])
 
-	if 0:
-		for ch in range (0,nch):
-			pl.figure(7);pl.clf();
-			pl.loglog(s1[ch,np.arange(0,ei,4)],aa[ch,np.arange(1,ei,4)],'o',color='gray',markersize=1)
-			pl.loglog(s1[ch,np.arange(0,ei,4)],aa[nch-ch-1,np.arange(1,ei,4)],'o',color='blue',markersize=1)
-			pl.xlim([0.3,3e3])
-			pl.ylim([0.3,1e2])
-			pl.title('ch %1.0f' % ch)
-			pl.show();pl.pause(0.1)	
-# 			input('press any key')
-
-
-if 0:
-	print('cascade times:')
-	print(dpt)
-	print('detected photons:')
-	print(detp)
-# 	print('yerr:')
-# 	print(np.sqrt(detp*N)/N/triggerS1)
-	
-	if 0:
-		Ef = np.array([0,1,2,3,4,5]) # electric field
-		pl.figure(7);pl.clf()
-		pl.plot(Ef,af[4,:],'ro')
 
 

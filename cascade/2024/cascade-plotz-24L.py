@@ -26,9 +26,9 @@ if 0: # aluminum TPC
 	labl = np.array(['Al TPC','Al, overfill','Al, remove electrodes','cold gas'])
 
 if 1: # compare PTFE and Al
-	data_folders = np.array(['20240919-072902','20241002-170523'])
-	colorz = np.array(['steelblue','olivedrab'])
-	labl = np.array(['PTFE TPC','Al TPC'])
+	data_folders = np.array(['20240919-072902','20241002-170523','20241009-132504'])
+	colorz = np.array(['steelblue','olivedrab','goldenrod'])
+	labl = np.array(['PTFE TPC','Al TPC','Al, no electrodes'])
 
 
 dtt = 0.01
@@ -39,7 +39,7 @@ fitdp = np.array([1.0e-4*tt**-1,1.2e-4*tt**-1])
 
 af = np.zeros((5,data_folders.shape[0]))
 
-for ii in range(0,4):#data_folders.shape[0]):
+for ii in range(0,3):#data_folders.shape[0]):
 	data_dir = '/Users/peter/Public/data/'+data_folders[ii]+'/'
 	aa_file_list = glob.glob(data_dir+"./aa/*v1.npz")
 	print('found %d files'%len(aa_file_list))
@@ -139,7 +139,7 @@ for ii in range(0,4):#data_folders.shape[0]):
 		pl.xscale('log')
 		pl.yscale('log')
 		pl.legend()
-		pl.title(data_dir[-16:-1])
+# 		pl.title(data_dir[-16:-1])
 		pl.ylim([1e-5,2])
 
 # 		pl.figure(88);pl.clf()

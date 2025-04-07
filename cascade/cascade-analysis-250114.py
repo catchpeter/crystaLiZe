@@ -57,7 +57,25 @@ if 1: # single PMT bottom, cathode alphas (?)
 
 	data_dir = '/Users/peter/Public/data/20250226-202029/' # 5000 events, 200 us
 
-	data_dir = '/Users/peter/Public/data/20250227-132142/' # few 1000 events, 200 us, no Xe
+# 	data_dir = '/Users/peter/Public/data/20250227-132142/' # few 1000 events, 200 us, no Xe, 300 K
+
+
+#	data_dir = '/Users/peter/Public/data/20250307-143126/' # 50 V post-post-220Rn plate-out, 100 events, 200 us, no Xe, -105 C
+
+# 	data_dir = '/Users/peter/Public/data/20250311-084238/' # 30 mV trigger, 50 V waaay-post-220Rn plate-out, 1000 events, 200 us, no Xe, -105 C
+# 	data_dir = '/Users/peter/Public/data/20250311-123821/' # 50 mV trigger, 50 V waaay-post-220Rn plate-out, 7500 events, 200 us, no Xe, -105 C
+# 	data_dir = '/Users/peter/Public/data/20250311-161601/' # line triggers, 50 V dark counts 
+# 	data_dir = '/Users/peter/Public/data/20250311-174524/' # 100 mV trigger, 50 V dark counts
+# 	data_dir = '/Users/peter/Public/data/20250311-193234/' # 300 mV trigger, 50 V 228Th external source
+# 	data_dir = '/Users/peter/Public/data/20250311-220055/' # 120 mV trigger, 50 V dark counts
+# 	data_dir = '/Users/peter/Public/data/20250312-072556/' # 120 mV trigger, 50 V dark counts
+# 	data_dir = '/Users/peter/Public/data/20250312-111635/' # 120 mV trigger, 50 V dark counts
+	
+
+try:
+	os.listdir(data_dir)
+except:
+	print('\n*** directory does not exist, is it a typo in the path??')
 
 
 aa_dir = data_dir + "aa/" # output rqs "aa" here
@@ -178,11 +196,13 @@ for compressed_file in compressed_file_list:
 		#input('*** debug ***')
 		if 0:
 			a = np.array([ np.sum(np.sum(ch_data_mV[:,0,:],axis=0)) , np.sum(np.sum(ch_data_mV[:,1,:],axis=0)) , np.sum(np.sum(ch_data_mV[:,2,:],axis=0)) , np.sum(np.sum(ch_data_mV[:,3,:],axis=0)) ])
-			n_start = int(np.argmax(a))
 		else:
 			a = np.array([ np.sum((ch_data_mV[:,0,:]>0.5) * ch_data_mV[:,0,:]) , np.sum((ch_data_mV[:,1,:]>0.5) * ch_data_mV[:,1,:]) , np.sum((ch_data_mV[:,2,:]>0.5) * ch_data_mV[:,2,:]) , np.sum((ch_data_mV[:,3,:]>0.5) * ch_data_mV[:,3,:]) ])
 			print(a)
 		n_start = int(np.argmax(a))
+		if 0:
+			print('\n*** ignoring ordering check and starting with the first event (line 198)\n')
+			n_start = 0
 		n_stop = int(np.floor((ch_data_mV.shape[1]-n_start)/4)*4)
 		print('waveforms indicate start with event %d (and so skip last %d events)'%(n_start,(ch_data_mV.shape[1]-n_stop)))
 		
@@ -317,7 +337,8 @@ for compressed_file in compressed_file_list:
 	# 			pl.plot(t[i_s2],1,'ko',markerfacecolor='None')
 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');pl.title('event %d'%n);
 				if 1:
-					pl.ylim([-0.3,150])
+					pl.ylim([-3,15])
+					pl.ylim([-30,150])
 # 					pl.ylim([-0.3,1.5])#pl.ylim([-0.2,3])
 				else:
 					pl.xlim([9,12])
