@@ -7,28 +7,10 @@ from matplotlib.patches import Rectangle
 
 
 
-pmt_ch = 16
-ds_pmt = 5 # pmt signal was scaled down for the analysis, put it back
-if 1: # PTFE, Xe liquid, alphas from cathode pointing down I think, PMT bottom, compact cylinder, not really a TPC
+if 1: # PTFE, Xe liquid
 
-	data_folders = np.array(['20250226-202029']) # liquid Xe, new PMT
-	#data_folders = np.array(['20250227-070842']) # liquid Xe, new PMT
-
-#	data_folders = np.array(['20250311-161601']) # 165 K no Xe, sipms at 50 V, line trigger
-
-#	data_folders = np.array(['20250305-164200']) # 165 K no Xe, sipms at 54 V, BG
-#	data_folders = np.array(['20250305-204032']) # 165 K no Xe, sipms at 50 V, 220Rn plate out
-#	data_folders = np.array(['20250306-081350']) # 165 K no Xe, sipms at 50 V, 220Rn plate out
-# 	data_folders = np.array(['20250306-083545']) # 165 K no Xe, sipms at 49 V, 220Rn plate out
-
-# 	data_folders = np.array(['20250307-143126']) # 165 K no Xe, sipms at 50 V, 220Rn plate out now hopefully dying away
-
-#	data_folders = np.array(['20250311-084238']) # 165 K no Xe, sipms at 50 V, cerenkov 30 mV trigger
-# 	data_folders = np.array(['20250311-123821']) # 165 K no Xe, sipms at 50 V, cerenkov 50 mV trigger
-# 	data_folders = np.array(['20250311-174524']) # 165 K no Xe, sipms at 50 V, cerenkov 100 mV trigger
-
-# 	data_folders = np.array(['20250311-220055']) # 165 K no Xe, sipms at 50 V, cerenkov 120 mV trigger
-#	data_folders = np.array(['20250312-111635']) # 165 K no Xe, sipms at 50 V, cerenkov 120 mV trigger
+	data_folders = np.array(['20250416-175203']) # liquid Xe, windowless sipms S13370
+	data_folders = np.array(['20250416-183422']) # liquid Xe, windowless sipms S13370
 
 	colorz = np.array(['gray','steelblue','olivedrab','goldenrod','firebrick','sienna'])
 	labl = np.array(['','','',''])
@@ -54,6 +36,8 @@ fitdp = np.array([1.0e-4*tt**-1,1.2e-4*tt**-1])
 
 
 af = np.zeros((5,data_folders.shape[0]))
+print('NOTE: code assumes windowless sipms are channels 0,5,10,15 (physical channels +1)')
+ww = 10 # which channel to look at
 
 for ii in range(0,1):#data_folders.shape[0]):
 	data_dir = '/Users/peter/Public/data/'+data_folders[ii]+'/'
@@ -88,12 +72,6 @@ for ii in range(0,1):#data_folders.shape[0]):
 	ei = (h_n_events-1) # end index
 	ei = int(np.floor(ei/4)*4)
 
-	print('multiplying back the PMT down-size factor x%d'%ds_pmt)
-	ss[pmt_ch,:,:] = ss[pmt_ch,:,:]*ds_pmt
-	aa[pmt_ch,:] = aa[pmt_ch,:]*ds_pmt
-	s1[pmt_ch,:] = s1[pmt_ch,:]*ds_pmt
-	s1ap[pmt_ch,:] = s1ap[pmt_ch,:]*ds_pmt
-
 	# get gains
 	gains = np.zeros(nch)
 	for ch in range (0,nch):
@@ -107,13 +85,13 @@ for ii in range(0,1):#data_folders.shape[0]):
 		cts0123 = cts0+cts1+cts2+cts3
 		cts123 = cts1+cts2+cts3
 		
-		lr = 7  # lower fit range for finding gain
-		ur = 55 # upper fit range for finding gain
-		if (ch<pmt_ch):
+		lr = 30  # lower fit range for finding gain
+		ur = 100 # upper fit range for finding gain
+		try:
 			gains[ch] = np.average(beanc[lr:ur],axis=0,weights=cts0123[lr:ur]) # 7 picked to stay above noise bkg
-		else:
-			gains[ch] = np.average(beanc[lr:],axis=0,weights=cts1[lr:]) # 7 picked to stay above noise bkg
-		
+		except:
+			print('not enough counts for average')
+					
 		if 0:
 			pl.figure(6);pl.clf();
 			pl.errorbar(beanc,cts0,yerr=np.sqrt(cts0),xerr=db/2,fmt='k.')
@@ -133,58 +111,56 @@ for ii in range(0,1):#data_folders.shape[0]):
 			pl.show();pl.pause(0.1)	
 # 			input('press any key')
 			
-		if (ch==pmt_ch) & (data_folders[0][-6:]=='103023'):
-			print('assume PMT gain measurement failed, and use previous value ==32')
-			gains[pmt_ch] = 32
 		s1[ch,:] = s1[ch,:] / gains[ch]
-		s1ap[ch,:] = s1ap[ch,:] / gains[ch]
-		aa[ch,:] = aa[ch,:] / gains[ch]
+# 		s1ap[ch,:] = s1ap[ch,:] / gains[ch]
+# 		aa[ch,:] = aa[ch,:] / gains[ch]
 
 #		input('paused...')
 
+	s10 = s1[:,np.arange(0,ei,4)]
+	
+	ss0 = np.sum( ss[:,np.arange(0,ei,4),:] ,axis=2 )
+	ss1 = np.sum( ss[:,np.arange(1,ei,4),:] ,axis=2 )
+	ss2 = np.sum( ss[:,np.arange(2,ei,4),:] ,axis=2 )
+	ss3 = np.sum( ss[:,np.arange(3,ei,4),:] ,axis=2 )
 
-	asum = np.sum(aa,axis=0)
-	a0t = np.sum( aa[0:nch-1,np.arange(0,ei,4)] ,axis=0 )
-	a1t = np.sum( aa[0:nch-1,np.arange(1,ei,4)] ,axis=0 )
-	a2t = np.sum( aa[0:nch-1,np.arange(2,ei,4)] ,axis=0 )
-	a3t = np.sum( aa[0:nch-1,np.arange(3,ei,4)] ,axis=0 )
-
-	a0b = ( aa[nch-1,np.arange(0,ei,4)])
-	a1b = ( aa[nch-1,np.arange(1,ei,4)])
-	a2b = ( aa[nch-1,np.arange(2,ei,4)])
-	a3b = ( aa[nch-1,np.arange(3,ei,4)])
+# 	asum = np.sum(aa,axis=0)
+# 	a0t = np.sum( aa[0:nch-1,np.arange(0,ei,4)] ,axis=0 )
+# 	a1t = np.sum( aa[0:nch-1,np.arange(1,ei,4)] ,axis=0 )
+# 	a2t = np.sum( aa[0:nch-1,np.arange(2,ei,4)] ,axis=0 )
+# 	a3t = np.sum( aa[0:nch-1,np.arange(3,ei,4)] ,axis=0 )
+# 
+# 	a0b = ( aa[nch-1,np.arange(0,ei,4)])
+# 	a1b = ( aa[nch-1,np.arange(1,ei,4)])
+# 	a2b = ( aa[nch-1,np.arange(2,ei,4)])
+# 	a3b = ( aa[nch-1,np.arange(3,ei,4)])
 
 	
-	print('NOTE: code assumes last channel in the array is the PMT')
-	s1bot = (s1[pmt_ch,np.arange(0,ei,4)])
+# 	s1bot = (s1[pmt_ch,np.arange(0,ei,4)])
 # 	if    (data_folders[0][-15:-7]=='20250227') \
 # 		| (data_folders[0][-15:-7]=='20250305') \
 # 		| (data_folders[0][-15:-7]=='20250306') \
 # 		| (data_folders[0][-15:-7]=='20250307'): # then looking at no-xenon data
-	if (int(data_folders[0][-15:-7])>20250227) :
-		print('identified as no Xe data')
-		xe=0
-	else:
-		s1bot = s1bot*(5/3)
-		print('\n*** Assuming alphas in Xe (ADC saturated): accounting for PMT ADC saturation factor 5/3, obtained from afterpulse size')
-		xe=1
+# 	if (int(data_folders[0][-15:-7])>20250227) :
+# 		print('identified as no Xe data')
+# 		xe=0
+# 	else:
+# 		s1bot = s1bot*(5/3)
+# 		print('\n*** Assuming alphas in Xe (ADC saturated): accounting for PMT ADC saturation factor 5/3, obtained from afterpulse size')
+# 		xe=1
 
-	s1bot_ap = (s1ap[pmt_ch,np.arange(0,ei,4)])
-	s1top = np.sum(s1[0:pmt_ch,np.arange(0,ei,4)],axis=0)
-	s1top_ap = np.sum(s1ap[0:pmt_ch,np.arange(0,ei,4)],axis=0)
-	s1top = s1top + s1top_ap
-	s10 = s1top + s1bot
-	s1tba = (s1top-s1bot)/(s1top+s1bot)
+# 	s1bot_ap = (s1ap[pmt_ch,np.arange(0,ei,4)])
+# 	s1top = np.sum(s1[0:pmt_ch,np.arange(0,ei,4)],axis=0)
+# 	s1top_ap = np.sum(s1ap[0:pmt_ch,np.arange(0,ei,4)],axis=0)
+# 	s1top = s1top + s1top_ap
+# 	s10 = s1top + s1bot
+# 	s1tba = (s1top-s1bot)/(s1top+s1bot)
 	
-	if 1: ## quality cuts
+	if 0: ## quality cuts
 		pl.figure(10);pl.clf();
 		db=50
-		if xe==1:
-			db=50
-			beans = np.arange(0,17e3,db)
-		else:
-			db=5
-			beans = np.arange(0,500,db)		
+		db=50
+		beans = np.arange(0,17e3,db)
 		beanc = (beans[1:]+beans[0:-1])/2
 		[cts,beans] = np.histogram(s1top,beans); cts[0]=0
 		pl.errorbar(beanc,cts,yerr=np.sqrt(cts),xerr=db/2,fmt='c+',label='sipm top')
@@ -250,12 +226,7 @@ for ii in range(0,1):#data_folders.shape[0]):
 
 
 	###
-	if xe:
-		cut = (s1bot>000) & (s1bot<4500) \
-			& (s1top>000) & (s1top<4500) \
-	 		& (s1bot_ap<300)
-
-# 			& (a1t<a0t) & (a2t<a0t) & (a3t<a0t) & (a1b<a0b) & (a2b<a0b) & (a3b<a0b)
+	cut = (s10[ww,:]>1500) & (s10[ww,:]<3000)
 	
 	if (int(data_folders[0][-6:])==161601): # the line trigger dataset
 		cut = (s10>0) & (s10<100)
@@ -265,30 +236,18 @@ for ii in range(0,1):#data_folders.shape[0]):
 	print('\n*** cut keeps %d events ***\n'%N)
 
 	### aggregate the data
-	
-
-# 	ct = np.array([0.01, 0.075, 0.5+0.05, 1.0+0.05, 5.0+0.05]) # trigger cascade (set by hardware) -- used for ever all earlier data
 	ct = np.array([0.01, 0.075, 0.2+0.05, 0.5+0.05, 1.0+0.05]) # trigger cascade (set by hardware) -- afternoon Feb 20 +
-	if (data_folders[0][-6:]=='094512'):
-		ct = np.array([0.01, 0.075, 0.3+0.05, 0.5+0.05, 1.0+0.05]) # trigger cascade (set by hardware) -- briefly used before noon on Feb 20
 
-	# Rce = 0.0063 # small-s2 limit of ratio S2ce/S2 -- should triple check
 	### define the number of detected photons. subtract the number of phd identified as single e-
-	dpt = np.array([ np.sum(s1top[cut])/N , np.sum(a0t[cut])*2/N , np.sum(a1t[cut])/N , np.sum(a2t[cut])/N , np.sum(a3t[cut])/N ])
-	dpb = np.array([ np.sum(s1bot[cut])/N , np.sum(a0b[cut])*2/N , np.sum(a1b[cut])/N , np.sum(a2b[cut])/N , np.sum(a3b[cut])/N ])
-# 	af[:,ii] = detp#/triggerS1
+	dpb = np.array([ np.sum(s10[ww,cut])/N , np.sum(ss0[ww,cut]/gains[ww])*2/N , np.sum(ss1[ww,cut]/gains[ww])/N , np.sum(ss2[ww,cut]/gains[ww])/N , np.sum(ss3[ww,cut]/gains[ww])/N ])
 	
 	if 1:
 		pbw = 0.1 # plot bin width, fixed to cascade event window!
 		pl.figure(8);pl.clf();ax=pl.gca()
-		pl.errorbar(ct[1:],dpt[1:],yerr=np.sqrt(dpt[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='s',color='grey',markersize=5,markerfacecolor='white',label='S13371 SiPM')
-		pl.errorbar(ct[1:],dpb[1:],yerr=np.sqrt(dpb[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='o',color='blue',markersize=5,markerfacecolor='white',label='R8778 PMT')
+		pl.plot(ct[0],dpb[0],'o',color='blue',markersize=7,markerfacecolor='white')
+		pl.errorbar(ct[1:],dpb[1:],yerr=np.sqrt(dpb[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='o',color='blue',markersize=5,markerfacecolor='white',label='S13370')
 		
-		if (int(data_folders[0][-6:])!=161601):
-			pl.plot(ct[0],dpt[0],'s',color='grey',markersize=7,markerfacecolor='white')
-			pl.plot(ct[0],dpb[0],'o',color='blue',markersize=7,markerfacecolor='white')
 
-# 		pl.text(0.015,dpb[0],('Xe scintillation trigger $\mu=%1.0f$'%dpb[0]),color='blue',verticalalignment='center')
 		pl.text(0.012,dpb[0],('Xe scintillation trigger'),color='blue',verticalalignment='center')
 
 		if (int(data_folders[0][-15:-7]) == 20250226): # new PMT		
@@ -304,6 +263,8 @@ for ii in range(0,1):#data_folders.shape[0]):
 # 			pl.plot(tt,(dpb[0]/8000)*tt**-1.5,'-',color='blue',linewidth=1) 
 			pl.text(0.012,dpb[0]/200,('delayed photons $d_p(t)$'),rotation=-22,color='blue',verticalalignment='center')
 # 			pl.plot(tt,(dpb[0]/4000)*tt**-1.5,'-',color='blue',linewidth=1) 
+
+		pl.plot(tt,(dpb[0]/5313)*tt**-1.097,'--',color='blue',linewidth=1,label='R8778') # fitting last 3 points, AP<300
 
 		pl.text(0.012,0.3*1.5,('random single photon background'),color='blue',verticalalignment='center')
 		
