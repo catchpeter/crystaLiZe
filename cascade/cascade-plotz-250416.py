@@ -92,7 +92,7 @@ for ii in range(0,1):#data_folders.shape[0]):
 		except:
 			print('not enough counts for average')
 					
-		if 0:
+		if ((ch==5) | (ch==10)):
 			pl.figure(6);pl.clf();
 			pl.errorbar(beanc,cts0,yerr=np.sqrt(cts0),xerr=db/2,fmt='k.')
 			pl.errorbar(beanc,cts1,yerr=np.sqrt(cts1),xerr=db/2,fmt='r.')
@@ -109,7 +109,7 @@ for ii in range(0,1):#data_folders.shape[0]):
 			pl.yscale('log')
 			pl.title('ch %d, gain %2.1f'%(ch,gains[ch]))
 			pl.show();pl.pause(0.1)	
-# 			input('press any key')
+			input('press any key')
 			
 		s1[ch,:] = s1[ch,:] / gains[ch]
 # 		s1ap[ch,:] = s1ap[ch,:] / gains[ch]
