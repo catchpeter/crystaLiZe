@@ -35,9 +35,30 @@ def linfit(X,Y):
 ### sandboxing #(socket.gethostname()[0]=='b') :
 
 plotz=0
-if 1: # single PMT bottom, cathode alphas (?)
-	data_dir = '/Users/peter/Public/data/20250416-175203/'	# ch 11 trigger 20 mV
-	data_dir = '/Users/peter/Public/data/20250416-183422/'	# ch 11 trigger 20 mV
+if 1: #
+	#s8 = 0.2 # parameter for baseline zero-suppression. specific to older, windowless S13370 SiPM
+	data_dir = '/Users/peter/Public/data/20250416-175203/'	# 50 V ch 11 trigger 20 mV
+	data_dir = '/Users/peter/Public/data/20250416-183422/'	# 50 V ch 11 trigger 20 mV
+
+	#s8 = 0.1 # parameter for baseline zero-suppression
+	data_dir = '/Users/peter/Public/data/20250417-133859/'	# 48 V ch 11 trigger 20 mV
+
+#	data_dir = '/Users/peter/Public/data/20250423-215229/'	# 48 V ch 6 trigger 50 mV
+#	data_dir = '/Users/peter/Public/data/20250423-220334/'	# 48 V ch 9 trigger 100 mV
+# 	data_dir = '/Users/peter/Public/data/20250423-221456/'	# 48 V ch 6 trigger 50 mV
+
+# 	data_dir = '/Users/peter/Public/data/20250424-073057/'
+#	data_dir = '/Users/peter/Public/data/20250424-091121/'
+
+	data_dir = '/Users/peter/Public/data/20250424-091853/'
+
+	data_dir = '/Users/peter/Public/data/20250424-092351/'
+	data_dir = '/Users/peter/Public/data/20250424-094149/'
+
+### the good data:
+	data_dir = '/Users/peter/Public/data/20250424-094903/'
+	data_dir = '/Users/peter/Public/data/20250424-101744/'
+
 
 try:
 	os.listdir(data_dir)
@@ -106,6 +127,8 @@ compressed_file_list = sorted( compressed_file_list )
 sipms = np.arange(0,17) #
 nch = sipms.shape[0]
 pmt_ch = 16
+s8s = np.ones(nch)*0.1; s8s[5] = 0.15; s8s[10] = 0.15
+
 
 print("looking in: %s"%compressed_file_list[0][0:41])
 for compressed_file in compressed_file_list:
@@ -150,7 +173,7 @@ for compressed_file in compressed_file_list:
 
 		# buffer some memory for the RQs
 		nSE = 20 # max to find
-		nspe = 10 # max to find
+		nspe = 20 # max to find
 		aa = np.zeros([nch, ch_data_mV.shape[1]]) # areas of delay_window_0[0:20us], delay_window_1, delay_window_2, delay_window_3
 		ss = np.zeros([nch, ch_data_mV.shape[1],nspe])  # areas of spe
 		s1 = np.zeros([nch, ch_data_mV.shape[1]]) # areas of s1, 0, 0, 0
@@ -205,7 +228,7 @@ for compressed_file in compressed_file_list:
 			y2spe = np.zeros(ch_data_mV.shape[2])
 			y3spe = np.zeros(ch_data_mV.shape[2])
 		
-			s8 = 0.2 # parameter for baseline zero-suppression. specific to older, windowless S13370 SiPM
+# 			s8 = 0.2 # parameter for baseline zero-suppression. specific to older, windowless S13370 SiPM
 			y0z = np.zeros((ch_data_mV.shape[0],ch_data_mV.shape[2]))
 			y1z = np.zeros((ch_data_mV.shape[0],ch_data_mV.shape[2]))
 			y2z = np.zeros((ch_data_mV.shape[0],ch_data_mV.shape[2]))
@@ -215,6 +238,8 @@ for compressed_file in compressed_file_list:
 
 			print('\nEvent %d'%n)		
 			for i in range(0,nch): # now go an integrate individual channel areas
+				s8 = s8s[i]
+				#print('ch=%1.0f,s8=%1.2f'%(i,s8))
 				y0 = ch_data_mV[i,n+0,:]
 				y1 = ch_data_mV[i,n+1,:]
 				y2 = ch_data_mV[i,n+2,:]
@@ -259,10 +284,10 @@ for compressed_file in compressed_file_list:
 				y0p5z[i,:] = y0[25000:50000]-(a+b*xx[25000:50000])
 		
 				# counting photoelectrons in aggregate - beware
-				aa[i,n+0] = np.sum(y0p5z[i,y0p5z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
-				aa[i,n+1] = np.sum(y1z[i,y1z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
-				aa[i,n+2] = np.sum(y2z[i,y2z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
-				aa[i,n+3] = np.sum(y3z[i,y3z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
+# 				aa[i,n+0] = np.sum(y0p5z[i,y0p5z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
+# 				aa[i,n+1] = np.sum(y1z[i,y1z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
+# 				aa[i,n+2] = np.sum(y2z[i,y2z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
+# 				aa[i,n+3] = np.sum(y3z[i,y3z[i,:]>s8]) * 2 # mV ns / spe_sizes[i] 
 			
 				# no threshold here since all channels are enormous
 				s1[i,n+0] = np.sum(y0z[i,4900:5150]) * 2 # mV ns / spe_sizes[i] 
@@ -284,7 +309,10 @@ for compressed_file in compressed_file_list:
 	# 12 13 08 09
 	# 15 14 11 10
 	#
-
+	# bottom sipm map (grabbed from corners of top array; only 05 and 10 are good)
+	#    00 05
+	#    15 10
+	#
 	# 		print("s2 radial = %1.2f"%s2cf[n+0])	
 	#		print("s1 = %1.2f"% np.sum(s1[:,n+0],axis=0))	
 			print("cascade sums:%1.0f,%1.0f,%1.0f,%1.0f"%(np.sum(aa[:,n+0],axis=0),np.sum(aa[:,n+1],axis=0),np.sum(aa[:,n+2],axis=0),np.sum(aa[:,n+3],axis=0) ))
@@ -296,13 +324,13 @@ for compressed_file in compressed_file_list:
 				pl.figure(8);pl.clf()
 	
 				pl.subplot(1,4,1)
-				for i in np.array([5,10]):#range(0,nch-1):
+				for i in np.array([5,10,9]):#range(0,nch-1):
 					pl.plot(y0z[i,:],'-',linewidth=0.5)
 # 				pl.plot(t,0+y0z[pmt_ch,:],'-',color='powderblue',linewidth=0.5)
 			
 	# 			pl.plot(t[i_s1],1,'ko',markerfacecolor='None')
 	# 			pl.plot(t[i_s2],1,'ko',markerfacecolor='None')
-				pl.xlabel(r'$\mu$s');pl.ylabel('mV');pl.title('event %d'%n);
+# 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');pl.title('event %d'%n);
 				if 1:
 					pl.ylim([-3,15])
 					pl.ylim([-30,150])
@@ -312,59 +340,66 @@ for compressed_file in compressed_file_list:
 					pl.ylim([-20,120])
 	
 				pl.subplot(1,4,2)
-				for i in np.array([5,10]):#range(0,nch-1):
+				for i in np.array([5,10,9]):#range(0,nch-1):
 					pl.plot(y1z[i,:],'-',linewidth=0.5);
-				try:
-					pl.plot(t[argmax1[1:]],-0.2*np.ones(t[argmax1[1:]].shape),'k^')
-				except:
-					print('')
+				pl.plot(np.array([0,50e3]),s8*np.array([1,1]),'k:',linewidth=0.5)
+				pl.plot(np.array([0,50e3]),-s8*np.array([1,1]),'k:',linewidth=0.5)
 # 				pl.plot(t,0+y1z[pmt_ch,:],'-',color='powderblue',linewidth=0.5);
-				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[0]);
-				pl.ylim([-0.5,1.5])
+# 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[0]);
+				pl.ylim([-0.5,1.])
 	
 				pl.subplot(1,4,3)
-				for i in np.array([5,10]):#range(0,nch-1):
-					pl.plot(t,y2z[i,:],'-',linewidth=0.5);
+				for i in np.array([5,10,9]):#range(0,nch-1):
+					pl.plot(y2z[i,:],'-',linewidth=0.5);
 				try:
 					pl.plot(t[argmax2[1:]],-0.2*np.ones(t[argmax2[1:]].shape),'k^')
 				except:
 					print('')
+				pl.plot(np.array([0,50e3]),s8*np.array([1,1]),'k:',linewidth=0.5)
+				pl.plot(np.array([0,50e3]),-s8*np.array([1,1]),'k:',linewidth=0.5)
 # 				pl.plot(t,0+y2z[pmt_ch,:],'-',color='powderblue',linewidth=0.5);
-				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[1]);
-				pl.ylim([-0.5,1.5])#pl.ylim([-0.2,3])
+# 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[1]);
+				pl.ylim([-0.5,1.])#pl.ylim([-0.2,3])
 	
 				pl.subplot(1,4,4)
-				for i in np.array([5,10]):#range(0,nch-1):
-					pl.plot(t,y3z[i,:],'-',linewidth=0.5);
+				for i in np.array([5,10,9]):#range(0,nch-1):
+					pl.plot(y3z[i,:],'-',linewidth=0.5);
 				try:
 					pl.plot(t[argmax3[1:]],-0.2*np.ones(t[argmax3[1:]].shape),'k^')
 				except:
 					print('')
+				pl.plot(np.array([0,50e3]),s8*np.array([1,1]),'k:',linewidth=0.5)
+				pl.plot(np.array([0,50e3]),-s8*np.array([1,1]),'k:',linewidth=0.5)
 # 				pl.plot(t,0+y3z[pmt_ch,:],'-',color='powderblue',linewidth=0.5);
-				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[2]);
-				pl.ylim([-0.5,1.5])
+# 				pl.xlabel(r'$\mu$s');pl.ylabel('mV');#pl.title('%1.1f ms delayed'%cascade[2]);
+				pl.ylim([-0.5,1.])
 	
 				pl.show();pl.pause(0.1)	
 
 
 			# get single phd areas - tailor for old windowless sipms, and issue with bi-polar ring in sipms that didn't get hit
-			def getss(wf,nspe):
+			def getss(wf,nspe,ch):
 				spes = np.zeros(nspe) # same size as ss defined above
 				for it in range(0,spes.shape[0]): # find several pulses
 					mxv = np.max(wf)
 					amx = np.argmax(wf)
-					kr = amx+75; kl = amx-75 # ad-hoc by eye to integrate out the whole ring
-# 					kr = amx; kl = amx
-# 					thr = 0.1
-# 					while (wf[kr]>thr):
-# 						kr+=1
-# 						if kr>=wf.shape[0]:
-# 							break
-# 					while (wf[kl]>thr):
-# 						kl-=1
-# 						if kl<=0:
-# 							break
-					spes[it] = np.sum(wf[kl:kr])
+					if 0: #((ch==5) | (ch==10)):
+						kl = amx-75; kr = amx+75 # ad-hoc by eye to integrate out the whole ring
+					else:
+						kr = amx; kl = amx
+						thr = 0.1
+						while (wf[kr]>thr):
+							kr+=1
+							if kr>=wf.shape[0]:
+								break
+						while (wf[kl]>thr):
+							kl-=1
+							if kl<=0:
+								break
+					if (mxv>s8):
+						spes[it] = np.sum(wf[kl:kr])
+					else:
+						spes[it] = 0						
 					wf[kl:kr] = 0
 				return spes
 
@@ -376,10 +411,10 @@ for compressed_file in compressed_file_list:
 					pl.ylim([-0.1,0.5])	
 					pl.xlabel(r'$\mu$s');pl.ylabel('mV');pl.title('event %d'%n);
 					pl.show();pl.pause(0.1)	
-				ss[ch,n+0,:] = getss(y0p5z[ch,:],nspe)*2 # mV ns
-				ss[ch,n+1,:] = getss(y1z[ch,:],nspe)*2
-				ss[ch,n+2,:] = getss(y2z[ch,:],nspe)*2
-				ss[ch,n+3,:] = getss(y3z[ch,:],nspe)*2
+				ss[ch,n+0,:] = getss(y0p5z[ch,:],nspe,ch)*2 # mV ns
+				ss[ch,n+1,:] = getss(y1z[ch,:],nspe,ch)*2
+				ss[ch,n+2,:] = getss(y2z[ch,:],nspe,ch)*2
+				ss[ch,n+3,:] = getss(y3z[ch,:],nspe,ch)*2
 	# 			print("spes in 50-100 us of initiating trigger:")
 	# 			print(ss[:,n+0])
 

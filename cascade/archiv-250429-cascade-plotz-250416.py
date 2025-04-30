@@ -21,7 +21,7 @@ if 1: # PTFE, Xe liquid
 	mrk = np.array(['s','d'])
 	colorz = np.array(['gray','green','olivedrab','steelblue','sienna'])
 
-# 	data_folders = np.array(['20250424-094149']); # line triggers
+	data_folders = np.array(['20250424-094149']); # line triggers
 
 def linfit(X,Y):
 	# following "Error Analysis" by Taylor 2nd Ed. p181 -pfs
@@ -60,19 +60,19 @@ print('NOTE: code assumes windowless sipms are channels 0,5,10,15 (physical chan
 pl.figure(8);pl.clf();ax=pl.gca()
 
 for ii in range(0,data_folders.shape[0]):
-# for ii in range(0,1):
+#for ii in range(0,1):
 	if ii==0:
 		ww=8
 	elif ii==1:
 		ww=5
-			
+	
 	data_dir = '/Users/peter/Public/data/'+data_folders[ii]+'/'
 	aa_file_list = glob.glob(data_dir+"./aa/*v2.npz")
 	print('looking in: %s'%data_folders[ii])
 	print('found %d files'%len(aa_file_list))
 	h_file = np.load(data_dir+"/compressed_filtered_data/headers.npz")
 	h_array = h_file["arr_0"]
-	h_n_events = int(np.floor(h_array.size/8)) +1014
+	h_n_events = int(np.floor(h_array.size/8))
 
 	# check data_size
 	check_data = np.load(aa_file_list[0])
@@ -84,7 +84,7 @@ for ii in range(0,data_folders.shape[0]):
 	s1ap = np.zeros([nch,h_n_events])
 	aa_last = 0
 	for aa_file in aa_file_list:
-		print(aa_file)
+# 		print(aa_file)
 		with np.load(aa_file) as data:
 			a = data["arr_0"].shape[1]
 			aa[:,aa_last:(aa_last+a)] = data["arr_0"]
@@ -119,7 +119,7 @@ for ii in range(0,data_folders.shape[0]):
 			print('not enough counts for average')
 		gains[gains==0]=1e-6
 		
-		if 0:#((ch==5) | (ch==10) | (ch==8)): 
+		if ((ch==5) | (ch==10) | (ch==8)): 
 			pl.figure(6);pl.clf();
 			pl.errorbar(beanc,cts0,yerr=np.sqrt(cts0),xerr=db/2,fmt='k.')
 			pl.errorbar(beanc,cts1,yerr=np.sqrt(cts1),xerr=db/2,fmt='r.')
@@ -145,9 +145,7 @@ for ii in range(0,data_folders.shape[0]):
 #		input('paused...')
 
 	s10 = s1[:,np.arange(0,ei,4)]
-	# threshold on found pulses! -- forgot this for the past 2 weeks :)
-	ss[ww,:,:] = ss[ww,:,:] * (ss[ww,:,:]>lr[ww]) 
-
+# 	sst = ss*(ss>lr) # threshold
 	# sum all the pulses, or put a threshold to only sum spe
 	ss0 = np.sum( ss[:,np.arange(0,ei,4),:] ,axis=2 )
 	ss1 = np.sum( ss[:,np.arange(1,ei,4),:] ,axis=2 )
@@ -168,10 +166,11 @@ for ii in range(0,data_folders.shape[0]):
 		pl.minorticks_on()
 
 	###
-	cut = (s10[ww,:]>2000) & (s10[ww,:]<4000) #\
-# 		& (ss1[ww,:]<s10[ww,:]) \
-# 		& (ss2[ww,:]<s10[ww,:]) \
-# 		& (ss3[ww,:]<s10[ww,:])
+	cut = (s10[ww,:]>2000) & (s10[ww,:]<4000) \
+		& (ss1[ww,:]<s10[ww,:]) \
+		& (ss2[ww,:]<s10[ww,:]) \
+		& (ss3[ww,:]<s10[ww,:])
+# 	print('*** hey - add a cut for pulses >> 1-2 spe, within a delayed window?')	
 
 	if ((data_folders[0][-6:])=='094149'): # the line trigger dataset
 		ww=5
@@ -201,23 +200,20 @@ for ii in range(0,data_folders.shape[0]):
 			pl.text(0.012,dpb[0],(r'Xe scintillation pulse $\bar{a}$'),color='k',verticalalignment='center',fontsize=14)
 			pl.text(0.012,dpb[0]/30,('delayed photons $d_p(t)$'),rotation=-27,color='k',verticalalignment='center',fontsize=14)
 
-		if ww==8:
-			(a, b, sigma_a, sigma_b) = linfit(np.log10(ct[1:4]),np.log10(dpb[1:4]))
-			print(b)
-			tmp = 1/(10**a/dpb[0])
-			print(tmp)
-	# 		pl.plot(tt[0:],(10**a)*tt[0:]**b,'-',color=colorz[ii],linewidth=1)
-			pl.plot(tt[0:],dpb[0]/tmp*tt[0:]**b,':',color=colorz[ii],linewidth=1)
-		if ww==5:
-			pl.plot(tt[0:],1*np.exp(-tt[0:]/1),'g:')
+		
+		(a, b, sigma_a, sigma_b) = linfit(np.log10(ct[1:4]),np.log10(dpb[1:4]))
+		print(b)
+		tmp = 1/(10**a/dpb[0])
+		print(1/(10**a/dpb[0]))
+# 		pl.plot(tt[0:],(10**a)*tt[0:]**b,'-',color=colorz[ii],linewidth=1)
+		pl.plot(tt[0:],dpb[0]/tmp*tt[0:]**b,':',color=colorz[ii],linewidth=1)
 
-		pl.text(0.012,0.4,('random photon background'),color='black',verticalalignment='center',fontsize=14)		
+
+		pl.text(0.012,0.4,('random photon background'),color='green',verticalalignment='center',fontsize=14)		
 		sig = 0.04; mu_b = 0.65;
-		sig = 0.04; mu_t = 0.15;
 		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_b,':',color='grey',linewidth=1)
-		ax.add_patch(Rectangle((1e-2, mu_t-sig), 2, sig*2,facecolor=colorz[ii],alpha=0.25,edgecolor='None'))
-		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_t,':',color='grey',linewidth=1)
-		ax.add_patch(Rectangle((1e-2, mu_b-sig), 2, sig*2,facecolor='grey',alpha=0.5,edgecolor='None'))
+		ax.add_patch(Rectangle((1e-2, mu_b-sig), 2, sig*2,facecolor=colorz[ii],alpha=0.25,edgecolor='None'))
+# 		ax.add_patch(Rectangle((1e-2, mu_t-sig), 2, sig*2,facecolor=colorz[ii],alpha=0.5,edgecolor='None'))
 # 		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_t,':',color='k',linewidth=1) 
 		
 

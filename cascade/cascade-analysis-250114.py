@@ -34,7 +34,7 @@ def linfit(X,Y):
 #https://drive.google.com/drive/folders/1DjYev4OSSBny3FIhqXFQoQJvNfHxt7ow
 ### sandboxing #(socket.gethostname()[0]=='b') :
 
-plotz=1
+plotz=0
 if 1: # single PMT bottom, cathode alphas (?)
 	#data_dir = '/Users/peter/Public/data/20250114-211818/'
 	#data_dir = '/Users/peter/Public/data/20250115-145123/'
@@ -56,6 +56,7 @@ if 1: # single PMT bottom, cathode alphas (?)
 	data_dir = '/Users/peter/Public/data/20250220-131431/' # 10000 events, 200 us
 
 	data_dir = '/Users/peter/Public/data/20250226-202029/' # 5000 events, 200 us
+	data_dir = '/Users/peter/Public/data/20250227-070842/' #
 
 # 	data_dir = '/Users/peter/Public/data/20250227-132142/' # few 1000 events, 200 us, no Xe, 300 K
 

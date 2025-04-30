@@ -4,6 +4,11 @@ import pandas as pd
 import os, socket
 import glob
 from matplotlib.patches import Rectangle
+from matplotlib import rc
+rc('font', **{'family':'sans-serif','serif':['Palatino']})
+rc('text', usetex=True)
+rc('xtick', labelsize=14)
+rc('ytick', labelsize=14)
 
 
 
@@ -61,8 +66,6 @@ for ii in range(0,data_folders.shape[0]):
 	print('looking in: %s'%data_folders[ii])
 	print('found %d files'%len(aa_file_list))
 	for aa_file in aa_file_list:
-		#print('load file %s'%aa_file)
-	#	np.savez(aa_file,aa,ee,s1,is1,is2,s2f)
 		with np.load(aa_file) as data:
 			a = data["arr_0"].shape[1]
 			aa[:,aa_last:(aa_last+a)] = data["arr_0"]
@@ -162,7 +165,7 @@ s1top = s1top + s1top_ap
 s10 = s1top + s1bot
 s1tba = (s1top-s1bot)/(s1top+s1bot)
 
-if 1: ## quality cuts
+if 0: ## quality cuts
 	pl.figure(10);pl.clf();
 	db=50
 	if xe==1:
@@ -236,8 +239,8 @@ if 1: ## quality cuts
 
 
 ###
-	cut = (s10>300) & (s10<500) \
-		& (s1bot_ap<10)
+cut = (s10>300) & (s10<500) \
+	& (s1bot_ap<10)
 
 				
 
@@ -258,58 +261,77 @@ ct = np.array([0.01, 0.075, 0.2+0.05, 0.5+0.05, 1.0+0.05]) # trigger cascade (se
 if (data_folders[0][-6:]=='094512'):
 	ct = np.array([0.01, 0.075, 0.3+0.05, 0.5+0.05, 1.0+0.05]) # trigger cascade (set by hardware) -- briefly used before noon on Feb 20
 
-# Rce = 0.0063 # small-s2 limit of ratio S2ce/S2 -- should triple check
 ### define the number of detected photons. subtract the number of phd identified as single e-
 dpt = np.array([ np.sum(s1top[cut])/N , np.sum(a0t[cut])*2/N , np.sum(a1t[cut])/N , np.sum(a2t[cut])/N , np.sum(a3t[cut])/N ])
 dpb = np.array([ np.sum(s1bot[cut])/N , np.sum(a0b[cut])*2/N , np.sum(a1b[cut])/N , np.sum(a2b[cut])/N , np.sum(a3b[cut])/N ])
 # 	af[:,ii] = detp#/triggerS1
 
+colr='blue'
 if 1:
 	pbw = 0.1 # plot bin width, fixed to cascade event window!
 	pl.figure(8);pl.clf(); ax = pl.gca()
-	pl.errorbar(ct[1:],dpb[1:],yerr=np.sqrt(dpb[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='o',color='blue',markersize=5,markerfacecolor='white',label='R8778 PMT')
+	pl.errorbar(ct[1:],dpb[1:],yerr=np.sqrt(dpb[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='o',color=colr,markersize=5,markerfacecolor='white',lw=0.5,label='R8778 PMT')
 	if psipm:
-		pl.errorbar(ct[1:],dpt[1:],yerr=np.sqrt(dpt[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='s',color='grey',markersize=5,markerfacecolor='white',label='S13371 SiPM')
+		pl.errorbar(ct[1:],dpt[1:],yerr=np.sqrt(dpt[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='s',color='grey',markersize=5,markerfacecolor='white',lw=0.5,label='S13371 SiPM')
 	
-	pl.plot(ct[0],dpb[0],'o',color='blue',markersize=7,markerfacecolor='white')
+	pl.plot(ct[0],dpb[0],'o',color=colr,markersize=7,markerfacecolor='white')
 	if psipm:
 		pl.plot(ct[0],dpt[0],'s',color='grey',markersize=7,markerfacecolor='white')
 
-# 	pl.text(0.012,dpb[0],('Cherenkov trigger $\mu=%1.0f$'%dpb[0]),color='blue',verticalalignment='center')
-	pl.text(0.012,dpb[0],('Cherenkov trigger'),color='blue',verticalalignment='center')
+	pl.text(0.012,dpb[0],(r'Cherenkov pulse $\bar{a}$'),color='k',verticalalignment='center',size=14)
 
-# 	(a, b, sigma_a, sigma_b) = linfit(np.log10(ct[1:4]),np.log10(dpb[1:4]))
-# 	pl.plot(tt,(10**a)*tt**b,'--',color='blue',linewidth=1,label='$at^{-b}$') 
+	(a, b, sigma_a, sigma_b) = linfit(np.log10(ct[1:4]),np.log10(dpb[1:4]))
+	pl.plot(tt,(10**a)*tt**b,'--',color='blue',linewidth=0.5)#,label='$at^{-b}$') 
+	print(b)
+	print(1/(10**a/dpb[0]))
 
-#	pl.plot(tt,(dpb[0]/5654)*tt**-1.24,'-',color='blue',linewidth=1,label='Xe expectation') # fitting last 3 points, no cut on AP
-# 	pl.plot(tt,(dpb[0]/6430)*tt**-1.26,'-',color='blue',linewidth=1,label='Xe expectation') # fitting last 3 points, AP<400
-	pl.plot(tt,(dpb[0]/5313)*tt**-1.097,'--',color='blue',linewidth=1,label='Xe expectation') # fitting last 3 points, AP<300
-# 	pl.plot(tt,(dpb[0]/5075)*tt**-1.11,'-',color='blue',linewidth=1,label='Xe expectation') # fitting last 3 points, AP<200
-# 	pl.text(0.012,dpb[0]/10,('$d_p(t)=at^{-b}$'),rotation=-30,color='blue',verticalalignment='center')
-	pl.text(0.012,dpb[0]/70,('delayed photons $d_p(t)$'),rotation=-22,color='blue',verticalalignment='center')
-# 	pl.text(0.012,dpb[0]/70,('Xe expectation'),rotation=-22,color='blue',verticalalignment='center')
-
-# 	pl.plot(tt,(dpb[0]/3800)*tt**-1.1,'--',color='blue',linewidth=1) 
+	# UCLA:
+	#pl.plot(tt,(dpb[0]/5313)*tt**-1.097,'--',color=colr,linewidth=1,label='Xe expectation') # fitting last 3 points, AP<300
+	#pl.text(0.012,dpb[0]/70,('delayed photons $d_p(t)$'),rotation=-22,color='k',verticalalignment='center')
 	
-# 		pl.plot(tt,fitdp[ii],'-',linewidth=0.5,color=colorz[ii],label=pwrlabl[ii])
+	# paper:
+	if 0:
+		pl.plot(tt[0:],(dpb[0]/avals[1])*tt[0:]**bvals[1],'--',color='red',linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[2])*tt[0:]**bvals[2],'--',color='orange',linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[3])*tt[0:]**bvals[3],'--',color='gold',linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[4])*tt[0:]**bvals[4],'--',color='green',linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[5])*tt[0:]**bvals[5],'--',color='blue',linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[6])*tt[0:]**bvals[6],'--',color='indigo',linewidth=0.5)
+	if 0:
+		sysc='k'
+		pl.plot(tt[0:],(dpb[0]/avals[1])*tt[0:]**bvals[1],':',color=sysc,linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[2])*tt[0:]**bvals[2],':',color=sysc,linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[3])*tt[0:]**bvals[3],':',color=sysc,linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[4])*tt[0:]**bvals[4],':',color=sysc,linewidth=0.5)
+		pl.plot(tt[0:],(dpb[0]/avals[5])*tt[0:]**bvals[5],':',color=sysc,linewidth=0.5)
+# 		pl.plot(tt[0:],(dpb[0]/avals[6])*tt[0:]**bvals[6],':',color=sysc,linewidth=0.5)
 	
-	pl.text(0.012,0.3,('random single photon background'),color='blue',verticalalignment='center')
+	pl.text(0.012,dpb[0]/40,('delayed photons $d_p(t)$'),rotation=-22,color='k',verticalalignment='center',size=14)
+	
+	pl.text(0.012,0.3,('random photon background'),color='b',verticalalignment='center',size=14)
 	sig = 0.04; mu_t = 0.45; mu_b = 0.19 
-	pl.plot(np.array([1e-2,2]),np.ones(2)*mu_b,':',color='blue',linewidth=1)
-	ax.add_patch(Rectangle((1e-2, mu_b-sig), 2, sig*2,color='powderblue',alpha=0.5))
+	pl.plot(np.array([1e-2,2]),np.ones(2)*mu_b,':',color='grey',linewidth=1)
+	ax.add_patch(Rectangle((1e-2, mu_b-sig), 2, sig*2,facecolor=colr,alpha=0.25, edgecolor='None'))
 	if psipm:
 		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_t,':',color='grey',linewidth=1)
-		ax.add_patch(Rectangle((1e-2, mu_t-sig), 2, sig*2,color='grey',alpha=0.5))
+		ax.add_patch(Rectangle((1e-2, mu_t-sig), 2, sig*2,color='grey',alpha=0.25,edgecolor='None'))
 		
-# 		pl.plot(np.array([1e-3,1e-1]),np.array([1,1]),'k:',label='progenitor window')	
-	pl.xlabel('time (ms)')
-	pl.ylabel('photon counts')
+
+
+	if 0: # top sipm array
+		(a, b, sigma_a, sigma_b) = linfit(np.log10(ct[1:4]),np.log10(dpb[1:4]))
+		print(b)
+		print(1/(10**a/dpb[0]))
+		pl.plot(tt,(10**a)*tt**b,'-',color='grey',linewidth=1)#,label='fit to sipms') 
+
+	pl.xlabel('time (ms)',size=14)
+	pl.ylabel('photon counts',size=14)
 # 		pl.ylim([1e-5,2])
 	pl.xscale('log')
 	pl.yscale('log')
-	pl.legend()
+	pl.legend(fontsize=14)
 # 	pl.title(data_dir[-16:-1])
 	pl.ylim([0.1,1e4])
 
-#pl.savefig('fig2.png',dpi=300)
+pl.savefig('fig2.png',dpi=300)
 
