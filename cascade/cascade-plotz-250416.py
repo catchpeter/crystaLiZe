@@ -43,9 +43,18 @@ def dp(a,b,t,A,tp,toff):
 	# t: time base (assumed ms here)
 	# A: progenitor pulse counts (photons detected)
 	# tp: time of the pulse
-	# toff: offset time in which the function is not calculated
+	# toff: holdoff time in which the function is not calculated
 	wf = a*A*((t-tp)/toff)**b
 	wf[t<(tp+toff)] = 0	
+	return (wf)
+
+def pexp(a,t,A,tp,tau):
+	# a: amplitude coefficient
+	# t: time base (assumed ms here)
+	# A: progenitor pulse counts (photons detected)
+	# tp: time of the pulse
+	wf = a*A*np.exp(-(t-tp)/tau)
+	wf[wf>A] = 0	# quick hack for plotting
 	return (wf)
 
 dtt = 0.01
@@ -59,13 +68,17 @@ af = np.zeros((5,data_folders.shape[0]))
 print('NOTE: code assumes windowless sipms are channels 0,5,10,15 (physical channels +1)')
 pl.figure(8);pl.clf();ax=pl.gca()
 
-for ii in range(0,data_folders.shape[0]):
+for ii in range(0,1):#data_folders.shape[0]):
 # for ii in range(0,1):
 	if ii==0:
 		ww=8
 	elif ii==1:
 		ww=5
-			
+
+	if ((data_folders[0][-6:])=='094149'): # the line trigger dataset
+		ww=5
+		print('line trigger data set, ww=%d'%ww)
+
 	data_dir = '/Users/peter/Public/data/'+data_folders[ii]+'/'
 	aa_file_list = glob.glob(data_dir+"./aa/*v2.npz")
 	print('looking in: %s'%data_folders[ii])
@@ -84,7 +97,7 @@ for ii in range(0,data_folders.shape[0]):
 	s1ap = np.zeros([nch,h_n_events])
 	aa_last = 0
 	for aa_file in aa_file_list:
-		print(aa_file)
+		#print(aa_file)
 		with np.load(aa_file) as data:
 			a = data["arr_0"].shape[1]
 			aa[:,aa_last:(aa_last+a)] = data["arr_0"]
@@ -112,11 +125,11 @@ for ii in range(0,data_folders.shape[0]):
 		lr = np.ones(nch)*6  # lower fit range for finding gain
 		lr[5] = 10
 		lr[10] = 10
-		ur = 50 # upper fit range for finding gain
+		ur = 75 # upper fit range for finding gain
 		if (any(cts0123[int(lr[ch]):ur])):
 			gains[ch] = np.average(beanc[int(lr[ch]):ur],axis=0,weights=cts0123[int(lr[ch]):ur]) #
 		else:
-			print('not enough counts for average')
+			print('not enough counts for average on ch %d'%ch)
 		gains[gains==0]=1e-6
 		
 		if 0:#((ch==5) | (ch==10) | (ch==8)): 
@@ -168,13 +181,18 @@ for ii in range(0,data_folders.shape[0]):
 		pl.minorticks_on()
 
 	###
-	cut = (s10[ww,:]>2000) & (s10[ww,:]<4000) #\
-# 		& (ss1[ww,:]<s10[ww,:]) \
-# 		& (ss2[ww,:]<s10[ww,:]) \
-# 		& (ss3[ww,:]<s10[ww,:])
+	if (ww==5) | (ww==10):
+		safetynet = 190
+	if ww==8:
+		safetynet = 600
+	
+	cut = (s10[ww,:]>2000) & (s10[ww,:]<4000) \
+			& (ss0[ww,:]<safetynet) \
+			& (ss1[ww,:]<safetynet) \
+			& (ss2[ww,:]<safetynet) \
+			& (ss3[ww,:]<safetynet)
 
 	if ((data_folders[0][-6:])=='094149'): # the line trigger dataset
-		ww=5
 		cut = (s10[ww,:]>0) & (s10[ww,:]<100) \
 			& (ss0[ww,:]<100) \
 			& (ss1[ww,:]<100) \
@@ -208,16 +226,18 @@ for ii in range(0,data_folders.shape[0]):
 			print(tmp)
 	# 		pl.plot(tt[0:],(10**a)*tt[0:]**b,'-',color=colorz[ii],linewidth=1)
 			pl.plot(tt[0:],dpb[0]/tmp*tt[0:]**b,':',color=colorz[ii],linewidth=1)
+# 			pl.plot(tt[0:],40*dpb[0]/tmp*tt[0:]**b,':',color=colorz[ii],linewidth=1)
 		if ww==5:
-			pl.plot(tt[0:],1*np.exp(-tt[0:]/1),'g:')
+			pl.plot(tt[0:],1.0*np.exp(-tt[0:]/1.0),'g:')
 
 		pl.text(0.012,0.4,('random photon background'),color='black',verticalalignment='center',fontsize=14)		
-		sig = 0.04; mu_b = 0.65;
-		sig = 0.04; mu_t = 0.15;
+# 		sig = 0.04; mu_b = 0.65; # not sure how I got this, can't duplicate
+		sig_b = 0.009; mu_b = 0.017;
+		sig_t = 0.04; mu_t = 0.15;
 		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_b,':',color='grey',linewidth=1)
-		ax.add_patch(Rectangle((1e-2, mu_t-sig), 2, sig*2,facecolor=colorz[ii],alpha=0.25,edgecolor='None'))
+		ax.add_patch(Rectangle((1e-2, mu_t-sig_t), 2, sig_t*2,facecolor=colorz[ii],alpha=0.25,edgecolor='None'))
 		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_t,':',color='grey',linewidth=1)
-		ax.add_patch(Rectangle((1e-2, mu_b-sig), 2, sig*2,facecolor='grey',alpha=0.5,edgecolor='None'))
+		ax.add_patch(Rectangle((1e-2, mu_b-sig_b), 2, sig_b*2,facecolor='grey',alpha=0.5,edgecolor='None'))
 # 		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_t,':',color='k',linewidth=1) 
 		
 
@@ -233,38 +253,113 @@ for ii in range(0,data_folders.shape[0]):
 
 pl.savefig('fig3.png',dpi=300)
 
+### plot photon rate
+if 1: 
+	ttt = np.arange(1,4e3,1) # ms
+	ws = np.zeros(len(ttt))
+	ws1 = np.zeros(len(ttt))
+	ws2 = np.zeros(len(ttt))
+	pgs = np.array([1e6,2e5,0.7e5,8e5,2e5])
+	tps = np.array([800,1100,1300,1600,1800])
+	labz = np.array([r'photon pulse ($n_{\gamma}$)','','','',''])
+	pl.figure(9);pl.clf();ax=pl.gca()
+	for i in range(len(pgs)):
+		pl.plot(tps[i],pgs[i],'k^',markerfacecolor='white',label=labz[i])
+		ws = ws + dp(0.42,-1.3,ttt,pgs[i],tps[i],40)
+# 		ws1 = ws1 + dp(1.2,-1.3,ttt,pgs[i],tps[i],10)
+		ws2 = ws2 + pexp(pgs[i]/2800*1e4,ttt,pgs[i],tps[i],1)
+		ws[(tps[i]+0)*1000:(tps[i]+40)*1000] = 0
+		ws1[(tps[i]+0)*1000:(tps[i]+40)*1000] = 0
+	
+	ws = ws+3400
+	ws2 = ws2 + 10000
+	
+	pl.plot(np.array([0,1]),np.array([0,1]),'b-',label=r'$d_p(t)=\alpha\bar{a}t^b$')
+	pl.plot(ttt,ws,'b.',lw=0.5,ms=1)#,label='Hypothetical detector')
+# 	pl.plot(ttt,ws1+10000,'c.',lw=0.5,ms=2,label='Hypothetical detector')
+	pl.plot(ttt,ws2,'g:',lw=1,label=r'$d_p(t)=\alpha e^{-t/\tau}$')
+
+	pl.plot(ttt[1550],ws[1550],'rs',ms=10,markerfacecolor='None')
+	pl.plot(ttt[1665],ws[1665],'rs',ms=10,markerfacecolor='None')
+	
+	pl.yscale('log')
+	pl.xlabel('time (ms)',fontsize=14)
+	pl.ylabel('photon rate (Hz)',fontsize=14)
+	pl.legend(fontsize=14,loc='best')
+	pl.xlim([1000,2000])
+	pl.ylim([8e3,1e6])
+	pl.minorticks_on()
+	#w0 = dp(0.2,-1.3,ttt,1e6,0,40)
+	pl.savefig('figs.000.png',dpi=300)
 
 
-
-ttt = np.arange(1e-3,5e3,1e-3) # ms
-ws = np.zeros(len(ttt))
-ws2 = np.zeros(len(ttt))
-pgs = np.array([7e5,5e5,3e5,8e5])
-tps = np.array([0,1000,1500,2700])
-labz = np.array(['photon pulse (counts)','','',''])
-pl.figure(9);pl.clf();ax=pl.gca()
-for i in range(len(pgs)):
-	pl.plot(tps[i],pgs[i],'ro',label=labz[i])
-	ws = ws + dp(0.42,-1.3,ttt,pgs[i],tps[i],40)
-	#ws2 = ws2 + dp(1.6,-1.3,ttt,pgs[i],tps[i],15)
-	ws2 = ws2 + dp(0.42/2.56,-0.15,ttt,pgs[i],tps[i],40)
-pl.plot(ttt,ws+3400,'b-')
-pl.plot(ttt,ws2+3400,'k--',lw=0.5)
-
-pl.yscale('log')
-pl.ylim([3e3,1e6])
-pl.xlabel('time (ms)')
-pl.ylabel('photon rate (Hz)')
-pl.legend()
-#w0 = dp(0.2,-1.3,ttt,1e6,0,40)
+	from numpy import math
+	M = 250 # number of PMTs
+	N = 3 # coincidence
+	Rdc = 1e4/M # Hz
+	T = 200e-9 # time window
+	factt = math.factorial(M)/math.factorial(M-N)
+	Sn = (1/T)*factt* (Rdc*T*np.exp(-Rdc*T))**N
 
 
+	if 0: # compare w Anderson
+		pl.figure(99);pl.clf();ax=pl.gca()
+		pl.plot(ttt[0],1e6,'k^',markerfacecolor='white',label=labz[i])
+		pl.plot(ttt,dp(0.42,-1.3,ttt,1e6,ttt[0],40),'b-')
+		pl.plot(ttt[0:],1e4*1e6/tmp*ttt[0:]**b,'k:')
+		pl.yscale('log')
+		pl.xscale('log')
 
-# wf0 = np.zeros(len(ttt))
-# trig=0.01; sz = 1000*1e3
-# wf0[ttt>=(trig+40000e-3)] = 10*sz/6086*(ttt[ttt>=(trig+40000e-3)])**-1.298
-# cp = 1000000
-# wf1 = np.append(np.zeros(cp),wf0[0:-cp])
-# cp = 2000000
-# wf2 = np.append(np.zeros(cp),wf0[0:-cp])
-# pl.semilogy(ttt,(wf0+wf1+wf2)*1e4 + 3410,'k.',markersize=3)
+### compare with LUX https://arxiv.org/pdf/2004.07791 and LZ
+ts = np.arange(1e-3,1,1e-4) # s
+tms = np.arange(0.1,1e3,0.1) # ms
+if 1:
+	pl.figure(88);pl.clf()
+	pl.loglog(tms,(1e4/6000)*tms**-1.30,'-',color=colorz[ii],linewidth=1,label='LBL')
+	pl.loglog(tms,33*(1e4/6000)*tms**-1.30,'-.',color=colorz[ii],linewidth=1,label=r'LBL $\times33$')
+	pl.loglog(tms,0.1*(1e4/6000)*tms**-1.30,'--',color=colorz[ii],linewidth=1,label=r'LBL $\times0.1$')
+# 	pl.loglog(ts,dp(0.42,-1.3,ts,1,0,40),'-',color='b',linewidth=1,label='LZ')
+	pl.plot(np.array([1e-4,1e-3,1e-2,1e0])*1e3,1e3*np.array([1e-3,1e-4,1e-5,1e-6]),'ro',label='LUX')
+# 	pl.plot(tms,(1e-3)**-0.953*8370/10**6.5*tms**-0.953,'m:',label='LZ 10$^{6.5}$')
+# 	pl.plot(tms,(1e-3)**-0.542*6993/10**5.5*tms**-0.542,'r:',label='LZ 10$^{5.5}$')
+
+	pl.plot(tms,(1e-3)**-1.3*6500/1e6*tms**-1.3,'b-',lw=0.5,label='LZ ad-hoc')
+
+	pl.grid()
+	pl.legend()
+	pl.xlabel('time (ms)',fontsize=14)
+	pl.ylabel('photon rate (Hz)',fontsize=14)
+
+if 1: # make sure I have the unit conversions correct
+	pl.figure(89);pl.clf()
+	pl.loglog(ts,8370*ts**-0.953,'m:',label='LZ 10$^{6.5}$')
+	pl.plot(tms*1e-3,(1e-3)**-0.542*6993*tms**-0.542,'k--',label='LZ 10$^{5.5}$')
+	pl.plot(ts,6993*ts**-0.542,'r:',label='LZ 10$^{5.5}$')
+	pl.plot(ts,dp(0.42,-1.3,ts,1e6,1e-3,0.04),'-',color='b',linewidth=1,label='LZ')
+	pl.plot(ts,6500*ts**-1.3,'c--',label='LZ ad-hoc')
+	pl.plot(tms*1e-3,(1e-3)**-1.3*6500*tms**-1.3,'g:',label='LZ ad-hoc')
+	pl.xlabel('time (s)',fontsize=14)
+	pl.grid()
+	
+# following need to be generated from plotz-250306:
+# 	pl.plot(ttt[0:],(1/avals[1])*ttt[0:]**bvals[1],'--',color='red',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[2])*ttt[0:]**bvals[2],'--',color='orange',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[3])*ttt[0:]**bvals[3],'--',color='gold',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[4])*ttt[0:]**bvals[4],'--',color='green',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[5])*ttt[0:]**bvals[5],'--',color='blue',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[6])*ttt[0:]**bvals[6],'--',color='indigo',linewidth=0.5)
+
+### how does the amplitude of dpt change with progenitor pulse size?
+if 0:
+	meandpb0 = np.array([392,831,1230,1447,1742,2238,2717,3245,3723,4219,4719])
+	dpb0overdbp1 = np.array([27,70,113,135,150,160,205,209,255,270,230])
+	theb = np.array([-1.55,-1.41,-1.40,-1.39,-1.42,-1.41,-1.25,-1.41,-1.18,-1.24,-1.21])
+
+	(a12, b12, sigma_a, sigma_b) = linfit(meandpb0[1:4],dpb0overdbp1[1:4])
+	mm = np.arange(10,5000,10)
+	pl.figure(12);pl.clf()
+	pl.plot(meandpb0,dpb0overdbp1,'ro')
+	pl.plot(mm,a12+b12*mm,'r-')
+	#pl.axis([0,5000,0,500])
+
+

@@ -47,7 +47,8 @@ fitdp = np.array([1.0e-4*tt**-1,1.2e-4*tt**-1])
 af = np.zeros((5,data_folders.shape[0]))
 cutvals = np.arange(1000,5000,500) # for PMT
 #cutvals = np.arange(1500,11000,1000) # for sipm
-cutvals = np.array([1500,2500,3500,4500,5500,6500])
+cutvals = np.array([1500,2500,3500,4500,5500,6500,7500])
+cutvals = np.array([5500])
 mvals = np.zeros(len(cutvals))
 avals = np.zeros(len(cutvals))
 bvals = np.zeros(len(cutvals))
@@ -57,8 +58,8 @@ avals1 = np.zeros(len(cutvals))
 bvals1 = np.zeros(len(cutvals))
 sumdp1 = np.zeros(len(cutvals))
 
-# for cc in range(0,len(cutvals)):
-for cc in range(0,1):
+for cc in range(0,len(cutvals)):
+# for cc in range(0,1):
 	for ii in range(0,1):#data_folders.shape[0]):
 		data_dir = '/Users/peter/Public/data/'+data_folders[ii]+'/'
 		aa_file_list = glob.glob(data_dir+"./aa/*v2.npz")
@@ -192,7 +193,7 @@ for cc in range(0,1):
 		if xe: # for UCLA cut on 4500 top and bot
 			cut = (s1bot>0) & (s1bot<4500) \
 				& (a0b<100) & (a1b<100) & (a2b<100) & (a3b<100) \
-				& (s1top>0) & (s1top<5500)
+				& (s1top>0) & (s1top<cutvals[cc])
 # 				& (s1top>cutvals[cc-1]) & (s1top<cutvals[cc]) \
 # 				& (s1top>000) & (s1top<4500) \
 	# 	 		& (s1bot_ap<300) # used 300 for UCLA, but don't need; previous line takes care of that data issue
@@ -201,7 +202,9 @@ for cc in range(0,1):
 	# 			& (a1t<a0t) & (a2t<a0t) & (a3t<a0t) & (a1b<a0b) & (a2b<a0b) & (a3b<a0b)
 	
 		if (int(data_folders[0][-6:])==161601): # the line trigger dataset
-			cut = (s10>0) & (s10<100)
+			cut = (s10>0) & (s10<100) \
+				& (a0t<3) & (a1t<3) & (a2t<3) & (a3t<3)
+			print('*** line trigger data set ***')
 
 		nz=np.nonzero(cut); nz = nz[0]
 		N = np.sum(cut)
@@ -228,9 +231,9 @@ for cc in range(0,1):
 			pl.errorbar(ct[1:],dpt[1:],yerr=np.sqrt(dpt[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='s',color='grey',markersize=5,markerfacecolor='white',lw=0.5,label='S13371 SiPM')
 			pl.errorbar(ct[1:],dpb[1:],yerr=np.sqrt(dpb[1:]*N)/N,xerr=np.array([0.025,0.05,0.05,0.05]),fmt='o',color=colorz[ii],markersize=5,markerfacecolor='white',lw=0.5,label='R8778 PMT')
 		
-			if (int(data_folders[0][-6:])!=161601):
-				pl.plot(ct[0],dpt[0],'s',color='grey',markersize=7,markerfacecolor='white')
-				pl.plot(ct[0],dpb[0],'o',color=colorz[ii],markersize=7,markerfacecolor='white')
+# 			if (int(data_folders[0][-6:])!=161601):
+			pl.plot(ct[0],dpt[0],'s',color='grey',markersize=7,markerfacecolor='white')
+			pl.plot(ct[0],dpb[0],'o',color=colorz[ii],markersize=7,markerfacecolor='white')
 
 	# 		pl.text(0.015,dpb[0],('Xe scintillation trigger $\mu=%1.0f$'%dpb[0]),color='blue',verticalalignment='center')
 			pl.text(0.012,dpb[0],(r'Xe scintillation pulse $\bar{a}$'),color='k',verticalalignment='center',size=14)
@@ -247,13 +250,14 @@ for cc in range(0,1):
 # 				pl.plot(tt[0:18],(10**a)*tt[0:18]**b,'--',color=colorz[ii],linewidth=0.5,label=None) 
 				pl.text(0.012,dpb[0]/150,('delayed photons $d_p(t)$'),rotation=-24,color='k',verticalalignment='center',size=14)
 
-			pl.text(0.012,0.3*1.5,('random photon background'),color='k',verticalalignment='center',size=14)
+			pl.text(0.012,0.3,('random photon background'),color='k',verticalalignment='center',size=14)
 		
-			sig = 0.04; mu_t = 0.45*1.5; mu_b = 0.19*1.5 # factor x1.5 is data-driven
+			sig_t = 0.07; mu_t = 0.43
+			sig_b = 0.06; mu_b = 0.19
 			pl.plot(np.array([1e-2,2]),np.ones(2)*mu_b,':',color='grey',linewidth=1)
-			ax.add_patch(Rectangle((1e-2, mu_b-sig), 2, sig*2,facecolor=colorz[ii],alpha=0.25,edgecolor='None'))
+			ax.add_patch(Rectangle((1e-2, mu_b-sig_b), 2, sig_b*2,facecolor=colorz[ii],alpha=0.25,edgecolor='None'))
 			pl.plot(np.array([1e-2,2]),np.ones(2)*mu_t,':',color='grey',linewidth=1) 
-			ax.add_patch(Rectangle((1e-2, mu_t-sig), 2, sig*2,facecolor='grey',alpha=0.25,edgecolor='None'))
+			ax.add_patch(Rectangle((1e-2, mu_t-sig_t), 2, sig_t*2,facecolor='grey',alpha=0.25,edgecolor='None'))
 
 			if 1: # top sipm array
 				(a1, b1, sigma_a, sigma_b) = linfit(np.log10(ct[1:5]),np.log10(dpt[1:5]))
@@ -272,7 +276,7 @@ for cc in range(0,1):
 	# 		pl.title(data_dir[-16:-1])
 			pl.ylim([0.1,1e4])
 
-	if cutvals[cc]==5500:
+	if 1:#cutvals[cc]==5500:
 		print('saving fig1')
 		pl.savefig('fig1.png',dpi=300)
 
@@ -287,6 +291,25 @@ for cc in range(0,1):
 		bvals1[cc] = b1
 		sumdp1[cc] = np.sum(mvals1[cc]/avals1[cc]*tt[0:99]**bvals1[cc])
 
+### compare with LUX https://arxiv.org/pdf/2004.07791
+if 1:
+	ttt = np.arange(1e-3,4e3,1e-3) # ms
+	pl.figure(88);pl.clf()
+	pl.loglog(ttt[0:],1/6000*ttt[0:]**-1.30,':',color=colorz[ii],linewidth=1)
+	pl.loglog(ttt[0:],40/6000*ttt[0:]**-1.30,'-',color='b',linewidth=1)
+	pl.plot(np.array([1e-4,1e-3,1e-2,1e0])*1e3,np.array([1e-3,1e-4,1e-5,1e-6]),'ro')
+
+# 	pl.plot(ttt[0:],(1/avals[1])*ttt[0:]**bvals[1],'--',color='red',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[2])*ttt[0:]**bvals[2],'--',color='orange',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[3])*ttt[0:]**bvals[3],'--',color='gold',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[4])*ttt[0:]**bvals[4],'--',color='green',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[5])*ttt[0:]**bvals[5],'--',color='blue',linewidth=0.5)
+# 	pl.plot(ttt[0:],(1/avals[6])*ttt[0:]**bvals[6],'--',color='indigo',linewidth=0.5)
+
+
+
+	pl.xlabel('time (ms)',fontsize=14)
+
 # 		input('press a key')
 
 # with bot pmt seeing<4500, cut on top sipm array seeing < 1500,2000,2500,etc
@@ -297,26 +320,23 @@ for cc in range(0,1):
 #bb = -np.array([0.776,0.838,0.862,0.951,0.990,1.081,1.095,1.180,1.260,1.260,1.323,1.362,1.402,1.421,1.456,1.457,1.481,1.472])
 
 
+if 0:
+	pl.figure(88);pl.clf();ax=pl.gca()
+	pl.plot(mvals1[1:],sumdp1[1:]/np.max(sumdp1),'o',label=r'$\Sigma(at^{-b}$) in sipm')
+	#pl.plot(mvals[1:],avals[1:],'o',label='1/a in PMT')
+	pl.plot(mvals1[1:],-bvals1[1:],'o',label='-b in sipm')
 
-pl.figure(88);pl.clf();ax=pl.gca()
-pl.plot(mvals1[1:],sumdp1[1:]/np.max(sumdp1),'o',label=r'$\Sigma(at^{-b}$) in sipm')
-#pl.plot(mvals[1:],avals[1:],'o',label='1/a in PMT')
-pl.plot(mvals1[1:],-bvals1[1:],'o',label='-b in sipm')
+	pl.plot(mvals1[1:],sumdp[1:]/np.max(sumdp),'o',label=r'$\Sigma(at^{-b}$) in pmt')
+	#pl.plot(mvals[1:],avals[1:],'o',label='1/a in PMT')
+	pl.plot(mvals1[1:],-bvals[1:],'o',label='-b in pmt')
 
-pl.plot(mvals1[1:],sumdp[1:]/np.max(sumdp),'o',label=r'$\Sigma(at^{-b}$) in pmt')
-#pl.plot(mvals[1:],avals[1:],'o',label='1/a in PMT')
-pl.plot(mvals1[1:],-bvals[1:],'o',label='-b in pmt')
-
-pl.xlabel('S13371 average photons per pulse ')
-pl.ylabel('see legend')
-pl.legend()
-#(a, b, sigma_a, sigma_b) = linfit(mm[6:],sumdp[6:])
-#pl.plot(np.arange(0,6000,10),a+b*np.arange(0,6000,10),'k--')
-#pl.xlim([0,6600])
-#pl.ylim([0,1100])
-
-#pl.figure(89);pl.clf();ax=pl.gca()
-#pl.plot(mvals,bvals,'o')
+	pl.xlabel('S13371 average photons per pulse ')
+	pl.ylabel('see legend')
+	pl.legend()
+	#(a, b, sigma_a, sigma_b) = linfit(mm[6:],sumdp[6:])
+	#pl.plot(np.arange(0,6000,10),a+b*np.arange(0,6000,10),'k--')
+	#pl.xlim([0,6600])
+	#pl.ylim([0,1100])
 
 
 

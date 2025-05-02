@@ -308,13 +308,15 @@ if 1:
 	
 	pl.text(0.012,dpb[0]/40,('delayed photons $d_p(t)$'),rotation=-22,color='k',verticalalignment='center',size=14)
 	
-	pl.text(0.012,0.3,('random photon background'),color='b',verticalalignment='center',size=14)
-	sig = 0.04; mu_t = 0.45; mu_b = 0.19 
-	pl.plot(np.array([1e-2,2]),np.ones(2)*mu_b,':',color='grey',linewidth=1)
-	ax.add_patch(Rectangle((1e-2, mu_b-sig), 2, sig*2,facecolor=colr,alpha=0.25, edgecolor='None'))
-	if psipm:
-		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_t,':',color='grey',linewidth=1)
-		ax.add_patch(Rectangle((1e-2, mu_t-sig), 2, sig*2,color='grey',alpha=0.25,edgecolor='None'))
+	if 1:
+		pl.text(0.012,0.3,('random photon background'),color='k',verticalalignment='center',size=14)
+		sig_t = 0.07; mu_t = 0.43
+		sig_b = 0.06; mu_b = 0.19
+		pl.plot(np.array([1e-2,2]),np.ones(2)*mu_b,':',color='grey',linewidth=1)
+		ax.add_patch(Rectangle((1e-2, mu_b-sig_b), 2, sig_b*2,facecolor=colr,alpha=0.25, edgecolor='None'))
+		if psipm:
+			pl.plot(np.array([1e-2,2]),np.ones(2)*mu_t,':',color='grey',linewidth=1)
+			ax.add_patch(Rectangle((1e-2, mu_t-sig_t), 2, sig_t*2,color='grey',alpha=0.25,edgecolor='None'))
 		
 
 

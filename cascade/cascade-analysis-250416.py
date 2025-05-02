@@ -34,7 +34,7 @@ def linfit(X,Y):
 #https://drive.google.com/drive/folders/1DjYev4OSSBny3FIhqXFQoQJvNfHxt7ow
 ### sandboxing #(socket.gethostname()[0]=='b') :
 
-plotz=0
+plotz=1
 if 1: #
 	#s8 = 0.2 # parameter for baseline zero-suppression. specific to older, windowless S13370 SiPM
 	data_dir = '/Users/peter/Public/data/20250416-175203/'	# 50 V ch 11 trigger 20 mV
@@ -50,14 +50,16 @@ if 1: #
 # 	data_dir = '/Users/peter/Public/data/20250424-073057/'
 #	data_dir = '/Users/peter/Public/data/20250424-091121/'
 
+### good, but low stats:
 	data_dir = '/Users/peter/Public/data/20250424-091853/'
-
 	data_dir = '/Users/peter/Public/data/20250424-092351/'
+
+### line triggers:
 	data_dir = '/Users/peter/Public/data/20250424-094149/'
 
 ### the good data:
 	data_dir = '/Users/peter/Public/data/20250424-094903/'
-	data_dir = '/Users/peter/Public/data/20250424-101744/'
+# 	data_dir = '/Users/peter/Public/data/20250424-101744/'
 
 
 try:
