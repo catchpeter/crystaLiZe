@@ -48,6 +48,18 @@ def dp(a,b,t,A,tp,toff):
 	wf[t<(tp+toff)] = 0	
 	return (wf)
 
+### plot photon rate
+def dpp(a,b,t,A,tp,toff):
+	# a: amplitude coefficient
+	# b: power law exponent
+	# t: time base (assumed ms here)
+	# A: progenitor pulse counts (photons detected)
+	# tp: time of the pulse
+	# toff: holdoff time in which the function is not calculated
+	wf = a*A*((t-tp))**b
+	wf[t<(tp+toff)] = 0	
+	return (wf)
+
 def pexp(a,t,A,tp,tau):
 	# a: amplitude coefficient
 	# t: time base (assumed ms here)
@@ -68,7 +80,7 @@ af = np.zeros((5,data_folders.shape[0]))
 print('NOTE: code assumes windowless sipms are channels 0,5,10,15 (physical channels +1)')
 pl.figure(8);pl.clf();ax=pl.gca()
 
-for ii in range(0,1):#data_folders.shape[0]):
+for ii in range(0,data_folders.shape[0]):
 # for ii in range(0,1):
 	if ii==0:
 		ww=8
@@ -217,7 +229,7 @@ for ii in range(0,1):#data_folders.shape[0]):
 		
 		if ii==1:
 			pl.text(0.012,dpb[0],(r'Xe scintillation pulse $\bar{a}$'),color='k',verticalalignment='center',fontsize=14)
-			pl.text(0.012,dpb[0]/30,('delayed photons $d_p(t)$'),rotation=-27,color='k',verticalalignment='center',fontsize=14)
+			pl.text(0.012,dpb[0]/30,('$d_p(t)=0.43t^{-1.32}$'),rotation=-27,color='k',verticalalignment='center',fontsize=14)
 
 		if ww==8:
 			(a, b, sigma_a, sigma_b) = linfit(np.log10(ct[1:4]),np.log10(dpb[1:4]))
@@ -229,8 +241,9 @@ for ii in range(0,1):#data_folders.shape[0]):
 # 			pl.plot(tt[0:],40*dpb[0]/tmp*tt[0:]**b,':',color=colorz[ii],linewidth=1)
 		if ww==5:
 			pl.plot(tt[0:],1.0*np.exp(-tt[0:]/1.0),'g:')
+			pl.text(0.012,1.7,('$d_p(t)=e^{-t}$'),rotation=0,color='k',verticalalignment='center',fontsize=14)
 
-		pl.text(0.012,0.4,('random photon background'),color='black',verticalalignment='center',fontsize=14)		
+		pl.text(0.012,0.3,('random photon background'),color='black',verticalalignment='center',fontsize=14)		
 # 		sig = 0.04; mu_b = 0.65; # not sure how I got this, can't duplicate
 		sig_b = 0.009; mu_b = 0.017;
 		sig_t = 0.04; mu_t = 0.15;
@@ -253,9 +266,10 @@ for ii in range(0,1):#data_folders.shape[0]):
 
 pl.savefig('fig3.png',dpi=300)
 
-### plot photon rate
+
 if 1: 
 	ttt = np.arange(1,4e3,1) # ms
+	excl = np.ones(ttt.shape,dtype='bool')
 	ws = np.zeros(len(ttt))
 	ws1 = np.zeros(len(ttt))
 	ws2 = np.zeros(len(ttt))
@@ -266,22 +280,26 @@ if 1:
 	for i in range(len(pgs)):
 		pl.plot(tps[i],pgs[i],'k^',markerfacecolor='white',label=labz[i])
 		ws = ws + dp(0.42,-1.3,ttt,pgs[i],tps[i],40)
-# 		ws1 = ws1 + dp(1.2,-1.3,ttt,pgs[i],tps[i],10)
+		ws1 = ws1 + dpp(40,-1.3,ttt,pgs[i],tps[i],40)
 		ws2 = ws2 + pexp(pgs[i]/2800*1e4,ttt,pgs[i],tps[i],1)
 		ws[(tps[i]+0)*1000:(tps[i]+40)*1000] = 0
 		ws1[(tps[i]+0)*1000:(tps[i]+40)*1000] = 0
-	
-	ws = ws+3400
+		excl[tps[i]:tps[i]+40] = False
+	ws = ws + 3400
 	ws2 = ws2 + 10000
+	ws1 = ws1 + 10000
 	
-	pl.plot(np.array([0,1]),np.array([0,1]),'b-',label=r'$d_p(t)=\alpha\bar{a}t^b$')
-	pl.plot(ttt,ws,'b.',lw=0.5,ms=1)#,label='Hypothetical detector')
-# 	pl.plot(ttt,ws1+10000,'c.',lw=0.5,ms=2,label='Hypothetical detector')
-	pl.plot(ttt,ws2,'g:',lw=1,label=r'$d_p(t)=\alpha e^{-t/\tau}$')
-
-	pl.plot(ttt[1550],ws[1550],'rs',ms=10,markerfacecolor='None')
-	pl.plot(ttt[1665],ws[1665],'rs',ms=10,markerfacecolor='None')
-	
+	pl.plot(np.array([0,1]),np.array([0,1]),'b-',label=r'$d_p(t)=\alpha\bar{a}(t-t_0)^k$ + R')
+# 	pl.plot(ttt[excl],ws[excl],'b.',lw=0.5,ms=1)#,label='Hypothetical detector')
+	pl.plot(ttt[excl],ws1[excl],'b.',lw=0.5,ms=1)#,label='Hypothetical detector')
+	pl.plot(ttt,ws2,'g:',lw=1,label=r'$d_p(t)=\alpha \bar{a} e^{-(t-t_0)/\tau}$ + R')
+	if 0: # original choice, following TA Eq 5.6
+		pl.plot(ttt[1550],ws[1550],'rs',ms=10,markerfacecolor='None')
+		pl.plot(ttt[1665],ws[1665],'rs',ms=10,markerfacecolor='None')
+	if 1:
+		pl.plot(ttt[1569],ws1[1569],'rs',ms=10,markerfacecolor='None')
+		pl.plot(ttt[1650],ws1[1650],'rs',ms=10,markerfacecolor='None')
+		
 	pl.yscale('log')
 	pl.xlabel('time (ms)',fontsize=14)
 	pl.ylabel('photon rate (Hz)',fontsize=14)
@@ -296,7 +314,7 @@ if 1:
 	from numpy import math
 	M = 250 # number of PMTs
 	N = 3 # coincidence
-	Rdc = 1e4/M # Hz
+	Rdc = 2.13e4/M # Hz
 	T = 200e-9 # time window
 	factt = math.factorial(M)/math.factorial(M-N)
 	Sn = (1/T)*factt* (Rdc*T*np.exp(-Rdc*T))**N

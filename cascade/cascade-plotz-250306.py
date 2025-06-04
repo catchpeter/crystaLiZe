@@ -246,9 +246,9 @@ for cc in range(0,len(cutvals)):
 	# 			(a, b, sigma_a, sigma_b) = linfit(np.log10(ct[1:5]),np.log10(dpb[1:5]))
 				print(b)
 				print(1/(10**a/dpb[0]))
-				pl.plot(tt[0:],(10**a)*tt[0:]**b,'--',color=colorz[ii],linewidth=0.5)#,label='fit to PMT') 
+				pl.plot(tt[8:],(10**a)*tt[8:]**b,'--',color=colorz[ii],linewidth=0.5)#,label='fit to PMT') 
 # 				pl.plot(tt[0:18],(10**a)*tt[0:18]**b,'--',color=colorz[ii],linewidth=0.5,label=None) 
-				pl.text(0.012,dpb[0]/150,('delayed photons $d_p(t)$'),rotation=-24,color='k',verticalalignment='center',size=14)
+				pl.text(0.082,2,('$d_p(t)=0.62t^{-1.30}$'),rotation=-25,color='k',verticalalignment='center',size=14)
 
 			pl.text(0.012,0.3,('random photon background'),color='k',verticalalignment='center',size=14)
 		
@@ -264,7 +264,8 @@ for cc in range(0,len(cutvals)):
 				print(b1)
 				print(1/(10**a1/dpb[0]))
 				pl.plot(tt[0:],(10**a1)*tt[0:]**b1,'--',color='grey',linewidth=0.5)#,label='fit to sipms') 
-		
+				pl.text(0.012,120,('$d_p(t)=1.5t^{-1.04}$'),rotation=-23,color='k',verticalalignment='center',size=14)
+
 				
 	# 		pl.plot(np.array([1e-3,1e-1]),np.array([1,1]),'k:',label='progenitor window')	
 			pl.xlabel('time (ms)',fontsize=14)
@@ -290,21 +291,6 @@ for cc in range(0,len(cutvals)):
 		avals1[cc] = 1/(10**a1/dpt[0])
 		bvals1[cc] = b1
 		sumdp1[cc] = np.sum(mvals1[cc]/avals1[cc]*tt[0:99]**bvals1[cc])
-
-### compare with LUX https://arxiv.org/pdf/2004.07791
-if 1:
-	ttt = np.arange(1e-3,4e3,1e-3) # ms
-	pl.figure(88);pl.clf()
-	pl.loglog(ttt[0:],1/6000*ttt[0:]**-1.30,':',color=colorz[ii],linewidth=1)
-	pl.loglog(ttt[0:],40/6000*ttt[0:]**-1.30,'-',color='b',linewidth=1)
-	pl.plot(np.array([1e-4,1e-3,1e-2,1e0])*1e3,np.array([1e-3,1e-4,1e-5,1e-6]),'ro')
-
-# 	pl.plot(ttt[0:],(1/avals[1])*ttt[0:]**bvals[1],'--',color='red',linewidth=0.5)
-# 	pl.plot(ttt[0:],(1/avals[2])*ttt[0:]**bvals[2],'--',color='orange',linewidth=0.5)
-# 	pl.plot(ttt[0:],(1/avals[3])*ttt[0:]**bvals[3],'--',color='gold',linewidth=0.5)
-# 	pl.plot(ttt[0:],(1/avals[4])*ttt[0:]**bvals[4],'--',color='green',linewidth=0.5)
-# 	pl.plot(ttt[0:],(1/avals[5])*ttt[0:]**bvals[5],'--',color='blue',linewidth=0.5)
-# 	pl.plot(ttt[0:],(1/avals[6])*ttt[0:]**bvals[6],'--',color='indigo',linewidth=0.5)
 
 
 

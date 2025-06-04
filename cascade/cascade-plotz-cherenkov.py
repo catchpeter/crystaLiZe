@@ -306,8 +306,8 @@ if 1:
 		pl.plot(tt[0:],(dpb[0]/avals[5])*tt[0:]**bvals[5],':',color=sysc,linewidth=0.5)
 # 		pl.plot(tt[0:],(dpb[0]/avals[6])*tt[0:]**bvals[6],':',color=sysc,linewidth=0.5)
 	
-	pl.text(0.012,dpb[0]/40,('delayed photons $d_p(t)$'),rotation=-22,color='k',verticalalignment='center',size=14)
-	
+	pl.text(0.012,dpb[0]/50,('$d_p(t)=0.09t^{-1.03}$'),rotation=-22,color='k',verticalalignment='center',size=14)
+
 	if 1:
 		pl.text(0.012,0.3,('random photon background'),color='k',verticalalignment='center',size=14)
 		sig_t = 0.07; mu_t = 0.43
